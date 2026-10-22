@@ -12,9 +12,9 @@ ROOT = Path(__file__).resolve().parents[2]
 
 
 @pytest.mark.parametrize('profile', ['rgbd', 'rgb-only'])
-def test_franka_workspace_renders_without_leftover_markup(tmp_path, profile):
+def test_xarm_workspace_renders_without_leftover_markup(tmp_path, profile):
     workspace = tmp_path/'ws'
-    manifest = build(recipe_for(), Setup('franka', 'stack_cups', 'claude', profile), workspace)
+    manifest = build(recipe_for(), Setup('xarm', 'stack_cups', 'claude', profile), workspace)
     for path in workspace.rglob('*.md'):
         text = path.read_text()
         assert '{{' not in text and '{%' not in text, path
@@ -22,11 +22,11 @@ def test_franka_workspace_renders_without_leftover_markup(tmp_path, profile):
     skills = sorted(p.name for p in (workspace/'.agents/skills').iterdir())
     assert {'manual-robot-control', 'experience-memory', 'wrist-camera-inspection', 'gemini'} <= set(skills)
     contract = json.loads((workspace/'MCP_CONTRACT.json').read_text())
-    assert contract['robot'] == 'franka' and 'status' in contract['tools']
-    assert set(ROBOT_FACTS['franka']['tools']) <= set(contract['tools'])
+    assert contract['robot'] == 'xarm' and 'status' in contract['tools']
+    assert set(ROBOT_FACTS['xarm']['tools']) <= set(contract['tools'])
     assert manifest['contract'] == contract
     assert 'real hardware' in (workspace/'MCP_SESSION.md').read_text()
-    assert 'Franka FR3' in (workspace/'AGENTS.md').read_text()
+    assert 'UFactory xArm 6' in (workspace/'AGENTS.md').read_text()
 
 
 def test_subagent_text_only_with_subagents(tmp_path):
@@ -50,4 +50,4 @@ def test_every_template_variable_is_a_setup_fact():
                  *ROOT.glob('agent_blocks/**/*.md')]:
         if path.name == 'README.md' and path.parent.name == 'agent_skills':
             continue
-        render(path.read_text(), Setup('franka'))
+        render(path.read_text(), Setup('xarm'))

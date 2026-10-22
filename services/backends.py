@@ -19,6 +19,7 @@ from importlib import import_module
 BACKENDS = {
     'franka': 'services.franka.backend:FrankaBackend',
     'mock': 'services.mock_backend:MockBackend',
+    'xarm': 'services.xarm.backend:XArmBackend',
 }
 
 

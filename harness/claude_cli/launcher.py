@@ -101,9 +101,9 @@ def agent_python(config):
 
 def site_paths(config):
     """The operator's robot-stack paths: RAX_PROTECTED_PATHS, the session's `protected_paths` and
-    the camera calibration directory (FRANKA_CALIBRATION_DIR)."""
+    the camera calibration directories (FRANKA_CALIBRATION_DIR, XARM_CALIBRATION_DIR)."""
     listed = [*os.environ.get(SITE_PATHS_ENVIRONMENT, '').split(':'),
-              *config.backend_options.get('protected_paths', ()), os.environ.get('FRANKA_CALIBRATION_DIR', '')]
+              *config.backend_options.get('protected_paths', ()), os.environ.get('FRANKA_CALIBRATION_DIR', ''), os.environ.get('XARM_CALIBRATION_DIR', '')]
     paths = []
     for entry in filter(None, listed):
         path = Path(entry).expanduser()

@@ -157,7 +157,7 @@ async function refreshFrame() {
   if (!state.selected) return;
   const { frame } = await api(`/api/session/${state.selected}/frame`);
   const box = $('cameras');
-  if (!frame) { $('frame-info').textContent = 'No frames yet (the agent captures them with franka_observe).'; box.replaceChildren(); return; }
+  if (!frame) { $('frame-info').textContent = 'No frames yet (the agent captures them with xarm_observe).'; box.replaceChildren(); return; }
   $('frame-info').textContent = `${frame.frame_id} · ${when(frame.time)} · ${frame.count} frames in session`;
   if (frame.frame_id === state.frameId) return;
   state.frameId = frame.frame_id;
@@ -206,7 +206,7 @@ function renderRequests(value) {
   const box = $('requests');
   const open = value.sessions.flatMap((s) => (s.requests || []).map((r) => ({ ...r, session: s.id, task: s.task })));
   box.hidden = open.length === 0;
-  document.title = open.length ? `(${open.length}) Agent needs you - Franka` : 'Franka operator';
+  document.title = open.length ? `(${open.length}) Agent needs you - xArm` : 'xArm operator';
   if (open.some((r) => !seenRequests.has(r.id))) beep();
   open.forEach((r) => seenRequests.add(r.id));
   if (box.contains(document.activeElement)) return;  // do not wipe a reply being typed

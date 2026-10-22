@@ -5,14 +5,21 @@ from dataclasses import dataclass
 # backend's MCP tools (services/backends.py); keep them in sync with the backend.
 ROBOT_FACTS = {
     'franka': {'name': 'Franka FR3', 'status': 'franka_status', 'observe': 'franka_observe',
-               'move': 'franka_move_pose', 'gripper': 'franka_gripper',
-               'pixel': 'franka_pixel_to_position',
+               'move': 'franka_move_pose', 'joints': 'franka_move_joints', 'gripper': 'franka_gripper',
+               'pixel': 'franka_pixel_to_position', 'stream': 'franka_stream',
                'tools': ('franka_status', 'franka_observe', 'franka_move_pose', 'franka_move_joints',
                          'franka_gripper', 'franka_pixel_to_position', 'franka_stream', 'franka_hold'),
                'overview_camera': 'left', 'overview': 'left exterior camera',
                'cameras': ('left', 'right', 'wrist')},
-    'mock': {'name': 'mock robot', 'status': 'status', 'observe': 'mock_observe', 'move': 'mock_move',
-             'gripper': 'mock_move', 'pixel': 'mock_observe', 'tools': ('mock_observe', 'mock_move'),
+    'xarm': {'name': 'UFactory xArm 6', 'status': 'xarm_status', 'observe': 'xarm_observe',
+             'move': 'xarm_move_pose', 'joints': 'xarm_move_joints', 'gripper': 'xarm_gripper',
+             'pixel': 'xarm_pixel_to_position', 'stream': 'xarm_stream',
+             'tools': ('xarm_status', 'xarm_observe', 'xarm_move_pose', 'xarm_move_joints',
+                       'xarm_gripper', 'xarm_pixel_to_position', 'xarm_stream', 'xarm_hold'),
+             'overview_camera': 'left', 'overview': 'left sideview camera',
+             'cameras': ('left', 'right', 'wrist')},
+    'mock': {'name': 'mock robot', 'status': 'status', 'observe': 'mock_observe', 'move': 'mock_move', 'joints': 'mock_move',
+             'gripper': 'mock_move', 'pixel': 'mock_observe', 'stream': 'mock_observe', 'tools': ('mock_observe', 'mock_move'),
              'overview_camera': 'none', 'overview': 'no camera', 'cameras': ()},
 }
 CLIS = ('claude',)
@@ -20,7 +27,7 @@ CLIS = ('claude',)
 
 @dataclass(frozen=True)
 class Setup:
-    robot: str = 'franka'
+    robot: str = 'xarm'
     task: str | None = None
     cli: str = 'claude'
     observation_profile: str = 'rgbd'

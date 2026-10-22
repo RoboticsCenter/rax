@@ -16,7 +16,7 @@ class Configuration:
     root: Path                      # session directory under the artifact root
     task: str                       # short task id, e.g. "stack_cups"
     task_description: str = ''      # TASK.md body written by the operator
-    robot: str = 'franka'           # services.backends registry key
+    robot: str = 'xarm'             # services.backends registry key
     # Backend-specific operator settings (bridge URLs, cameras, workspace box, ...).
     backend_options: dict = field(default_factory=dict)
     observation_profile: str = 'rgbd'

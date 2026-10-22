@@ -13,43 +13,45 @@ import pytest
 from services.dashboard import sessions as sessions_module
 from services.dashboard.server import COOKIE, make_server
 from services.dashboard.sessions import Sessions
-from services.franka import arming
-from services.franka.kinematics import flange_pose
+from services.xarm import arming
 
 PROJECT = Path(__file__).resolve().parents[2]
-START_Q = [-0.0169, -0.6314, -0.0054, -2.3977, -0.0217, 1.7756, 0.7776]
+START_Q = [0.0, -0.72, -1.18, 0.0, 1.9, 0.0]
 
 
-class FakeBridges:
+class FakeRobot:
     def __init__(self):
-        self.posts = []
-        F = flange_pose(START_Q)
-        from scipy.spatial.transform import Rotation
-        self.arm = {'arm_pos': F[:3, 3].tolist(), 'arm_quat': Rotation.from_matrix(F[:3, :3]).as_quat().tolist(),
-                    'arm_joint_position': START_Q, 'policy_running': True, 'controller_backend': 'droid_differential_ik'}
+        self.holds = 0
+        self.down = False
 
-    def get(self, url, timeout=1.0):
-        if url.endswith(':50054/state'):
-            return self.arm
-        return {'width': 0.08, 'max_width': 0.0801, 'is_grasped': False, 'is_moving': False, 'stale': False}
+    def state(self):
+        if self.down:
+            raise ConnectionError('unreachable')
+        return {'tcp_position': [0.42, 0.0, 0.30], 'tcp_quaternion': [1.0, 0.0, 0.0, 0.0],
+                'joints': START_Q, 'state': 0, 'mode': 0, 'error_code': 0, 'warn_code': 0}
 
-    def post(self, url, payload, timeout=3.0):
-        self.posts.append((url, payload))
-        return {}
+    def gripper_state(self):
+        if self.down:
+            raise ConnectionError('unreachable')
+        return {'width': 0.085, 'max_width': 0.085, 'raw_position': 850, 'is_grasped': False,
+                'is_moving': False, 'stale': False}
 
-
-@pytest.fixture
-def bridges():
-    return FakeBridges()
+    def hold(self):
+        self.holds += 1
 
 
 @pytest.fixture
-def dashboard(artifact_root, bridges, monkeypatch):
+def robot():
+    return FakeRobot()
+
+
+@pytest.fixture
+def dashboard(artifact_root, robot, monkeypatch):
     # Dashboard sessions take the operator's backend options (cameras) from the environment.
-    monkeypatch.setenv('RAX_BACKEND_OPTIONS', str(PROJECT/'examples/franka.json'))
+    monkeypatch.setenv('RAX_BACKEND_OPTIONS', str(PROJECT/'examples/xarm.json'))
     # A launcher stand-in that just sleeps, so launches never start a model or a robot service.
     sleeper = [sys.executable, '-c', 'import sys, time; time.sleep(60)']
-    sessions = Sessions(project=PROJECT, launcher=sleeper, http_post=bridges.post, http_get=bridges.get)
+    sessions = Sessions(project=PROJECT, launcher=sleeper, robot_driver=lambda: robot)
     server, token = make_server('127.0.0.1', 0, sessions=sessions, token='test-token')
     thread = threading.Thread(target=server.serve_forever, daemon=True)
     thread.start()
@@ -107,7 +109,7 @@ def test_token_url_sets_cookie(dashboard):
     cookie = error.value.headers['Set-Cookie']
     assert cookie.startswith(f'{COOKIE}={token}') and 'HttpOnly' in cookie and 'SameSite=Strict' in cookie
     with urlopen(Request(base + '/', headers={'Cookie': f'{COOKIE}={token}'}), timeout=5) as response:
-        assert b'Franka Operator' in response.read()
+        assert b'xArm Operator' in response.read()
 
 
 def test_post_requires_json_content_type(dashboard):
@@ -122,7 +124,7 @@ def test_configure_and_list(dashboard, artifact_root):
     config = json.loads(Path(value['config_path']).read_text())
     assert config['agent_effort'] == 'max' and config['agent_provider'] == 'claude-login'
     assert config['task'] == 'red_on_blue' and config['observation_profile'] == 'rgbd'
-    assert config['backend_options'] == json.loads((PROJECT/'examples/franka.json').read_text())
+    assert config['backend_options'] == json.loads((PROJECT/'examples/xarm.json').read_text())
     assert value['commands']['interactive'].endswith(f"--config {value['config_path']}")
     assert '--non-interactive' in value['commands']['headless']
     status, listing = call(base, '/api/sessions')
@@ -137,10 +139,10 @@ def test_configure_without_backend_options_reports_the_missing_cameras(dashboard
     base, _, _ = dashboard
     monkeypatch.delenv('RAX_BACKEND_OPTIONS')
     status, value = call(base, '/api/configure', {'task': 'red_on_blue', 'task_text': 'x'})
-    assert status == 400 and 'a franka session needs its cameras' in value['error']
+    assert status == 400 and 'an xarm session needs its cameras' in value['error']
 
 
-def test_arm_requires_confirmation_and_disarm_holds(dashboard, bridges, artifact_root):
+def test_arm_requires_confirmation_and_disarm_holds(dashboard, robot, artifact_root):
     base, token, sessions = dashboard
     session_id = configure(base)['id']
     status, value = call(base, f'/api/session/{session_id}/arm', {})
@@ -150,10 +152,10 @@ def test_arm_requires_confirmation_and_disarm_holds(dashboard, bridges, artifact
     assert status == 200 and value['armed'] is True and value['until'] is not None
     status, value = call(base, f'/api/session/{session_id}/disarm', {})
     assert status == 200 and value['motion']['armed'] is False and value['hold'] == 'ok'
-    assert bridges.posts == [('http://127.0.0.1:50054/hold', {})]
+    assert robot.holds == 1
 
 
-def test_disarm_all(dashboard, bridges):
+def test_disarm_all(dashboard, robot):
     base, token, sessions = dashboard
     first, second = configure(base, 'a')['id'], configure(base, 'b')['id']
     for session_id in (first, second):
@@ -161,17 +163,17 @@ def test_disarm_all(dashboard, bridges):
     status, value = call(base, '/api/disarm-all', {})
     assert status == 200 and sorted(value['disarmed']) == sorted([first, second])
     assert all(not arming.read(root)['armed'] for root in sessions.roots())
-    assert bridges.posts[-1][0].endswith('/hold')
+    assert robot.holds >= 1
 
 
-def test_disarm_reports_hold_failure_but_still_disarms(dashboard, bridges):
+def test_disarm_reports_hold_failure_but_still_disarms(dashboard, robot):
     base, token, sessions = dashboard
     session_id = configure(base)['id']
     call(base, f'/api/session/{session_id}/arm', {'estop_confirmed': True})
 
-    def broken(url, payload, timeout=3.0):
+    def broken():
         raise ConnectionError('bridge down')
-    sessions.http_post = broken
+    sessions.robot_driver = broken
     status, value = call(base, f'/api/session/{session_id}/disarm', {})
     assert status == 200 and value['motion']['armed'] is False and 'bridge down' in value['hold']
 
@@ -203,16 +205,14 @@ def test_resume_needs_a_previous_launch(dashboard):
     assert status == 409 and 'never launched' in value['error']
 
 
-def test_robot_panel_reports_tcp_and_bridge_down(dashboard, bridges):
+def test_robot_panel_reports_tcp_and_bridge_down(dashboard, robot):
     base, token, sessions = dashboard
     status, value = call(base, '/api/robot')
     assert status == 200 and value['arm']['ok'] and len(value['arm']['tcp_position']) == 3
-    assert abs(value['arm']['tcp_position'][2] - 0.4321) < 0.01  # TCP, not the flange
-    assert value['gripper']['ok'] and value['gripper']['width'] == 0.08
+    assert abs(value['arm']['tcp_position'][2] - 0.30) < 0.01
+    assert value['gripper']['ok'] and value['gripper']['width'] == 0.085
 
-    def down(url, timeout=1.0):
-        raise ConnectionError('unreachable')
-    sessions.http_get = down
+    robot.down = True
     status, value = call(base, '/api/robot')
     assert value['arm']['ok'] is False and 'unreachable' in value['arm']['error']
 
@@ -236,16 +236,16 @@ def test_frames_and_activity(dashboard):
     transcript.write_text('\n'.join(json.dumps(e) for e in [
         {'type': 'assistant', 'timestamp': 't1', 'message': {'content': [
             {'type': 'text', 'text': 'Looking at the scene.'},
-            {'type': 'tool_use', 'name': 'mcp__robot__franka_observe', 'input': {}}]}},
+            {'type': 'tool_use', 'name': 'mcp__robot__xarm_observe', 'input': {}}]}},
         {'type': 'user', 'timestamp': 't2', 'message': {'content': [
             {'type': 'tool_result', 'content': [{'type': 'text', 'text': '{"frame_id": "x"}'}, {'type': 'image'}]}]}},
     ]) + '\n')
-    (root/'mcp.jsonl').write_text(json.dumps({'time': 1.0, 'event': 'mcp_request', 'tool': 'franka_observe',
+    (root/'mcp.jsonl').write_text(json.dumps({'time': 1.0, 'event': 'mcp_request', 'tool': 'xarm_observe',
                                               'call_id': 'c', 'arguments': {}}) + '\n')
     status, value = call(base, f'/api/session/{session_id}/activity')
     kinds = [e['kind'] for e in value['transcript']]
     assert kinds == ['assistant', 'tool_call', 'tool_result']
-    assert value['transcript'][1]['name'] == 'mcp__robot__franka_observe'
+    assert value['transcript'][1]['name'] == 'mcp__robot__xarm_observe'
     assert '[image]' in value['transcript'][2]['text']
-    assert value['mcp'][0]['tool'] == 'franka_observe'
+    assert value['mcp'][0]['tool'] == 'xarm_observe'
     assert call(base, '/api/session/nope/activity')[0] == 404
