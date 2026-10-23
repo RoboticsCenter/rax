@@ -262,6 +262,8 @@ def agent_environment(deployed, relay_address):
         'PATH': f'{deployed["claude"].parent}:/usr/local/bin:/usr/bin:/bin',
         'ANTHROPIC_BASE_URL': f'http://{relay_address[0]}:{relay_address[1]}',
         'ANTHROPIC_AUTH_TOKEN': RELAY_TOKEN, 'RAX_MCP_SOCKET': str(deployed['socket'])})
+    environment['CLAUDE_CODE_DISABLE_UNKNOWN_MODEL_WINDOW_ENFORCEMENT'] = os.environ.get(
+        'CLAUDE_CODE_DISABLE_UNKNOWN_MODEL_WINDOW_ENFORCEMENT', '1')
     return environment
 
 

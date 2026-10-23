@@ -38,15 +38,16 @@ MAX_OUTPUT_TOKENS = 128000
 BUDGET_EXHAUSTED = b'Relay model-call budget exhausted; the operator must raise --max-model-calls.'
 OAUTH_BETA = 'oauth-2025-04-20'
 # model: the agent; auditor: Claude Code's `sonnet` alias, for cheaper review-style
-# subagents; fast: the `haiku` alias (background tasks). Sonnet 5.5 is not served
-# to the Claude login (checked 2026-09-29), so first-party providers use Haiku 4.5 there.
+# subagents; fast: the `haiku` alias (background tasks). Keep first-party model
+# names aligned with Claude Code's baked catalog; unknown names can make the CLI
+# exit before the relay sees any model request.
 PROVIDERS = {
     'openrouter': {'base_url': 'https://openrouter.ai/api', 'model': 'anthropic/claude-opus-5.5',
                    'auditor': 'anthropic/claude-sonnet-5.5', 'fast': 'anthropic/claude-haiku-4.5'},
-    'anthropic': {'base_url': 'https://api.anthropic.com', 'model': 'claude-opus-5-5',
-                  'auditor': 'claude-haiku-4-5-20251001', 'fast': 'claude-haiku-4-5-20251001'},
-    'claude-login': {'base_url': 'https://api.anthropic.com', 'model': 'claude-opus-5-5',
-                     'auditor': 'claude-haiku-4-5-20251001', 'fast': 'claude-haiku-4-5-20251001'},
+    'anthropic': {'base_url': 'https://api.anthropic.com', 'model': 'claude-opus-5',
+                  'auditor': 'claude-haiku-4-5', 'fast': 'claude-haiku-4-5'},
+    'claude-login': {'base_url': 'https://api.anthropic.com', 'model': 'claude-opus-5',
+                     'auditor': 'claude-haiku-4-5', 'fast': 'claude-haiku-4-5'},
 }
 ROUTES = {'/v1/messages': True, '/v1/messages/count_tokens': False}  # path -> counts against the cap
 FORWARDED_HEADERS = ('anthropic-version', 'anthropic-beta')

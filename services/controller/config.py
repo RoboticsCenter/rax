@@ -22,7 +22,7 @@ class Configuration:
     observation_profile: str = 'rgbd'
     agent_provider: str = 'claude-login'
     agent_effort: str = 'xhigh'
-    agent_model: str | None = None  # Provider default (Opus 5.5) when unset.
+    agent_model: str | None = None  # Provider default when unset.
     session_seconds: int = 4 * 3600
     max_model_calls: int = 4000
     subagents: int = 0              # 0: the Agent tool is removed.

@@ -80,8 +80,8 @@ if action == 'ready':
     print(f"xArm SDK connected to {opts['xarm_ip']}")
     if ask('Person at the emergency stop and workspace clear? Type READY: ') != 'READY':
         sys.exit('not changed')
-    for call, args in ((arm.clean_error, ()), (arm.clean_warn, ()), (arm.motion_enable, (True,)),
-                       (arm.set_mode, (0,)), (arm.set_state, (0,))):
+    for call, args in ((arm.clean_error, ()), (arm.clean_warn, ()), (arm.set_mode, (0,)),
+                       (arm.set_state, (0,)), (arm.motion_enable, (True,)), (arm.set_state, (0,))):
         code = call(*args)
         if code != 0:
             sys.exit(f'{call.__name__} failed with xArm code {code}')

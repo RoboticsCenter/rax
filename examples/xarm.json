@@ -1,15 +1,51 @@
 {
-  "xarm_ip": "192.168.1.194",
+  "xarm_ip": "192.168.2.205",
   "cameras": [
-    {"name": "left", "serial": "111111111111", "mount": "fixed", "extrinsics": "left_T_cam_base.yaml",
-     "depth_min_m": 0.25, "depth_max_m": 3.0},
-    {"name": "right", "serial": "222222222222", "mount": "fixed", "extrinsics": "right_T_cam_base.yaml",
-     "depth_min_m": 0.25, "depth_max_m": 3.0},
-    {"name": "wrist", "serial": "333333333333", "mount": "tcp", "extrinsics": "wrist_T_cam_tcp.yaml",
-     "depth_min_m": 0.10, "depth_max_m": 1.5}
+    {
+      "name": "left",
+      "serial": "348522070593",
+      "mount": "fixed",
+      "extrinsics": "/home/jerry/rax/calibration/xarm/left_T_cam_base.yaml",
+      "width": 640,
+      "height": 480,
+      "depth_min_m": 0.25,
+      "depth_max_m": 3.0
+    },
+    {
+      "name": "right",
+      "serial": "841612070490",
+      "mount": "fixed",
+      "extrinsics": "/home/jerry/rax/calibration/xarm/right_T_cam_base.yaml",
+      "width": 640,
+      "height": 480,
+      "depth_min_m": 0.25,
+      "depth_max_m": 3.0
+    },
+    {
+      "name": "wrist",
+      "serial": "108322071838",
+      "mount": "tcp",
+      "extrinsics": "/home/jerry/rax/calibration/xarm/wrist_T_cam_tcp.yaml",
+      "width": 640,
+      "height": 480,
+      "depth_min_m": 0.1,
+      "depth_max_m": 1.5
+    }
   ],
   "camera_cpus": "0-15",
-  "workspace_min": [0.20, -0.55, 0.08],
-  "workspace_max": [0.85, 0.55, 0.70],
-  "protected_paths": []
+  "workspace_min": [
+    0.2,
+    -0.55,
+    0.08
+  ],
+  "workspace_max": [
+    0.85,
+    0.55,
+    0.62
+  ],
+  "protected_paths": [],
+  "stream_fps": 15,
+  "stream_depth_hz": 2.0,
+  "stream_window_s": 120,
+  "stream_archive": false
 }

@@ -165,7 +165,7 @@ class Sessions:
             'running': bool(process), 'process': process,
             'motion': arming.read(root),
             'requests': operator.pending(root),
-            'model': config.get('agent_model') or 'provider default (Opus 5.5)',
+            'model': config.get('agent_model') or 'provider default',
             'provider': config.get('agent_provider'), 'effort': config.get('agent_effort'),
             'session_hours': round(config.get('session_seconds', 0) / 3600, 2),
             'observation_profile': config.get('observation_profile'),

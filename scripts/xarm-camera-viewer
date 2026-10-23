@@ -1,0 +1,164 @@
+#!/usr/bin/env python3
+"""Tiny browser viewer for the xArm RealSense sliding-window stream."""
+import argparse
+import json
+from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
+from pathlib import Path
+from urllib.parse import urlparse
+
+
+PAGE = """<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>xArm Cameras</title>
+  <style>
+    body { margin: 0; font: 14px system-ui, sans-serif; background: #111; color: #eee; }
+    header { height: 44px; display: flex; align-items: center; gap: 18px; padding: 0 14px; background: #202020; }
+    #status { color: #bbb; }
+    main { display: grid; grid-template-columns: repeat(3, minmax(260px, 1fr)); gap: 10px; padding: 10px; }
+    section { background: #1b1b1b; border: 1px solid #333; border-radius: 6px; overflow: hidden; }
+    h2 { margin: 0; padding: 8px 10px; font-size: 15px; font-weight: 650; background: #252525; }
+    img { width: 100%; display: block; background: #050505; aspect-ratio: 4 / 3; object-fit: contain; }
+    .depth { border-top: 1px solid #333; }
+    @media (max-width: 900px) { main { grid-template-columns: 1fr; } }
+  </style>
+</head>
+<body>
+  <header><strong>xArm RealSense live view</strong><span id="status">starting...</span></header>
+  <main id="grid"></main>
+  <script>
+    const cameras = CAMERAS;
+    const grid = document.getElementById('grid');
+    for (const camera of cameras) {
+      const section = document.createElement('section');
+      section.innerHTML = `<h2>${camera}</h2><img id="rgb-${camera}"><img class="depth" id="depth-${camera}">`;
+      grid.appendChild(section);
+    }
+    function refreshImages() {
+      const t = Date.now();
+      for (const camera of cameras) {
+        document.getElementById(`rgb-${camera}`).src = `/latest/${camera}.jpg?t=${t}`;
+      }
+    }
+    function refreshDepth() {
+      const t = Date.now();
+      for (const camera of cameras) {
+        document.getElementById(`depth-${camera}`).src = `/depth/${camera}.jpg?t=${t}`;
+      }
+    }
+    async function refreshStatus() {
+      try {
+        const response = await fetch(`/status?t=${Date.now()}`);
+        const value = await response.json();
+        const parts = cameras.map(c => {
+          const info = value.cameras?.[c] || {};
+          return `${c}: ${info.fps_measured ?? '?'} fps, drops ${info.dropped_frames ?? '?'}`;
+        });
+        document.getElementById('status').textContent = parts.join(' | ');
+      } catch (err) {
+        document.getElementById('status').textContent = String(err);
+      }
+    }
+    refreshImages(); refreshDepth(); refreshStatus();
+    setInterval(refreshImages, 250);
+    setInterval(refreshDepth, 1000);
+    setInterval(refreshStatus, 1000);
+  </script>
+</body>
+</html>
+"""
+
+
+def newest_file(stream, camera, suffix):
+    root = stream / camera
+    if not root.is_dir():
+        return None
+    for minute in sorted((p for p in root.iterdir() if p.is_dir()), reverse=True):
+        files = sorted(minute.glob(f"*{suffix}"), reverse=True)
+        if files:
+            return files[0]
+    return None
+
+
+def colorize_depth(path):
+    import cv2 as cv
+    import numpy as np
+
+    depth = cv.imread(str(path), cv.IMREAD_UNCHANGED)
+    if depth is None:
+        return None
+    valid = depth[depth > 0]
+    if valid.size:
+        lo, hi = np.percentile(valid, [2, 98])
+        if hi <= lo:
+            hi = lo + 1
+        scaled = np.clip((depth.astype(np.float32) - lo) * 255.0 / (hi - lo), 0, 255).astype(np.uint8)
+    else:
+        scaled = np.zeros_like(depth, dtype=np.uint8)
+    colored = cv.applyColorMap(scaled, cv.COLORMAP_TURBO)
+    colored[depth == 0] = (0, 0, 0)
+    ok, encoded = cv.imencode(".jpg", colored, [cv.IMWRITE_JPEG_QUALITY, 85])
+    return encoded.tobytes() if ok else None
+
+
+def main():
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--stream", required=True)
+    parser.add_argument("--host", default="127.0.0.1")
+    parser.add_argument("--port", type=int, default=8765)
+    parser.add_argument("--cameras", default="left,right,wrist")
+    args = parser.parse_args()
+    stream = Path(args.stream).resolve()
+    cameras = [name for name in args.cameras.split(",") if name]
+    page = PAGE.replace("CAMERAS", json.dumps(cameras))
+
+    class Handler(BaseHTTPRequestHandler):
+        def log_message(self, *_):
+            pass
+
+        def send_bytes(self, data, content_type, status=200):
+            self.send_response(status)
+            self.send_header("Content-Type", content_type)
+            self.send_header("Cache-Control", "no-store")
+            self.send_header("Content-Length", str(len(data)))
+            self.end_headers()
+            self.wfile.write(data)
+
+        def do_GET(self):
+            path = urlparse(self.path).path
+            if path == "/":
+                self.send_bytes(page.encode(), "text/html; charset=utf-8")
+                return
+            if path == "/status":
+                index = stream / "index.json"
+                data = index.read_bytes() if index.exists() else b'{"cameras":{}}'
+                self.send_bytes(data, "application/json")
+                return
+            if path.startswith("/latest/") and path.endswith(".jpg"):
+                camera = path.removeprefix("/latest/").removesuffix(".jpg")
+                file = newest_file(stream, camera, ".jpg")
+                if file:
+                    self.send_bytes(file.read_bytes(), "image/jpeg")
+                else:
+                    self.send_error(404)
+                return
+            if path.startswith("/depth/") and path.endswith(".jpg"):
+                camera = path.removeprefix("/depth/").removesuffix(".jpg")
+                file = newest_file(stream, camera, "_depth.png")
+                data = colorize_depth(file) if file else None
+                if data:
+                    self.send_bytes(data, "image/jpeg")
+                else:
+                    self.send_error(404)
+                return
+            self.send_error(404)
+
+    server = ThreadingHTTPServer((args.host, args.port), Handler)
+    print(f"live camera viewer: http://{args.host}:{args.port}", flush=True)
+    server.serve_forever()
+
+
+if __name__ == "__main__":
+    main()
