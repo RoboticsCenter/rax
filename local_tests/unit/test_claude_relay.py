@@ -14,6 +14,7 @@ from harness.claude_cli import messages_relay
 from harness.claude_cli.messages_relay import BUDGET_EXHAUSTED, Credential, MessagesRelay, OAUTH_BETA
 
 MODEL = 'anthropic/claude-opus-5.5'
+OPENAI_MODEL = 'openai/gpt-6-astra'
 SSE = (b'event: message_start\ndata: {"type":"message_start","message":{"usage":{"input_tokens":11,'
        b'"cache_read_input_tokens":5,"output_tokens":1}}}\n\n'
        b'event: content_block_delta\ndata: {"type":"content_block_delta","delta":{"text":"ok"}}\n\n'
@@ -133,6 +134,98 @@ def test_client_tools_and_inline_images_pass(relay):
             'messages': [{'role': 'user', 'content': [
                 {'type': 'image', 'source': {'type': 'base64', 'media_type': 'image/png', 'data': 'AA=='}}]}]}
     assert call(body)[0] == 200 and received
+
+
+def test_openai_provider_translates_messages_tools_and_usage(tmp_path):
+    received = []
+
+    class Handler(BaseHTTPRequestHandler):
+        def log_message(self, *_):
+            pass
+
+        def do_POST(self):
+            body = json.loads(self.rfile.read(int(self.headers['Content-Length'])))
+            received.append((self.path, dict(self.headers), body))
+            data = json.dumps({
+                'id': 'resp_1', 'model': 'gpt-6-astra',
+                'output': [
+                    {'type': 'message', 'role': 'assistant',
+                     'content': [{'type': 'output_text', 'text': 'checking'}]},
+                    {'type': 'function_call', 'call_id': 'call_1', 'name': 'Bash',
+                     'arguments': '{"command":"date"}'},
+                ],
+                'usage': {'input_tokens': 5, 'output_tokens': 7,
+                          'input_tokens_details': {'cached_tokens': 2}},
+            }).encode()
+            self.send_response(200)
+            self.send_header('Content-Type', 'application/json')
+            self.send_header('Content-Length', str(len(data)))
+            self.end_headers()
+            self.wfile.write(data)
+
+    upstream = ThreadingHTTPServer(('127.0.0.1', 0), Handler)
+    threading.Thread(target=upstream.serve_forever, daemon=True).start()
+    router = MessagesRelay(tmp_path/'relay.sock', Credential('openai', key_file=private(tmp_path/'openai.key', 'sk-oai')),
+                           base_url=f'http://127.0.0.1:{upstream.server_port}/api',
+                           models=[OPENAI_MODEL], client_write_timeout=5, usage_log=tmp_path/'usage.jsonl')
+    router.start()
+    try:
+        connection = http.client.HTTPConnection('localhost', timeout=5)
+        connection.sock = socket.socket(socket.AF_UNIX)
+        connection.sock.connect(str(tmp_path/'relay.sock'))
+        payload = {'model': OPENAI_MODEL, 'max_tokens': 64, 'stream': False,
+                   'system': 'You are inside RAX.',
+                   'tools': [{'name': 'Bash', 'description': 'run shell',
+                              'input_schema': {'type': 'object', 'properties': {'command': {'type': 'string'}}}}],
+                   'messages': [{'role': 'user', 'content': [
+                       {'type': 'text', 'text': 'hi'},
+                       {'type': 'image', 'source': {'type': 'base64', 'media_type': 'image/png', 'data': 'AA=='}}]},
+                       {'role': 'assistant', 'content': [
+                           {'type': 'tool_use', 'id': 'toolu_1', 'name': 'Bash', 'input': {'command': 'pwd'}}]},
+                       {'role': 'user', 'content': [
+                           {'type': 'tool_result', 'tool_use_id': 'toolu_1', 'content': 'ok'}]}]}
+        connection.request('POST', '/v1/messages', json.dumps(payload).encode(), {'Content-Type': 'application/json'})
+        response = connection.getresponse()
+        body = json.loads(response.read())
+        connection.close()
+        assert response.status == 200
+        assert body['content'] == [{'type': 'text', 'text': 'checking'},
+                                   {'type': 'tool_use', 'id': 'call_1', 'name': 'Bash',
+                                    'input': {'command': 'date'}}]
+        path, headers, upstream_body = received[0]
+        assert path == '/api/v1/responses'
+        assert headers['Authorization'] == 'Bearer sk-oai' and 'anthropic-version' not in headers
+        assert upstream_body['model'] == 'gpt-6-astra'
+        assert upstream_body['instructions'] == 'You are inside RAX.'
+        assert upstream_body['tools'][0]['type'] == 'function'
+        assert upstream_body['input'][1]['type'] == 'function_call'
+        assert upstream_body['input'][2] == {'type': 'function_call_output', 'call_id': 'toolu_1', 'output': 'ok'}
+        row = json.loads((tmp_path/'usage.jsonl').read_text())
+        assert row['model'] == OPENAI_MODEL and row['input_tokens'] == 5
+        assert row['cache_read_input_tokens'] == 2 and row['output_tokens'] == 7
+    finally:
+        router.close()
+        upstream.shutdown()
+        upstream.server_close()
+
+
+def test_openai_count_tokens_is_local(tmp_path):
+    credential = Credential('openai', key_file=private(tmp_path/'openai.key', 'sk-oai'))
+    router = MessagesRelay(tmp_path/'relay.sock', credential, base_url='http://127.0.0.1:9', models=[OPENAI_MODEL],
+                           client_write_timeout=5)
+    router.start()
+    try:
+        connection = http.client.HTTPConnection('localhost', timeout=5)
+        connection.sock = socket.socket(socket.AF_UNIX)
+        connection.sock.connect(str(tmp_path/'relay.sock'))
+        connection.request('POST', '/v1/messages/count_tokens', json.dumps(
+            {'model': OPENAI_MODEL, 'max_tokens': 8, 'messages': [{'role': 'user', 'content': 'hi'}]}).encode(),
+            {'Content-Type': 'application/json'})
+        response = connection.getresponse()
+        body = json.loads(response.read())
+        assert response.status == 200 and body['input_tokens'] >= 1 and router.calls == 0
+    finally:
+        router.close()
 
 
 def test_provider_errors_keep_their_type(relay):

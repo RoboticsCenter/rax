@@ -7,7 +7,7 @@ from pathlib import Path
 import re
 
 AGENT_EFFORTS = ('high', 'xhigh', 'max')
-PROVIDERS = ('claude-login', 'openrouter', 'anthropic')
+PROVIDERS = ('claude-login', 'openrouter', 'anthropic', 'openai')
 PROFILES = ('rgbd', 'rgb-only')
 
 

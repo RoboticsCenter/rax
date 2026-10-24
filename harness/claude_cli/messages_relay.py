@@ -10,6 +10,8 @@ host-side JSONL for the operator.
 Providers:
 - ``openrouter``: https://openrouter.ai/api/v1/messages with the OpenRouter key.
 - ``anthropic``: https://api.anthropic.com/v1/messages with an API key (x-api-key).
+- ``openai``: https://api.openai.com/v1/responses with an OpenAI API key. The relay
+  translates Anthropic Messages requests from Claude Code to OpenAI Responses and back.
 - ``claude-login``: https://api.anthropic.com with the dedicated experiment account's
   long-lived ``claude setup-token`` token (harness/claude_cli/experiment_login.py),
   re-read for every request so a rotated token takes effect at once. The operator's
@@ -46,6 +48,8 @@ PROVIDERS = {
                    'auditor': 'anthropic/claude-sonnet-5.5', 'fast': 'anthropic/claude-haiku-4.5'},
     'anthropic': {'base_url': 'https://api.anthropic.com', 'model': 'claude-opus-5',
                   'auditor': 'claude-haiku-4-5', 'fast': 'claude-haiku-4-5'},
+    'openai': {'base_url': 'https://api.openai.com', 'model': 'openai/gpt-6-astra',
+               'auditor': 'openai/gpt-6-astra', 'fast': 'openai/gpt-6-astra'},
     'claude-login': {'base_url': 'https://api.anthropic.com', 'model': 'claude-opus-5',
                      'auditor': 'claude-haiku-4-5', 'fast': 'claude-haiku-4-5'},
 }
@@ -107,6 +111,11 @@ class Credential:
             key = _private_text(self.key_file).strip() if self.key_file else os.environ.get('OPENROUTER_API_KEY', '')
             if not key:
                 raise ValueError('The openrouter provider needs --key-file or OPENROUTER_API_KEY')
+            return {'Authorization': 'Bearer ' + key}
+        if self.provider == 'openai':
+            key = _private_text(self.key_file).strip() if self.key_file else os.environ.get('OPENAI_API_KEY', '')
+            if not key:
+                raise ValueError('The openai provider needs --key-file or OPENAI_API_KEY')
             return {'Authorization': 'Bearer ' + key}
         return {'Authorization': 'Bearer ' + self._token()}
 
@@ -184,6 +193,210 @@ class StreamUsage:
                 else event.get('usage')
             if isinstance(usage, dict):
                 self.usage.update({k: v for k, v in usage.items() if v is not None})
+
+
+def _openai_model(model):
+    return model[len('openai/'):] if isinstance(model, str) and model.startswith('openai/') else model
+
+
+def _json_text(value):
+    if isinstance(value, str):
+        return value
+    return json.dumps(value, separators=(',', ':'), ensure_ascii=False)
+
+
+def _content_text(value):
+    if isinstance(value, str):
+        return value
+    if not isinstance(value, list):
+        return _json_text(value)
+    pieces = []
+    for block in value:
+        if isinstance(block, str):
+            pieces.append(block)
+        elif isinstance(block, dict) and block.get('type') == 'text':
+            pieces.append(str(block.get('text', '')))
+        elif isinstance(block, dict) and block.get('type') == 'image':
+            pieces.append('[inline image]')
+        elif isinstance(block, dict):
+            pieces.append(_json_text(block))
+    return '\n'.join(piece for piece in pieces if piece)
+
+
+def _anthropic_system(payload):
+    system = payload.get('system')
+    if not system:
+        return None
+    return _content_text(system)
+
+
+def _openai_image(block):
+    source = block.get('source') or {}
+    if source.get('type') != 'base64':
+        return None
+    media = source.get('media_type') or 'application/octet-stream'
+    data = source.get('data') or ''
+    return {'type': 'input_image', 'image_url': f'data:{media};base64,{data}'}
+
+
+def _openai_message(role, parts):
+    if not parts:
+        return None
+    text_parts = [part.get('text', '') for part in parts if part.get('type') == 'input_text']
+    if len(text_parts) == len(parts):
+        return {'role': role, 'content': '\n'.join(text_parts)}
+    return {'role': role if role == 'user' else 'user', 'content': parts}
+
+
+def _anthropic_tool_result_output(content):
+    if isinstance(content, str):
+        return content
+    if not isinstance(content, list):
+        return _json_text(content)
+    pieces = []
+    for block in content:
+        if isinstance(block, str):
+            pieces.append(block)
+        elif isinstance(block, dict) and block.get('type') == 'text':
+            pieces.append(str(block.get('text', '')))
+        elif isinstance(block, dict) and block.get('type') == 'image':
+            pieces.append('[inline image result]')
+        else:
+            pieces.append(_json_text(block))
+    return '\n'.join(piece for piece in pieces if piece)
+
+
+def _openai_input(messages):
+    items = []
+    for message in messages or []:
+        role = message.get('role', 'user')
+        content = message.get('content', '')
+        if isinstance(content, str):
+            if content:
+                items.append({'role': role, 'content': content})
+            continue
+        parts = []
+        for block in content or []:
+            if not isinstance(block, dict):
+                parts.append({'type': 'input_text', 'text': str(block)})
+                continue
+            kind = block.get('type')
+            if kind == 'text':
+                parts.append({'type': 'input_text', 'text': str(block.get('text', ''))})
+            elif kind == 'image':
+                image = _openai_image(block)
+                if image:
+                    parts.append(image)
+            elif kind == 'tool_use':
+                if (item := _openai_message(role, parts)) is not None:
+                    items.append(item)
+                    parts = []
+                arguments = block.get('input') if isinstance(block.get('input'), dict) else {}
+                items.append({'type': 'function_call', 'call_id': block.get('id') or block.get('name'),
+                              'name': block.get('name'), 'arguments': _json_text(arguments)})
+            elif kind == 'tool_result':
+                if (item := _openai_message(role, parts)) is not None:
+                    items.append(item)
+                    parts = []
+                items.append({'type': 'function_call_output',
+                              'call_id': block.get('tool_use_id') or block.get('id') or 'call',
+                              'output': _anthropic_tool_result_output(block.get('content', ''))})
+        if (item := _openai_message(role, parts)) is not None:
+            items.append(item)
+    return items
+
+
+def _openai_tools(tools):
+    converted = []
+    for tool in tools or []:
+        schema = tool.get('input_schema') or tool.get('parameters') or {'type': 'object', 'properties': {}}
+        converted.append({'type': 'function', 'name': tool['name'],
+                          'description': tool.get('description') or '',
+                          'parameters': schema, 'strict': False})
+    return converted
+
+
+def openai_request(payload):
+    body = {'model': _openai_model(payload['model']), 'input': _openai_input(payload.get('messages', [])),
+            'max_output_tokens': payload.get('max_tokens')}
+    if instructions := _anthropic_system(payload):
+        body['instructions'] = instructions
+    if tools := _openai_tools(payload.get('tools', [])):
+        body['tools'] = tools
+        body['parallel_tool_calls'] = True
+        body['tool_choice'] = 'auto'
+    if isinstance(payload.get('metadata'), dict):
+        body['metadata'] = payload['metadata']
+    thinking = payload.get('thinking') or {}
+    if isinstance(thinking, dict) and thinking.get('type') == 'enabled':
+        body['reasoning'] = {'effort': 'high'}
+    return body
+
+
+def _tool_input(arguments):
+    if isinstance(arguments, dict):
+        return arguments
+    try:
+        parsed = json.loads(arguments or '{}')
+        return parsed if isinstance(parsed, dict) else {'value': parsed}
+    except (TypeError, ValueError):
+        return {'value': str(arguments or '')}
+
+
+def anthropic_message_from_openai(data, requested_model):
+    content = []
+    for item in data.get('output') or []:
+        if item.get('type') == 'message':
+            for block in item.get('content') or []:
+                kind = block.get('type')
+                text = block.get('text') if kind in ('output_text', 'text') else None
+                if text:
+                    content.append({'type': 'text', 'text': text})
+        elif item.get('type') in ('function_call', 'custom_tool_call'):
+            content.append({'type': 'tool_use', 'id': item.get('call_id') or item.get('id'),
+                            'name': item.get('name'), 'input': _tool_input(item.get('arguments') or item.get('input'))})
+    usage = data.get('usage') or {}
+    mapped_usage = {'input_tokens': usage.get('input_tokens', 0) or 0,
+                    'output_tokens': usage.get('output_tokens', 0) or 0}
+    details = usage.get('input_tokens_details') or {}
+    if isinstance(details.get('cached_tokens'), int):
+        mapped_usage['cache_read_input_tokens'] = details['cached_tokens']
+    return {'id': data.get('id') or f'msg_{int(time.time()*1000)}', 'type': 'message',
+            'role': 'assistant', 'model': requested_model, 'content': content,
+            'stop_reason': 'tool_use' if any(block.get('type') == 'tool_use' for block in content) else 'end_turn',
+            'stop_sequence': None, 'usage': mapped_usage}
+
+
+def _anthropic_sse(message):
+    usage = dict(message.get('usage') or {})
+    start = dict(message)
+    start['content'], start['stop_reason'], start['usage'] = [], None, {
+        'input_tokens': usage.get('input_tokens', 0), 'output_tokens': 0}
+    chunks = [('message_start', {'type': 'message_start', 'message': start})]
+    for index, block in enumerate(message.get('content') or []):
+        if block.get('type') == 'text':
+            chunks.append(('content_block_start', {'type': 'content_block_start', 'index': index,
+                                                   'content_block': {'type': 'text', 'text': ''}}))
+            chunks.append(('content_block_delta', {'type': 'content_block_delta', 'index': index,
+                                                   'delta': {'type': 'text_delta', 'text': block.get('text', '')}}))
+        elif block.get('type') == 'tool_use':
+            chunks.append(('content_block_start', {'type': 'content_block_start', 'index': index,
+                                                   'content_block': {'type': 'tool_use', 'id': block.get('id'),
+                                                                     'name': block.get('name'), 'input': {}}}))
+            chunks.append(('content_block_delta', {'type': 'content_block_delta', 'index': index,
+                                                   'delta': {'type': 'input_json_delta',
+                                                             'partial_json': _json_text(block.get('input') or {})}}))
+        chunks.append(('content_block_stop', {'type': 'content_block_stop', 'index': index}))
+    chunks.append(('message_delta', {'type': 'message_delta',
+                                     'delta': {'stop_reason': message.get('stop_reason'), 'stop_sequence': None},
+                                     'usage': {'output_tokens': usage.get('output_tokens', 0)}}))
+    chunks.append(('message_stop', {'type': 'message_stop'}))
+    return ''.join(f'event: {event}\ndata: {json.dumps(data, separators=(",", ":"))}\n\n'
+                   for event, data in chunks).encode()
+
+
+def token_count(payload):
+    return {'input_tokens': max(1, len(json.dumps(payload, separators=(',', ':'))) // 4)}
 
 
 def usage_reset(response):
@@ -286,6 +499,16 @@ class MessagesRelay:
                     except (OSError, ValueError, RuntimeError):
                         self.reject(401, b'Relay provider credential unavailable')
                         return
+                    if relay.credential.provider == 'openai' and parts.path == '/v1/messages/count_tokens':
+                        data = json.dumps(token_count(payload), separators=(',', ':')).encode()
+                        self.send_response(200)
+                        self.send_header('Content-Type', 'application/json')
+                        self.send_header('Content-Length', str(len(data)))
+                        self.send_header('Connection', 'close')
+                        self.end_headers()
+                        self.wfile.write(data)
+                        self.close_connection = True
+                        return
                     headers = {**auth, 'Content-Type': 'application/json', 'Accept-Encoding': 'identity',
                                'Accept': self.headers.get('Accept', 'application/json')}
                     for name in FORWARDED_HEADERS:
@@ -296,11 +519,20 @@ class MessagesRelay:
                         headers['anthropic-beta'] = ','.join(dict.fromkeys([*betas, OAUTH_BETA]))
                     headers.setdefault('anthropic-version', '2023-06-01')
                     connection = http.client.HTTPSConnection if url.scheme == 'https' else http.client.HTTPConnection
-                    target = url.path.rstrip('/') + parts.path + (f'?{parts.query}' if parts.query else '')
+                    is_openai = relay.credential.provider == 'openai'
+                    if is_openai:
+                        headers.pop('anthropic-version', None)
+                        headers.pop('anthropic-beta', None)
+                        headers['Accept'] = 'application/json'
+                        upstream_body = json.dumps(openai_request(payload), separators=(',', ':')).encode()
+                        target = url.path.rstrip('/') + '/v1/responses'
+                    else:
+                        upstream_body = body
+                        target = url.path.rstrip('/') + parts.path + (f'?{parts.query}' if parts.query else '')
                     deadline, attempt = time.monotonic()+RETRY_WINDOW_SECONDS, 0
                     while True:
                         upstream = connection(url.hostname, url.port, timeout=600)
-                        upstream.request('POST', target, body, headers)
+                        upstream.request('POST', target, upstream_body, headers)
                         response = upstream.getresponse()
                         if response.status not in RETRY_STATUSES:
                             break
@@ -327,6 +559,28 @@ class MessagesRelay:
                         return
                     # A slow client must not truncate a valid response.
                     self.connection.settimeout(client_write_timeout)
+                    if is_openai:
+                        data = response.read(MAX_BODY+1)
+                        if len(data) > MAX_BODY:
+                            self.reject(502, b'OpenAI response too large')
+                            return
+                        message = anthropic_message_from_openai(json.loads(data), payload.get('model'))
+                        if counted:
+                            relay.usage.record(payload.get('model'), message.get('usage') or {})
+                        if payload.get('stream'):
+                            data = _anthropic_sse(message)
+                            ctype = 'text/event-stream'
+                        else:
+                            data = json.dumps(message, separators=(',', ':')).encode()
+                            ctype = 'application/json'
+                        self.send_response(200)
+                        self.send_header('Content-Type', ctype)
+                        self.send_header('Content-Length', str(len(data)))
+                        self.send_header('Connection', 'close')
+                        self.end_headers()
+                        self.wfile.write(data)
+                        self.close_connection = True
+                        return
                     self.send_response(200)
                     self.send_header('Content-Type', response.getheader('Content-Type', 'text/event-stream'))
                     self.send_header('Connection', 'close')

@@ -186,6 +186,7 @@ The relay holds the credential; the agent never sees it. Choose the provider wit
 | `claude-login` (default) | a long-lived Claude Code token: `bash scripts/setup_claude_experiment_login.sh` signs in to a separate experiment account in its own config directory and stores its `claude setup-token` token in `~/.config/rax/`. `--personal` uses your own signed-in account instead. | `claude-opus-5-5` |
 | `anthropic` | an Anthropic API key file, passed to the launcher with `--key-file` | `claude-opus-5-5` |
 | `openrouter` | an OpenRouter key file, passed with `--key-file` | `anthropic/claude-opus-5.5` |
+| `openai` | an OpenAI API key file, passed with `--key-file`, or `OPENAI_API_KEY` in the launcher environment | `openai/gpt-6-astra` |
 
 Key files must be readable only by you (mode 0600). `--agent-model` overrides the model.
 
