@@ -44,7 +44,7 @@
     0.62
   ],
   "protected_paths": [],
-  "stream_fps": 15,
+  "stream_fps": 6,
   "stream_depth_hz": 2.0,
   "stream_window_s": 120,
   "stream_archive": false
