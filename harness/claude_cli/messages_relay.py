@@ -231,6 +231,10 @@ def _anthropic_system(payload):
 
 
 def _openai_image(block):
+    if block.get('mimeType') and block.get('data'):
+        media = block.get('mimeType') or 'application/octet-stream'
+        data = block.get('data') or ''
+        return {'type': 'input_image', 'image_url': f'data:{media};base64,{data}'}
     source = block.get('source') or {}
     if source.get('type') != 'base64':
         return None
@@ -266,6 +270,18 @@ def _anthropic_tool_result_output(content):
     return '\n'.join(piece for piece in pieces if piece)
 
 
+def _openai_tool_result_images(content):
+    if not isinstance(content, list):
+        return []
+    images = []
+    for block in content:
+        if isinstance(block, dict) and block.get('type') == 'image':
+            image = _openai_image(block)
+            if image:
+                images.append(image)
+    return images
+
+
 def _openai_input(messages):
     items = []
     for message in messages or []:
@@ -298,9 +314,16 @@ def _openai_input(messages):
                 if (item := _openai_message(role, parts)) is not None:
                     items.append(item)
                     parts = []
+                call_id = block.get('tool_use_id') or block.get('id') or 'call'
                 items.append({'type': 'function_call_output',
-                              'call_id': block.get('tool_use_id') or block.get('id') or 'call',
+                              'call_id': call_id,
                               'output': _anthropic_tool_result_output(block.get('content', ''))})
+                images = _openai_tool_result_images(block.get('content', ''))
+                if images:
+                    items.append({'role': 'user',
+                                  'content': [{'type': 'input_text',
+                                               'text': f'Inline images returned by tool {call_id}:'},
+                                              *images]})
         if (item := _openai_message(role, parts)) is not None:
             items.append(item)
     return items

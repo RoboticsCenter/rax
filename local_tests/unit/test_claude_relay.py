@@ -183,7 +183,9 @@ def test_openai_provider_translates_messages_tools_and_usage(tmp_path):
                        {'role': 'assistant', 'content': [
                            {'type': 'tool_use', 'id': 'toolu_1', 'name': 'Bash', 'input': {'command': 'pwd'}}]},
                        {'role': 'user', 'content': [
-                           {'type': 'tool_result', 'tool_use_id': 'toolu_1', 'content': 'ok'}]}]}
+                           {'type': 'tool_result', 'tool_use_id': 'toolu_1', 'content': [
+                               {'type': 'text', 'text': 'ok'},
+                               {'type': 'image', 'mimeType': 'image/jpeg', 'data': 'AA=='}]}]}]}
         connection.request('POST', '/v1/messages', json.dumps(payload).encode(), {'Content-Type': 'application/json'})
         response = connection.getresponse()
         body = json.loads(response.read())
@@ -199,7 +201,11 @@ def test_openai_provider_translates_messages_tools_and_usage(tmp_path):
         assert upstream_body['instructions'] == 'You are inside RAX.'
         assert upstream_body['tools'][0]['type'] == 'function'
         assert upstream_body['input'][1]['type'] == 'function_call'
-        assert upstream_body['input'][2] == {'type': 'function_call_output', 'call_id': 'toolu_1', 'output': 'ok'}
+        assert upstream_body['input'][2] == {'type': 'function_call_output', 'call_id': 'toolu_1',
+                                             'output': 'ok\n[inline image result]'}
+        assert upstream_body['input'][3]['role'] == 'user'
+        assert upstream_body['input'][3]['content'][1]['type'] == 'input_image'
+        assert upstream_body['input'][3]['content'][1]['image_url'] == 'data:image/jpeg;base64,AA=='
         row = json.loads((tmp_path/'usage.jsonl').read_text())
         assert row['model'] == OPENAI_MODEL and row['input_tokens'] == 5
         assert row['cache_read_input_tokens'] == 2 and row['output_tokens'] == 7
