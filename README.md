@@ -268,8 +268,9 @@ Never give the URL or token to an agent.
 
 While the robot service runs, the camera server records every camera at 30 Hz (depth at
 1 Hz) and the arm at 10 Hz into `<session>/stream/`. This is a 10-minute sliding window
-the agent can read (`runtime/stream`, the `franka_stream` tool) but not write. Each
-completed minute is also encoded into a whole-session archive:
+the agent can read (`runtime/stream`, the `franka_stream` or `xarm_stream` tool) but not
+write. When `stream_archive` is enabled, each completed minute is also encoded into a
+whole-session archive:
 
 ```
 <session>/archive/<camera>/<UTC YYYYmmddTHHMM>.mp4    H.264
@@ -279,6 +280,20 @@ completed minute is also encoded into a whole-session archive:
 
 Frame k of a minute's MP4 was captured at `frames_ms[k]` of its sidecar. The archive
 therefore lines up with the Claude transcript, `mcp.jsonl` and `model-usage.jsonl`.
+
+The xArm backend also supports motion-only persistent clips. With
+`motion_archive_enabled: true`, every `xarm_move_pose`, `xarm_move_joints` and
+`xarm_gripper` command saves just that motion window, plus `motion_archive_padding_s`
+before and after it:
+
+```
+<session>/motion-archive/<UTC>_<tool>_<id>/<camera>.mp4
+<session>/motion-archive/<UTC>_<tool>_<id>/<camera>.json
+<session>/motion-archive/<UTC>_<tool>_<id>/robot.jsonl
+<session>/motion-archive/<UTC>_<tool>_<id>/manifest.json
+```
+
+This keeps the agent's short live stream available while avoiding permanent idle video.
 
 ## Repository layout
 

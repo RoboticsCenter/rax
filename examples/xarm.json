@@ -47,5 +47,7 @@
   "stream_fps": 6,
   "stream_depth_hz": 2.0,
   "stream_window_s": 120,
-  "stream_archive": false
+  "stream_archive": false,
+  "motion_archive_enabled": true,
+  "motion_archive_padding_s": 0.75
 }

@@ -62,6 +62,9 @@ DEFAULTS = {
     'stream_jpeg_quality': 80,
     'robot_log_hz': 10.0,
     'stream_archive': True,
+    'motion_archive_enabled': True,
+    'motion_archive_padding_s': 0.75,
+    'motion_archive_codec': None,
     'agent_image_width': 640,
     'gripper_type': 'xarm',
     'gripper_max_width_m': 0.085,
@@ -185,7 +188,10 @@ class XArmBackend:
         self.frames_root = self.workspace/'runtime'/'frames'
         self.depth = config.observation_profile == 'rgbd'
         self.stream = config.root/'stream' if self.options['stream_enabled'] else None
+        self.motion_archive = config.root/'motion-archive' if self.stream is not None \
+            and self.options['motion_archive_enabled'] else None
         self.last_motion = None
+        self.motion_clip_threads = []
         self._stop = threading.Event()
         if cameras is None:
             self.cameras = CameraService(self.options, self.frames_root, config.root/'camera-server.log',
@@ -195,6 +201,8 @@ class XArmBackend:
                 self.stream.mkdir(mode=0o755, exist_ok=True)
                 self.cameras.start()
                 threading.Thread(target=self._log_robot, name='robot-log', daemon=True).start()
+                if self.motion_archive is not None:
+                    self.motion_archive.mkdir(mode=0o755, exist_ok=True)
         else:
             self.cameras = cameras
 
@@ -408,11 +416,43 @@ class XArmBackend:
                                  goal_p)
             time.sleep(self.options['poll_period_s'])
 
+    def _schedule_motion_clip(self, tool, start_s, end_s, status, detail=None):
+        if self.motion_archive is None:
+            return None
+        padding = max(0.0, float(self.options['motion_archive_padding_s']))
+        clip_id = f"{time.strftime('%Y%m%dT%H%M%S', time.gmtime(start_s))}_{tool}_{uuid.uuid4().hex[:6]}"
+        out_dir = self.motion_archive/clip_id
+        start_ms, end_ms = int((start_s - padding) * 1000), int((end_s + padding) * 1000)
+        metadata = {'tool': tool, 'status': status, 'motion_start_ms': int(start_s * 1000),
+                    'motion_end_ms': int(end_s * 1000), 'padding_s': padding}
+        if detail:
+            metadata['detail'] = str(detail)[:500]
+
+        def encode():
+            # Wait until the post-motion padding is in the stream before extracting it.
+            time.sleep(max(0.0, end_s + padding + 0.25 - time.time()))
+            try:
+                from .archive import encode_interval
+                encode_interval(self.stream, out_dir, sorted(self.models), start_ms=start_ms, end_ms=end_ms,
+                                fps=self.options['stream_fps'], codec=self.options['motion_archive_codec'],
+                                metadata=metadata)
+            except Exception as exc:
+                log = self.config.root/'motion-archive.log'
+                with open(log, 'a') as stream:
+                    stream.write(f'{clip_id}: {type(exc).__name__}: {exc}\n')
+
+        thread = threading.Thread(target=encode, name=f'motion-clip-{clip_id}', daemon=True)
+        thread.start()
+        self.motion_clip_threads.append(thread)
+        return {'directory': f'motion-archive/{clip_id}', 'start_ms': start_ms, 'end_ms': end_ms,
+                'status': status, 'cameras': sorted(self.models)}
+
     def _move_pose(self, position, quaternion=None, relative=False, tolerance_mm=1.5, timeout_s=None):
         goal_p, goal_q = self._pose_goal({'position': position, 'quaternion': quaternion, 'relative': relative},
                                          self.arm.state())
         self._require_armed()
         timeout = min(float(timeout_s or self.options['move_timeout_s']), 60.0)
+        motion_start = time.time()
         try:
             self.arm.move_pose(goal_p, goal_q, speed_mps=self.options['cartesian_speed_mps'],
                                acc_mps2=self.options['cartesian_acc_mps2'], timeout_s=timeout)
@@ -421,13 +461,19 @@ class XArmBackend:
                                         timeout_s=timeout)
         except ValueError as exc:
             self.arm.hold()
+            self._schedule_motion_clip('xarm_move_pose', motion_start, time.time(), 'failed', exc)
             raise self._held(MotionStopped(f'{exc}; the arm holds'), goal_p) from exc
         except TargetRejected as exc:
             self.arm.hold()
+            self._schedule_motion_clip('xarm_move_pose', motion_start, time.time(), 'failed', exc)
             raise self._held(TargetRejected(f'the controller refused this target: {exc}; the arm holds'),
                              goal_p) from exc
         except (MotionStopped, TimeoutError) as exc:
+            self._schedule_motion_clip('xarm_move_pose', motion_start, time.time(), 'failed', exc)
             raise self._held(exc, goal_p)
+        clip = self._schedule_motion_clip('xarm_move_pose', motion_start, time.time(), 'completed')
+        if clip:
+            result['motion_clip'] = clip
         self.last_motion = {'tool': 'xarm_move_pose', 'at': time.time(), **result}
         return {**result, 'target_position': np.round(goal_p, 5).tolist(),
                 'target_quaternion': np.round(goal_q, 5).tolist()}, []
@@ -447,7 +493,7 @@ class XArmBackend:
         step = self._check_joint_path(start, goal)
         self._require_armed()
         timeout = min(self.options['move_timeout_s'], max(2.0, step / self.options['joint_speed_radps']) + 10.0)
-        started = time.monotonic()
+        started, motion_start = time.monotonic(), time.time()
         try:
             self.arm.move_joints(goal, speed_radps=self.options['joint_speed_radps'],
                                  acc_radps2=self.options['joint_acc_radps2'], timeout_s=timeout)
@@ -464,6 +510,7 @@ class XArmBackend:
                 time.sleep(self.options['poll_period_s'])
         except (MotionStopped, TimeoutError, TargetRejected) as exc:
             self.arm.hold()
+            self._schedule_motion_clip('xarm_move_joints', motion_start, time.time(), 'failed', exc)
             report = self._pose_report(self.arm.state())
             exc.control_certain = True
             exc.robot_state = report
@@ -472,6 +519,9 @@ class XArmBackend:
         error = np.abs(np.asarray(state['joints']) - goal)
         result = {'seconds': round(time.monotonic() - started, 2),
                   'max_joint_error_rad': round(float(error.max()), 4), **self._pose_report(state)}
+        clip = self._schedule_motion_clip('xarm_move_joints', motion_start, time.time(), 'completed')
+        if clip:
+            result['motion_clip'] = clip
         self.last_motion = {'tool': 'xarm_move_joints', 'at': time.time(), **result}
         return result, []
 
@@ -482,12 +532,17 @@ class XArmBackend:
         state = self.arm.gripper_state()
         if state.get('stale'):
             raise RuntimeError('gripper state is stale; tell the operator')
+        motion_start = time.time()
         self.arm.gripper_move(width, speed=float(speed or self.options['gripper_speed']), force=force)
         time.sleep(0.2)
         value = self.arm.gripper_state()
-        return {'action': action, 'width': round(float(value['width']), 4),
-                'is_grasped': bool(value.get('is_grasped', False)),
-                'raw_position': value.get('raw_position')}, []
+        result = {'action': action, 'width': round(float(value['width']), 4),
+                  'is_grasped': bool(value.get('is_grasped', False)),
+                  'raw_position': value.get('raw_position')}
+        clip = self._schedule_motion_clip('xarm_gripper', motion_start, time.time(), 'completed')
+        if clip:
+            result['motion_clip'] = clip
+        return result, []
 
     def _frame_dir(self, frame_id):
         if not isinstance(frame_id, str) or not frame_id.isalnum():
@@ -639,6 +694,8 @@ class XArmBackend:
                      'directory': 'runtime/stream', 'window_s': self.options['stream_window_s'],
                      'fps': self.options['stream_fps'], 'depth_hz': self.options['stream_depth_hz'],
                      'now_ms': int(time.time() * 1000)},
+                 'motion_archive': None if self.motion_archive is None else {
+                     'directory': 'motion-archive', 'padding_s': self.options['motion_archive_padding_s']},
                  'last_motion': self.last_motion}
         try:
             grip = self.arm.gripper_state()
@@ -654,6 +711,8 @@ class XArmBackend:
             self.arm.hold()
         except Exception:
             pass
+        for thread in list(self.motion_clip_threads):
+            thread.join(timeout=5)
         self.cameras.close()
         close = getattr(self.arm, 'close', None)
         if close is not None:

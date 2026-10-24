@@ -7,7 +7,7 @@ import cv2 as cv
 import numpy as np
 import pytest
 
-from services.franka.archive import Archiver, encode_minute, minute_of
+from services.franka.archive import Archiver, encode_interval, encode_minute, minute_of
 from services.franka.camera_server import Cameras
 
 pytestmark = pytest.mark.skipif(shutil.which('ffmpeg') is None, reason='ffmpeg not installed')
@@ -50,6 +50,28 @@ def test_archiver_archives_completed_minutes_and_flushes_the_rest(tmp_path):
     assert (tmp_path/'archive'/'robot'/f'{done}.jsonl').exists()
     archiver.flush()
     assert archiver.archived('left', current)
+
+
+def test_encode_interval_keeps_only_the_motion_window(tmp_path):
+    start = 1_791_070_920_000
+    for camera in ('left', 'right', 'wrist'):
+        fill_minute(tmp_path/'stream'/camera/'20261003T2342', start, n=8, step_ms=100)
+    robot = tmp_path/'stream'/'robot'
+    robot.mkdir()
+    (robot/'20261003T2342.jsonl').write_text(
+        json.dumps({'t_ms': start - 100, 'tcp_position': [0, 0, 0]}) + '\n' +
+        json.dumps({'t_ms': start + 200, 'tcp_position': [1, 0, 0]}) + '\n' +
+        json.dumps({'t_ms': start + 900, 'tcp_position': [2, 0, 0]}) + '\n')
+    manifest = encode_interval(tmp_path/'stream', tmp_path/'motion-archive'/'clip1',
+                               ['left', 'right', 'wrist'], start_ms=start + 150, end_ms=start + 450,
+                               fps=10, codec='libx264', metadata={'tool': 'xarm_move_pose'})
+    assert manifest['tool'] == 'xarm_move_pose'
+    assert {c: manifest['cameras'][c]['frames'] for c in ('left', 'right', 'wrist')} == {
+        'left': 3, 'right': 3, 'wrist': 3}
+    assert json.loads((tmp_path/'motion-archive'/'clip1'/'manifest.json').read_text()) == manifest
+    assert (tmp_path/'motion-archive'/'clip1'/'left.mp4').is_file()
+    robot_lines = (tmp_path/'motion-archive'/'clip1'/'robot.jsonl').read_text().splitlines()
+    assert len(robot_lines) == 1 and json.loads(robot_lines[0])['tcp_position'] == [1, 0, 0]
 
 
 def test_prune_keeps_unarchived_minutes_until_the_last_resort(tmp_path):

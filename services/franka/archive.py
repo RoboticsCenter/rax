@@ -49,9 +49,8 @@ def frame_files(minute_dir):
     return sorted(files)
 
 
-def encode_minute(minute_dir, out_mp4, *, fps, codec, ffmpeg='ffmpeg'):
-    """Encode one minute of JPEGs to out_mp4 (+ .json sidecar). Returns the sidecar dict or None."""
-    frames = frame_files(minute_dir)
+def encode_frames(frames, out_mp4, *, fps, codec, camera, label, ffmpeg='ffmpeg', metadata=None):
+    """Encode [(epoch_ms, jpg)] frames to out_mp4 (+ .json sidecar)."""
     if not frames:
         return None
     out_mp4.parent.mkdir(parents=True, exist_ok=True)
@@ -74,11 +73,68 @@ def encode_minute(minute_dir, out_mp4, *, fps, codec, ffmpeg='ffmpeg'):
         process.kill()
         temporary.unlink(missing_ok=True)
         raise
-    sidecar = {'camera': minute_dir.parent.name, 'minute_utc': minute_dir.name, 'fps_nominal': fps,
-               'codec': codec, 'frames': len(frames), 'frames_ms': [t for t, _ in frames]}
+    sidecar = {'camera': camera, 'label': label, 'fps_nominal': fps, 'codec': codec, 'frames': len(frames),
+               'frames_ms': [t for t, _ in frames], **(metadata or {})}
     out_mp4.with_suffix('.json').write_text(json.dumps(sidecar))
     os.replace(temporary, out_mp4)
     return sidecar
+
+
+def encode_minute(minute_dir, out_mp4, *, fps, codec, ffmpeg='ffmpeg'):
+    """Encode one minute of JPEGs to out_mp4 (+ .json sidecar). Returns the sidecar dict or None."""
+    minute_dir = Path(minute_dir)
+    return encode_frames(frame_files(minute_dir), out_mp4, fps=fps, codec=codec, ffmpeg=ffmpeg,
+                         camera=minute_dir.parent.name, label=minute_dir.name,
+                         metadata={'minute_utc': minute_dir.name})
+
+
+def frame_files_between(stream, camera, start_ms, end_ms):
+    """[(t_ms, path)] RGB frames for camera in [start_ms, end_ms], across minute folders."""
+    folder = Path(stream)/camera
+    frames = []
+    for minute in sorted(p for p in folder.iterdir() if p.is_dir()) if folder.is_dir() else []:
+        for t_ms, path in frame_files(minute):
+            if start_ms <= t_ms <= end_ms:
+                frames.append((t_ms, path))
+    return sorted(frames)
+
+
+def copy_robot_between(stream, out_jsonl, start_ms, end_ms):
+    """Copy robot log records in [start_ms, end_ms] to out_jsonl. Returns the number copied."""
+    source = Path(stream)/'robot'
+    rows = []
+    for path in sorted(source.glob('*.jsonl')) if source.is_dir() else []:
+        for line in path.read_text().splitlines():
+            try:
+                record = json.loads(line)
+            except ValueError:
+                continue
+            t_ms = record.get('t_ms')
+            if isinstance(t_ms, int) and start_ms <= t_ms <= end_ms:
+                rows.append(line)
+    out_jsonl.parent.mkdir(parents=True, exist_ok=True)
+    out_jsonl.write_text(''.join(row + '\n' for row in rows))
+    return len(rows)
+
+
+def encode_interval(stream, out_dir, cameras, *, start_ms, end_ms, fps, codec=None, ffmpeg='ffmpeg', metadata=None):
+    """Persist a time interval of the sliding stream as one MP4 per camera plus robot.jsonl."""
+    codec = codec or pick_codec(ffmpeg=ffmpeg)
+    out_dir = Path(out_dir)
+    out_dir.mkdir(parents=True, exist_ok=True)
+    manifest = {'start_ms': int(start_ms), 'end_ms': int(end_ms), 'fps_nominal': fps, 'codec': codec,
+                'cameras': {}, **(metadata or {})}
+    for camera in cameras:
+        frames = frame_files_between(stream, camera, start_ms, end_ms)
+        sidecar = encode_frames(frames, out_dir/f'{camera}.mp4', fps=fps, codec=codec, ffmpeg=ffmpeg,
+                                camera=camera, label=out_dir.name,
+                                metadata={'start_ms': int(start_ms), 'end_ms': int(end_ms)})
+        manifest['cameras'][camera] = {'frames': 0 if sidecar is None else sidecar['frames'],
+                                       'video': None if sidecar is None else f'{camera}.mp4',
+                                       'sidecar': None if sidecar is None else f'{camera}.json'}
+    manifest['robot_records'] = copy_robot_between(stream, out_dir/'robot.jsonl', start_ms, end_ms)
+    (out_dir/'manifest.json').write_text(json.dumps(manifest, indent=1))
+    return manifest
 
 
 class Archiver:
