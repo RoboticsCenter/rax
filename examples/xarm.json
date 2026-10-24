@@ -44,6 +44,11 @@
     0.9
   ],
   "gripper_type": "g2",
+  "gripper_max_width_m": 0.085,
+  "gripper_closed_position": 0,
+  "gripper_open_position": 850,
+  "gripper_speed": 5000,
+  "gripper_force": 60,
   "protected_paths": [],
   "stream_fps": 6,
   "stream_depth_hz": 2.0,
