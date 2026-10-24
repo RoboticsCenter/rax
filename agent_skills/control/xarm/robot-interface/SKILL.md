@@ -32,8 +32,9 @@ physically.
   angles in radians, or the backend home preset. The path is sampled with controller FK
   and checked against the workspace box before moving. Requires operator arming.
 - `{{ robot.gripper }} {action: open | move | grasp, width?, force?, speed?}`: position
-  control for the xArm gripper. `force` only applies when the operator configured a G2
-  gripper; for the standard gripper, verify object retention from images.
+  control for the xArm gripper. `speed` is an integer in the xArm SDK units. `force`
+  only applies when the operator configured a G2 gripper; for the standard gripper,
+  verify object retention from images.
 - `xarm_hold`: stop/hold the current motion. Always allowed.
 
 ## Limits and arming

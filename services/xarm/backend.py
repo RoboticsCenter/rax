@@ -272,13 +272,15 @@ class XArmBackend:
                                      'preset': {'type': 'string', 'enum': ['home']}})},
             {'name': 'xarm_gripper', 'description':
                 'xArm gripper. open; move to width (m); grasp closes to width (force is used only by gripper_g2). '
+                'For a G2 gripper, width is metres but the SDK position is millimetres, 0..84; speed is mm/s. '
                 'Position feedback is reported; verify a grasp visually because the standard xArm gripper does '
                 'not report a reliable is_grasped signal. Requires operator arming.',
              'inputSchema': _schema({'action': {'type': 'string', 'enum': ['open', 'move', 'grasp']},
                                      'width': {'type': 'number', 'minimum': 0,
                                                'maximum': self.options['gripper_max_width_m']},
                                      'force': {'type': 'number', 'minimum': 1, 'maximum': 100},
-                                     'speed': {'type': 'number', 'minimum': 1, 'maximum': 10000}},
+                                     'speed': {'type': 'integer', 'minimum': 15,
+                                               'maximum': 225 if self.options['gripper_type'] == 'g2' else 10000}},
                                     ['action'])},
             {'name': 'xarm_stream', 'description':
                 'Look back in the continuous recording without moving anything. seconds_ago: frames from that '
@@ -533,7 +535,7 @@ class XArmBackend:
         if state.get('stale'):
             raise RuntimeError('gripper state is stale; tell the operator')
         motion_start = time.time()
-        self.arm.gripper_move(width, speed=float(speed or self.options['gripper_speed']), force=force)
+        self.arm.gripper_move(width, speed=int(round(float(speed or self.options['gripper_speed']))), force=force)
         time.sleep(0.2)
         value = self.arm.gripper_state()
         result = {'action': action, 'width': round(float(value['width']), 4),

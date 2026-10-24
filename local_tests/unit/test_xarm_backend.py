@@ -13,6 +13,7 @@ from services.xarm import arming
 from services.xarm.backend import HOME_Q, XArmBackend, matrix
 from services.xarm.calibration import project
 from services.xarm.sdk import MotionStopped, TargetRejected
+from services.xarm.sdk import XArmDriver
 
 START_Q = np.array([0.0, -0.72, -1.18, 0.0, 1.90, 0.0])
 
@@ -178,6 +179,31 @@ def test_gripper_requires_arming_and_moves(make_backend):
     arming.write(root, True)
     value, _ = backend.call('xarm_gripper', {'action': 'grasp', 'width': 0.02, 'force': 30})
     assert value['width'] == 0.02 and value['raw_position'] == pytest.approx(200)
+
+
+def test_g2_gripper_uses_integer_sdk_arguments():
+    class FakeG2:
+        def __init__(self):
+            self.kwargs = None
+
+        def set_gripper_g2_position(self, raw, **kwargs):
+            self.raw = raw
+            self.kwargs = kwargs
+            assert isinstance(raw, int)
+            assert isinstance(kwargs['speed'], int)
+            assert isinstance(kwargs['force'], int)
+            return 0
+
+    driver = XArmDriver.__new__(XArmDriver)
+    driver.arm = FakeG2()
+    driver.options = {'gripper_type': 'g2', 'gripper_max_width_m': 0.085,
+                      'gripper_closed_position': 0, 'gripper_open_position': 850,
+                      'gripper_speed': 5000, 'gripper_force': 60}
+    driver.gripper_move(0.04, speed=1000.0, force=42.0)
+    assert driver.arm.raw == 40
+    assert driver.arm.kwargs['speed'] == 225
+    assert driver.arm.kwargs['force'] == 42
+    assert driver._raw_to_width(83) == pytest.approx(0.083)
 
 
 def test_pixel_to_position_inverts_projection(make_backend):

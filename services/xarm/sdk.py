@@ -164,23 +164,32 @@ class XArmDriver:
         raw = self._width_to_raw(width_m)
         typ = self.options['gripper_type']
         if typ == 'g2' and hasattr(self.arm, 'set_gripper_g2_position'):
-            return _code_result(self.arm.set_gripper_g2_position(raw, wait=True, speed=float(speed),
-                                                                 force=float(force or self.options['gripper_force']),
+            speed = int(round(float(speed)))
+            speed = max(15, min(225, speed))
+            force = int(round(float(force or self.options['gripper_force'])))
+            force = max(1, min(100, force))
+            return _code_result(self.arm.set_gripper_g2_position(raw, wait=True, speed=speed,
+                                                                 force=force,
                                                                  timeout=10),
                                 'set_gripper_g2_position')
         method = getattr(self.arm, 'set_gripper_position')
+        speed = int(round(float(speed)))
         try:
-            return _code_result(method(raw, wait=True, speed=float(speed)), 'set_gripper_position')
+            return _code_result(method(raw, wait=True, speed=speed), 'set_gripper_position')
         except TypeError:
             return _code_result(method(raw, wait=True), 'set_gripper_position')
 
     def _width_to_raw(self, width_m):
+        if self.options['gripper_type'] == 'g2':
+            return int(round(np.clip(float(width_m) * 1000.0, 0.0, 84.0)))
         ratio = np.clip(float(width_m) / float(self.options['gripper_max_width_m']), 0.0, 1.0)
         closed = float(self.options['gripper_closed_position'])
         open_ = float(self.options['gripper_open_position'])
         return int(round(closed + ratio * (open_ - closed)))
 
     def _raw_to_width(self, raw):
+        if self.options['gripper_type'] == 'g2':
+            return np.clip(float(raw) / 1000.0, 0.0, float(self.options['gripper_max_width_m']))
         closed = float(self.options['gripper_closed_position'])
         open_ = float(self.options['gripper_open_position'])
         if math.isclose(open_, closed):
