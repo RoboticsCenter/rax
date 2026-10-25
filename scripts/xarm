@@ -25,6 +25,7 @@ from services.controller import operator
 from services.storage_root import artifact_root
 from services.xarm.backend import DEFAULTS, HOME_Q
 from services.xarm.sdk import XArmDriver
+from services.xarm.end_effectors import kind as effector_kind
 
 sessions = sorted((p.parent for p in (artifact_root()/'sessions').glob('*/operator-input.json')),
                   key=lambda p: (p/'operator-input.json').stat().st_mtime)
@@ -85,13 +86,25 @@ if action == 'ready':
         code = call(*args)
         if code != 0:
             sys.exit(f'{call.__name__} failed with xArm code {code}')
-    if hasattr(arm, 'set_gripper_enable'):
+    if effector_kind(opts) != 'wuji_hand2' and hasattr(arm, 'set_gripper_enable'):
         arm.set_gripper_enable(True)
     print('xArm ready: errors clear, motion enabled, mode 0, state 0')
+    arm.disconnect()
+    if effector_kind(opts) == 'wuji_hand2':
+        print('Prepare the hand separately through scripts/wuji prepare --session SESSION after arming.')
 elif action == 'disarm':
     for root in sessions:
         if arming.read(root)['armed']:
             arming.write(root, False, reason='disarmed by the operator')
+    from services.wuji.client import request, socket_path
+    import uuid
+    for root in sessions:
+        if socket_path(root).exists():
+            try:
+                request(socket_path(root), 'emergency', id=uuid.uuid4().hex)
+                print(f'{root.name}: hand stop queued; inspect scripts/wuji status for confirmation')
+            except Exception as exc:
+                print(f'{root.name}: hand stop request failed ({exc})')
     try:
         driver().hold()
         print('all sessions disarmed; arm holding')
@@ -121,6 +134,8 @@ elif action == 'status':
     except Exception as exc:
         print(f'robot unreachable: {exc}')
 elif action == 'home':
+    if '--open' in sys.argv[2:] and effector_kind(options()) == 'wuji_hand2':
+        sys.exit('--open is for a gripper; use a commissioned Wuji posture through the session MCP tools')
     busy = [root.name for root in sessions if alive(root)]
     if busy:
         sys.exit(f'an agent session is running ({busy[0]}): stop it or use the agent; not homing')

@@ -23,3 +23,4 @@
 .vscode/
 # Isolated local feature checkouts.
 /.worktrees/
+.venv/

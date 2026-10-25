@@ -41,6 +41,9 @@ class Configuration:
             raise ValueError(f"Unknown robot; choose one of {', '.join(sorted(BACKENDS))}")
         if not isinstance(self.backend_options, dict):
             raise ValueError('backend_options must be an object')
+        if self.robot == 'xarm':
+            from services.xarm.end_effectors import kind
+            kind(self.backend_options)  # Pure validation, including the Wuji profile; no SDK import.
         if self.observation_profile not in PROFILES:
             raise ValueError(f'observation_profile must be one of {PROFILES}')
         if self.agent_provider not in PROVIDERS:

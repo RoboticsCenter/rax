@@ -29,6 +29,7 @@ from scipy.spatial.transform import Rotation
 from . import arming
 from .calibration import CameraModel, backproject, camera_specs, project as project_to_pixel
 from .sdk import MotionStopped, TargetRejected, XArmDriver
+from . import end_effectors
 
 PROJECT = Path(__file__).resolve().parents[2]
 WORKSPACE_NAME = 'agent-workspace'
@@ -72,6 +73,7 @@ DEFAULTS = {
     'gripper_closed_position': 0,
     'gripper_speed': 5000,
     'gripper_force': 60,
+    'end_effector': None,
 }
 LAUNCHER_OPTIONS = ('agent_python', 'protected_paths')
 
@@ -172,18 +174,35 @@ class CameraService:
 class XArmBackend:
     mutating = frozenset({'xarm_move_pose', 'xarm_move_joints', 'xarm_gripper'})
 
-    def __init__(self, config, *, arm=None, cameras=None):
+    def __init__(self, config, *, arm=None, cameras=None, hand=None):
         self.config = config
         unknown = set(config.backend_options) - set(DEFAULTS) - set(LAUNCHER_OPTIONS)
         if unknown:
             raise ValueError(f'unknown xarm backend options: {sorted(unknown)}')
         self.options = {**DEFAULTS, **config.backend_options}
+        self.end_effector_kind = end_effectors.kind(self.options)
+        self.has_hand = self.end_effector_kind == 'wuji_hand2'
+        self.hand_config = None
+        if self.has_hand:
+            from services.wuji.config import validate_config, MOTION_TOOLS
+            self.hand_config = validate_config(self.options['end_effector'])
+            self.mutating = frozenset({'xarm_move_pose', 'xarm_move_joints', *MOTION_TOOLS})
+        elif self.options['end_effector']:
+            self.options['gripper_type'] = 'g2' if self.end_effector_kind == 'g2' else 'xarm'
         self.box_min = np.asarray(self.options['workspace_min'], dtype=np.float64)
         self.box_max = np.asarray(self.options['workspace_max'], dtype=np.float64)
         if not np.all(self.box_min < self.box_max):
             raise ValueError('workspace_min must be below workspace_max on every axis')
-        self.arm = arm or XArmDriver(self.options)
         self.models = {spec['name']: CameraModel.from_spec(spec) for spec in camera_specs(self.options)}
+        self.arm = arm or XArmDriver(self.options)
+        try:
+            self.end_effector = hand if hand is not None else end_effectors.make(config, self.arm, on_fault=self.arm.hold)
+        except BaseException:
+            close = getattr(self.arm, 'close', None)
+            if close:
+                close()
+            raise
+        self._closed = False
         self.workspace = config.root/WORKSPACE_NAME
         self.frames_root = self.workspace/'runtime'/'frames'
         self.depth = config.observation_profile == 'rgbd'
@@ -193,18 +212,19 @@ class XArmBackend:
         self.last_motion = None
         self.motion_clip_threads = []
         self._stop = threading.Event()
-        if cameras is None:
-            self.cameras = CameraService(self.options, self.frames_root, config.root/'camera-server.log',
-                                         self.options['camera_depth_mode'] if self.depth else 'NONE',
-                                         stream=self.stream)
-            if self.stream is not None:
+        self.cameras = cameras if cameras is not None else CameraService(
+            self.options, self.frames_root, config.root/'camera-server.log',
+            self.options['camera_depth_mode'] if self.depth else 'NONE', stream=self.stream)
+        try:
+            if cameras is None and self.stream is not None:
                 self.stream.mkdir(mode=0o755, exist_ok=True)
                 self.cameras.start()
-                threading.Thread(target=self._log_robot, name='robot-log', daemon=True).start()
                 if self.motion_archive is not None:
                     self.motion_archive.mkdir(mode=0o755, exist_ok=True)
-        else:
-            self.cameras = cameras
+                threading.Thread(target=self._log_robot, name='robot-log', daemon=True).start()
+        except BaseException:
+            self.close()
+            raise
 
     def _log_robot(self):
         from .camera_server import minute_name
@@ -217,14 +237,17 @@ class XArmBackend:
             now = time.time()
             try:
                 state = self.arm.state()
-                if tick % max(1, int(self.options['robot_log_hz'] / 2)) == 0:
-                    width = self.arm.gripper_state().get('width')
+                if not self.has_hand and tick % max(1, int(self.options['robot_log_hz'] / 2)) == 0:
+                    width = self.end_effector.status().get('width')
                 tick += 1
                 record = {'t_ms': int(now * 1000),
                           'tcp_position': np.round(state['tcp_position'], 5).tolist(),
                           'tcp_quaternion': np.round(state['tcp_quaternion'], 5).tolist(),
                           'joints': np.round(np.asarray(state['joints']), 4).tolist(),
                           'gripper_width': None if width is None else round(float(width), 4)}
+                if self.has_hand:
+                    record.pop('gripper_width')
+                    record['hand'] = self.end_effector.status()
             except Exception as exc:
                 record = {'t_ms': int(now * 1000), 'error': str(exc)[:200]}
             with open(folder/f'{minute_name(now)}.jsonl', 'a') as log:
@@ -233,7 +256,7 @@ class XArmBackend:
     def tools(self):
         names = sorted(self.models)
         lo, hi = self.box_min.round(3).tolist(), self.box_max.round(3).tolist()
-        return [
+        definitions = [
             {'name': 'xarm_status', 'inputSchema': _schema(),
              'description': 'Robot state without moving: TCP pose (xArm base frame), joints, gripper width, '
                             'whether the operator has armed motion, the workspace box and limits.'},
@@ -295,6 +318,16 @@ class XArmBackend:
             {'name': 'xarm_hold', 'inputSchema': _schema(),
              'description': 'Stop/hold the current motion. Always allowed.'},
         ]
+        if self.has_hand:
+            from services.wuji.config import tools
+            definitions = [t for t in definitions if t['name'] != 'xarm_gripper']
+            definitions.extend(tools(self.hand_config))
+            definitions[0]['description'] = ('xArm pose and joints, Wuji hand feedback, controller errors, '
+                                             'operator arming, cameras and configured workspace limits.')
+            next(t for t in definitions if t['name'] == 'xarm_hold')['description'] = (
+                'Stop the arm and request Wuji emergency stop independently. Always allowed. '
+                'Reports each outcome; an SDK return alone does not confirm physical stopping.')
+        return definitions
 
     def _require_armed(self):
         state = arming.read(self.config.root)
@@ -357,6 +390,18 @@ class XArmBackend:
         return step
 
     def validate(self, name, arguments):
+        if self.has_hand and name.startswith('wuji_'):
+            from services.wuji.config import validate_tool, MOTION_TOOLS
+            from services.wuji.controller import Trajectory
+            goal = validate_tool(name, arguments, self.hand_config)
+            if name in MOTION_TOOLS:
+                self._require_armed()
+                self.end_effector.require_ready()
+                state = self.end_effector.status()
+                Trajectory(state['target_positions'], goal['positions'], self.hand_config, goal['duration_s'])
+            return
+        if name == 'xarm_gripper' and self.has_hand:
+            raise ValueError('xarm_gripper is unavailable with a Wuji hand')
         if name == 'xarm_move_pose':
             self._pose_goal(arguments, self.arm.state())
         elif name == 'xarm_move_joints':
@@ -371,17 +416,84 @@ class XArmBackend:
             self._frame_dir(arguments['frame_id'])
         if name in self.mutating:
             self._require_armed()
+            if self.has_hand:
+                self.end_effector.require_ready()
 
     def call(self, name, arguments):
+        if self.has_hand and name.startswith('wuji_'):
+            self.validate(name, arguments)
+            return self._hand_call(name, arguments)
         handler = getattr(self, '_' + name.removeprefix('xarm_'), None)
         if handler is None or name not in {tool['name'] for tool in self.tools()}:
             raise ValueError(f'unknown tool {name}')
+        if self.has_hand and name in self.mutating:
+            self.end_effector.require_ready()
+            try:
+                return handler(**arguments)
+            except Exception as exc:
+                outcome = self._stop_assembly()
+                exc.control_certain = False
+                exc.robot_state = {**getattr(exc, 'robot_state', {}), 'assembly_stop': outcome,
+                                   'hand': self.end_effector.status()}
+                raise
         return handler(**arguments)
+
+    def _hand_call(self, name, arguments):
+        if name == 'wuji_status':
+            return self.end_effector.status(), []
+        if name == 'wuji_hold':
+            return self.end_effector.hold(), []
+        from services.wuji.config import validate_tool
+        goal = validate_tool(name, arguments, self.hand_config)
+        self._require_armed()
+        started = time.time()
+        try:
+            result = self.end_effector.move(**goal)
+        except Exception as exc:
+            outcome = self._stop_assembly()
+            self._schedule_motion_clip(name, started, time.time(), 'failed', exc)
+            exc.control_certain = False
+            exc.robot_state = {**getattr(exc, 'robot_state', {}), 'hand': self.end_effector.status(),
+                               'assembly_stop': outcome}
+            raise
+        clip = self._schedule_motion_clip(name, started, time.time(), 'completed')
+        if clip:
+            result['motion_clip'] = clip
+        self.last_motion = {'tool': name, 'at': time.time(), **result}
+        return result, []
+
+    def _stop_assembly(self):
+        """Independent stop dispatch; one blocked SDK cannot suppress the other stop."""
+        outcomes = {}
+        lock = threading.Lock()
+        def attempt(name, function):
+            try:
+                result = function()
+                value = result if isinstance(result, dict) else {
+                    'requested': True, 'sdk_returned': True, 'confirmed': False}
+            except Exception as exc:
+                value = {'requested': True, 'sdk_returned': False, 'confirmed': False, 'error': str(exc)}
+            with lock:
+                outcomes[name] = value
+        actions = [('arm', self.arm.hold)]
+        if self.has_hand:
+            actions.append(('hand', self.end_effector.stop))
+        threads = [threading.Thread(target=attempt, args=action, daemon=True) for action in actions]
+        for thread in threads:
+            thread.start()
+        deadline = time.monotonic() + (self.hand_config['stop_timeout_s']+2 if self.has_hand else 2)
+        for thread in threads:
+            thread.join(max(0, deadline-time.monotonic()))
+        with lock:
+            return {name: outcomes.get(name, {'requested': True, 'sdk_returned': False,
+                                              'confirmed': False, 'pending': True}) for name, _ in actions}
 
     def _status(self):
         return self.status(), []
 
     def _hold(self):
+        if self.has_hand:
+            return {'assembly_stop': self._stop_assembly()}, []
         self.arm.hold()
         return {'held': True, **self._pose_report(self.arm.state())}, []
 
@@ -389,6 +501,8 @@ class XArmBackend:
         if not arming.read(self.config.root)['armed']:
             self.arm.hold()
             raise MotionStopped('the operator disarmed motion; the arm holds')
+        if self.has_hand:
+            self.end_effector.require_ready()
         self._check_box(state['tcp_position'], margin=self.options['workspace_guard_margin_m'], what='measured TCP')
 
     def _monitor_pose(self, goal_p, goal_q, *, tolerance_m, tolerance_rad, timeout_s):
@@ -510,7 +624,7 @@ class XArmBackend:
                     raise TimeoutError(f"joint target not reached in {timeout:.1f}s: largest error "
                                        f"{float(error.max()):.3f} rad; the arm holds where it is")
                 time.sleep(self.options['poll_period_s'])
-        except (MotionStopped, TimeoutError, TargetRejected) as exc:
+        except (MotionStopped, TimeoutError, TargetRejected, ValueError) as exc:
             self.arm.hold()
             self._schedule_motion_clip('xarm_move_joints', motion_start, time.time(), 'failed', exc)
             report = self._pose_report(self.arm.state())
@@ -531,13 +645,13 @@ class XArmBackend:
         self._require_armed()
         if action == 'open':
             width = self.options['gripper_max_width_m']
-        state = self.arm.gripper_state()
+        state = self.end_effector.status()
         if state.get('stale'):
             raise RuntimeError('gripper state is stale; tell the operator')
         motion_start = time.time()
-        self.arm.gripper_move(width, speed=int(round(float(speed or self.options['gripper_speed']))), force=force)
+        self.end_effector.move(width, speed=int(round(float(speed or self.options['gripper_speed']))), force=force)
         time.sleep(0.2)
-        value = self.arm.gripper_state()
+        value = self.end_effector.status()
         result = {'action': action, 'width': round(float(value['width']), 4),
                   'is_grasped': bool(value.get('is_grasped', False)),
                   'raw_position': value.get('raw_position')}
@@ -569,6 +683,8 @@ class XArmBackend:
                 'tcp_quaternion': tcp_q.tolist(), 'joints': np.asarray(after['joints']).tolist(),
                 'arm_moved_during_capture_mm': round(moved * 1000, 2), 'depth_units': 'mm (uint16, 0 = invalid)',
                 'cameras': {}}
+        if self.has_hand:
+            meta['hand'] = self.end_effector.status()
         images, report = [], {}
         for name in names:
             entry = captured[name]
@@ -595,6 +711,7 @@ class XArmBackend:
         (out_dir/'meta.json').write_text(json.dumps(meta, indent=1))
         return {'frame_id': frame_id, 'directory': f'runtime/frames/{frame_id}', 'images_in_order': names,
                 'cameras': report, 'arm_moved_during_capture_mm': meta['arm_moved_during_capture_mm'],
+                **({'hand': meta['hand']} if self.has_hand else {}),
                 **self._pose_report(after)}, images
 
     def _pixel_to_position(self, frame_id, camera, pixels, radius=3):
@@ -699,23 +816,38 @@ class XArmBackend:
                  'motion_archive': None if self.motion_archive is None else {
                      'directory': 'motion-archive', 'padding_s': self.options['motion_archive_padding_s']},
                  'last_motion': self.last_motion}
-        try:
-            grip = self.arm.gripper_state()
-            value['gripper'] = {k: grip.get(k) for k in
-                                ('width', 'max_width', 'raw_position', 'is_grasped', 'is_moving', 'stale')}
-        except Exception as exc:
-            value['gripper'] = {'error': str(exc)}
+        value['end_effector'] = self.end_effector_kind
+        if self.has_hand:
+            value['hand'] = self.end_effector.status()
+        else:
+            try:
+                grip = self.end_effector.status()
+                value['gripper'] = {k: grip.get(k) for k in
+                                    ('width', 'max_width', 'raw_position', 'is_grasped', 'is_moving', 'stale')}
+            except Exception as exc:
+                value['gripper'] = {'error': str(exc)}
         return value
 
     def close(self):
+        if self._closed:
+            return
+        self._closed = True
         self._stop.set()
+        try:
+            self.end_effector.close()
+        finally:
+            self._close_arm_and_cameras()
+
+    def _close_arm_and_cameras(self):
         try:
             self.arm.hold()
         except Exception:
             pass
         for thread in list(self.motion_clip_threads):
             thread.join(timeout=5)
-        self.cameras.close()
-        close = getattr(self.arm, 'close', None)
-        if close is not None:
-            close()
+        try:
+            self.cameras.close()
+        finally:
+            close = getattr(self.arm, 'close', None)
+            if close is not None:
+                close()

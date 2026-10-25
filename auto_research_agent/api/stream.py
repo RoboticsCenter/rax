@@ -6,7 +6,7 @@ passes while you think. `runtime/stream/` (read-only) always holds the recent pa
     python -m api.stream latest                  # newest frame per camera and its age
     python -m api.stream sheet left --seconds 60 --count 12   # contact sheet -> output/
     python -m api.stream changes left --seconds 300           # when did the scene change?
-    python -m api.stream robot --seconds 30                   # arm / gripper history
+    python -m api.stream robot --seconds 30                   # arm / end-effector history
 
 or from Python: `from api import stream; stream.latest()`.
 Times are epoch milliseconds; file names are the capture times.
@@ -109,7 +109,7 @@ def changes(camera, *, seconds=120, every_s=0.5, threshold=4.0):
 
 
 def robot(*, seconds=30):
-    """Arm/gripper records (t_ms, tcp_position, tcp_quaternion, joints, gripper_width)."""
+    """Robot records: t_ms, TCP, arm joints, and gripper_width or a hand snapshot."""
     since = int(time.time() * 1000) - int(seconds * 1000)
     records = []
     folder = STREAM/'robot'

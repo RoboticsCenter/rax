@@ -1,0 +1,117 @@
+{
+  "xarm_ip": "192.168.2.205",
+  "cameras": [
+    {
+      "name": "left",
+      "serial": "348522070593",
+      "mount": "fixed",
+      "extrinsics": "/home/jerry/rax/calibration/xarm/left_T_cam_base.yaml",
+      "width": 640,
+      "height": 480,
+      "depth_min_m": 0.25,
+      "depth_max_m": 3.0
+    },
+    {
+      "name": "right",
+      "serial": "841612070490",
+      "mount": "fixed",
+      "extrinsics": "/home/jerry/rax/calibration/xarm/right_T_cam_base.yaml",
+      "width": 640,
+      "height": 480,
+      "depth_min_m": 0.25,
+      "depth_max_m": 3.0
+    },
+    {
+      "name": "wrist",
+      "serial": "108322071838",
+      "mount": "tcp",
+      "extrinsics": "/home/jerry/rax/calibration/xarm/wrist_T_cam_tcp.yaml",
+      "width": 640,
+      "height": 480,
+      "depth_min_m": 0.1,
+      "depth_max_m": 1.5
+    }
+  ],
+  "camera_cpus": "0-15",
+  "workspace_min": [
+    0.2,
+    -0.35,
+    0.02
+  ],
+  "workspace_max": [
+    0.8,
+    0.35,
+    0.9
+  ],
+  "protected_paths": [],
+  "stream_fps": 6,
+  "stream_depth_hz": 2.0,
+  "stream_window_s": 120,
+  "stream_archive": false,
+  "motion_archive_enabled": true,
+  "motion_archive_padding_s": 0.75,
+  "end_effector": {
+    "type": "wuji_hand2",
+    "serial": "WH2KA01260823017",
+    "handedness": "right",
+    "address": "192.168.1.111:7447",
+    "profile_revision": "right-hand2-commissioning-v1",
+    "lower_rad": [
+      -1.186824,
+      -1.48353,
+      -1.047198,
+      -1.047198,
+      -1.047198,
+      -0.698132,
+      -1.047198,
+      -1.047198,
+      -1.047198,
+      -0.698132,
+      -1.047198,
+      -1.047198,
+      -1.047198,
+      -0.698132,
+      -1.047198,
+      -1.047198,
+      -1.047198,
+      -0.698132,
+      -1.047198,
+      -1.047198
+    ],
+    "upper_rad": [
+      1.291544,
+      0.698132,
+      1.570796,
+      1.570796,
+      1.570796,
+      0.698132,
+      2.094395,
+      1.570796,
+      1.570796,
+      0.698132,
+      2.094395,
+      1.570796,
+      1.570796,
+      0.698132,
+      2.094395,
+      1.570796,
+      1.570796,
+      0.698132,
+      2.094395,
+      1.570796
+    ],
+    "current_limit_a": 0.5,
+    "kp": 1.5,
+    "kd": 0.1,
+    "command_hz": 120,
+    "max_velocity_rad_s": 0.5,
+    "max_acceleration_rad_s2": 1.0,
+    "max_step_rad": 0.35,
+    "max_tracking_error_rad": 0.35,
+    "max_feedback_age_s": 0.25,
+    "postures": {},
+    "lock_paths": [
+      "/home/jerry/xe-eval-deploy/bimanual/eval_robotics_xarm_bimanual/wuji-teleop/teleop.lock"
+    ]
+  }
+}

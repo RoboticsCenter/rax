@@ -16,7 +16,7 @@ def describe(setup) -> str:
 
 
 def manifest(setup):
-    return {'robot': setup.robot, 'observation_profile': setup.observation_profile,
+    return {'robot': setup.robot, 'end_effector': setup.end_effector, 'observation_profile': setup.observation_profile,
             'subagents': setup.subagents, 'tools': list(setup.tools)}
 
 

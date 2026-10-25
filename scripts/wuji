@@ -1,0 +1,8 @@
+#!/usr/bin/env bash
+# Uses the running RAX hand owner; never creates a second vendor SDK connection.
+set -euo pipefail
+SCRIPT="$(readlink -f "${BASH_SOURCE[0]}")"
+PROJECT_ROOT="$(cd "$(dirname "$SCRIPT")/.." && pwd)"
+PYTHON="${RAX_PYTHON:-$(command -v python3 || true)}"
+cd "$PROJECT_ROOT"
+PYTHONPATH="$PROJECT_ROOT" exec "$PYTHON" -m services.wuji.operator "$@"

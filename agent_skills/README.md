@@ -18,6 +18,7 @@ skill, and an absent layer is skipped:
 | `perception/<mode>-<robot>/` | `object-localization` for that mode and robot (`depth-franka`, `rgb-only-franka`, `depth-xarm`, `rgb-only-xarm`) |
 | `control/common/` | control for any robot (none yet) |
 | `control/<robot>/` | the robot's `robot-interface` and motion skills (`franka`, `xarm`) |
+| `end_effectors/<type>/` | hand-specific guidance selected by backend configuration (`wuji_hand2`) |
 | `auto-research/` | `gemini` |
 
 `<mode>` is `depth` or `rgb-only` (from the observation profile) and `<robot>` is the

@@ -53,12 +53,14 @@ def test_settings_confine_tools_to_the_workspace_and_sandbox_bash(deployed):
     denied = sandbox['filesystem']['denyRead']
     site = [Path(p) for p in (*SITE, '/opt/second-robot-config.yaml', config.root.parent/'calibration')]
     for protected in (launcher.PROJECT, Path.home()/'.claude', Path.home()/'.ssh', *site,
-                      config.root/'model-relay.json', config.root/'mcp.jsonl'):
+                      config.root/'model-relay.json', config.root/'mcp.jsonl',
+                      config.root/'operator', config.root/'operator-input.json', config.root/'wuji-controller.log'):
         assert str(protected) in denied
         assert f'Read(/{protected})' in permissions['deny']
     assert 'Read(//opt/robot-controller/**)' in permissions['deny']  # a directory: everything below too
     assert sandbox['network'] == {'allowAllUnixSockets': True, 'allowLocalBinding': False, 'allowedDomains': ['*']}
-    for hidden in ('/run/docker.sock', '/var/run/docker.sock', f'/run/user/{launcher.UID}'):
+    for hidden in ('/run/docker.sock', '/var/run/docker.sock', f'/run/user/{launcher.UID}',
+                   f'/tmp/rax-wuji-{launcher.UID}', f'/tmp/rax-xarm-cam-{launcher.UID}'):
         assert hidden in denied  # Unix sockets that would bypass the robot service.
     assert settings['env']['RAX_MCP_SOCKET'] == str(d['socket'])
     assert settings['env']['PYTHONPATH'] == workspace

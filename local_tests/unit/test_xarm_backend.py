@@ -80,14 +80,14 @@ def make_backend(tmp_path, monkeypatch):
     extrinsic = tmp_path/'cam.yaml'
     yaml.safe_dump({'matrix': np.eye(4).tolist()}, extrinsic.open('w'))
 
-    def build(arm=None, **options):
+    def build(arm=None, hand=None, **options):
         root = tmp_path/'sessions'/'s1'
         root.mkdir(parents=True, exist_ok=True)
         (root/'operator-input.json').write_text('{}')
         cameras = [{'name': 'left', 'serial': '1', 'mount': 'fixed', 'extrinsics': str(extrinsic)}]
         config = Configuration(root=root, task='t', robot='xarm', backend_options={'cameras': cameras, **options})
         arm = arm or FakeArm()
-        return XArmBackend(config, arm=arm, cameras=FakeCameras()), arm, root
+        return XArmBackend(config, arm=arm, cameras=FakeCameras(), hand=hand), arm, root
     return build
 
 
@@ -95,8 +95,11 @@ def test_cameras_come_from_the_operator_configuration(make_backend, tmp_path, mo
     with pytest.raises(ValueError, match="option 'cameras' is required"):
         make_backend(cameras=None)
     example = json.loads((Path(__file__).resolve().parents[2]/'examples/xarm.json').read_text())
+    # The site example now contains real serials and absolute calibration paths.
+    # Exercise the supported relative-path contract with temporary calibrations.
     for spec in example['cameras']:
-        assert not Path(spec['extrinsics']).is_absolute()
+        spec['extrinsics'] = Path(spec['extrinsics']).name
+    monkeypatch.delenv('XARM_CALIBRATION_DIR', raising=False)
     with pytest.raises(ValueError, match='needs XARM_CALIBRATION_DIR'):
         make_backend(cameras=example['cameras'])
     calibration = tmp_path/'calibration'
@@ -109,7 +112,7 @@ def test_cameras_come_from_the_operator_configuration(make_backend, tmp_path, mo
     options = {k: v for k, v in example.items() if k != 'cameras'}
     backend, _, _ = make_backend(cameras=example['cameras'], **options)
     assert {name: (model.serial, model.mount) for name, model in backend.models.items()} == {
-        'left': ('111111111111', 'fixed'), 'right': ('222222222222', 'fixed'), 'wrist': ('333333333333', 'tcp')}
+        spec['name']: (spec['serial'], spec['mount']) for spec in example['cameras']}
     assert np.allclose(backend.models['left'].base_from_camera()[:3, 3], [-0.1, -0.2, -0.3])
 
 

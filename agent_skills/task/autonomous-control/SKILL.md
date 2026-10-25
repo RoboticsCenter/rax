@@ -28,7 +28,7 @@ current observations to adapt to new layouts, rather than blindly replaying one 
 actions.
 
 - Hard-code reusable motion functions and decision rules on the MCP tools
-  (`{{ robot.move }}`, `{{ robot.joints }}`, `{{ robot.gripper }}`) when suitable;
+  (`{{ robot.move }}`, `{{ robot.joints }}`, `{{ robot.effector_tool }}`) when suitable;
   [robot-interface](../robot-interface/SKILL.md) has the frames and limits.
 {% if gemini %}
 - Use Gemini when simple perception rules are insufficient. Write your own prompts and
@@ -58,7 +58,7 @@ generalization.
 - Give each step a function `fn(ctx, ...)` that checks its preconditions from fresh
   observations, acts, verifies the result, and returns a small dict with `ok`, what it
   measured and, on failure, why. It returns instead of improvising when the scene is
-  outside what it was tested on, leaving the robot in a safe state (gripper not
+  outside what it was tested on, leaving the robot in a safe state (end effector not
   dropping a held object mid-air, arm lifted clear).
 - Make the pipeline resumable at any step, and give every motion that can fail a
   fallback.
@@ -82,7 +82,12 @@ def main(ctx):
     reply = ctx.value("{{ robot.observe }}")
     # Your observation–decision–action loop, e.g.:
     # ctx.value("{{ robot.move }}", position=[x, y, z], quaternion=q)
+{% if robot.has_hand %}
+    # ctx.value("wuji_move_joints", positions=verified_target_rad)
+    # Keep the accepted hand target while carrying; verify the object in images.
+{% else %}
     # ctx.value("{{ robot.gripper }}", action="grasp", width=0.0, force=30)
+{% endif %}
     return {"ok": True}
 
 
@@ -122,9 +127,16 @@ retrying the same motion. Observations save full-resolution frames under
 There is no formal evaluation: you judge the controller by running it end to end on
 the real scene.
 
+{% if robot.has_hand %}
+1. Support and release any held object with a commissioned hand posture, then
+   move to a verified clear arm pose. Do not assume zero joint targets are open
+   or that the old gripper home pose clears the hand. Call `request_operator` with
+   kind `reset`, describe the desired scene, and wait for the answer.
+{% else %}
 1. Bring the robot to a neutral state (gripper open, `{{ robot.joints }}` preset
    `home`), then call `request_operator` with kind `reset` and say what you need, e.g.
    "please put the cubes back at new positions on the table". Wait for the answer.
+{% endif %}
 2. Commit the controller version (`git` inside `code/<project>/`) and run it once,
    unattended: no direct robot calls while it runs. If it fails, read its report, log
    and frames, fix the code and go back to step 1; do not hand-finish a run and count

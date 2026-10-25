@@ -1,5 +1,5 @@
 """The facts a workspace is generated from; roles live in recipes, not here."""
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 
 # Words shared sources use for the robot instead of branching on it. Tool names are the
 # backend's MCP tools (services/backends.py); keep them in sync with the backend.
@@ -33,6 +33,7 @@ class Setup:
     observation_profile: str = 'rgbd'
     subagents: int = 0
     gemini: bool = True
+    backend_options: dict = field(default_factory=dict)
 
     def __post_init__(self):
         if self.robot not in ROBOT_FACTS:
@@ -41,10 +42,36 @@ class Setup:
             raise ValueError('Unknown agent CLI')
         if self.observation_profile not in ('rgbd', 'rgb-only'):
             raise ValueError('Unknown observation profile')
+        if self.robot == 'xarm':
+            from services.xarm.end_effectors import kind
+            kind(self.backend_options)
 
     @classmethod
     def from_config(cls, config, *, gemini=True):
-        return cls(config.robot, config.task, 'claude', config.observation_profile, config.subagents, gemini)
+        return cls(config.robot, config.task, 'claude', config.observation_profile, config.subagents, gemini,
+                   config.backend_options)
+
+    @property
+    def end_effector(self):
+        if self.robot == 'xarm':
+            from services.xarm.end_effectors import kind
+            return kind(self.backend_options)
+        return 'gripper' if self.robot == 'franka' else 'none'
+
+    @property
+    def robot_facts(self):
+        facts = dict(ROBOT_FACTS[self.robot])
+        facts.update(has_hand=self.end_effector == 'wuji_hand2', end_effector=self.end_effector,
+                     effector_name='gripper', effector_tool=facts['gripper'])
+        if self.robot == 'xarm':
+            from services.xarm.end_effectors import tool_names
+            facts['tools'] = tuple(t for t in facts['tools'] if t != 'xarm_gripper') + tool_names(self.backend_options)
+        if facts['has_hand']:
+            side = self.backend_options['end_effector'].get('handedness', 'right')
+            facts.update(effector_name=f'{side} Wuji Hand 2', effector_tool='wuji_move_joints',
+                         hand_status='wuji_status', hand_pose='wuji_pose', hand_hold='wuji_hold')
+            facts.pop('gripper')  # Accidental gripper-template references fail rendering.
+        return facts
 
     @property
     def camera_geometry(self):
@@ -53,12 +80,13 @@ class Setup:
     @property
     def tools(self):
         """Every MCP tool the session exposes, sorted."""
-        return tuple(sorted({'status', 'request_operator', *ROBOT_FACTS[self.robot]['tools'],
+        return tuple(sorted({'status', 'request_operator', *self.robot_facts['tools'],
                              *(('gemini_generate',) if self.gemini else ())}))
 
     def axes(self):
         """Which skill layers a workspace takes: the robot it controls and how it perceives."""
-        return {'robot': self.robot, 'perception': 'depth' if self.camera_geometry else 'rgb-only'}
+        return {'robot': self.robot, 'perception': 'depth' if self.camera_geometry else 'rgb-only',
+                'end_effector': self.end_effector}
 
     def context(self):
         """Template variables: facts only, named for readability in the sources."""
@@ -69,5 +97,5 @@ class Setup:
             'camera_geometry': self.camera_geometry,
             'subagent_cap': self.subagents,
             'gemini': self.gemini,
-            'robot': ROBOT_FACTS[self.robot],
+            'robot': self.robot_facts,
         }

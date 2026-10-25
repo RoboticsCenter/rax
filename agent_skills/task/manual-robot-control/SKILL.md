@@ -39,7 +39,7 @@ Use these skills as needed rather than loading every reference up front:
   points from the current images.
 {% endif %}
 - [Wrist-camera inspection](../wrist-camera-inspection/SKILL.md) for a closer view
-  with an empty gripper when the {{ robot.overview }} is insufficient.
+  with an empty end effector when the {{ robot.overview }} is insufficient.
 - [Experience memory](../experience-memory/SKILL.md) to record and reuse tested
   motion strategies under matching observable conditions.
 

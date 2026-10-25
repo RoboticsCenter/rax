@@ -134,18 +134,29 @@ async function act(action) {
 }
 
 function renderRobot(value) {
-  const arm = value.arm, grip = value.gripper;
-  const ok = arm.ok && grip.ok;
-  $('robot-badge').textContent = arm.ok ? (grip.ok ? 'robot bridges ok' : 'gripper problem') : 'ARM BRIDGE DOWN';
+  const arm = value.arm, grip = value.gripper, hand = value.hand;
+  const ok = arm.ok && (hand ? hand.ok : grip.ok);
+  $('robot-badge').textContent = arm.ok ? (ok ? 'robot connected' : 'end-effector problem') : 'ARM UNAVAILABLE';
   $('robot-badge').className = ok ? 'badge ok' : 'badge bad';
   const rows = [];
   if (arm.ok) {
     rows.push(['TCP (m)', arm.tcp_position.map((v) => v.toFixed(4)).join(', ')]);
     rows.push(['TCP quat', arm.tcp_quaternion.map((v) => v.toFixed(3)).join(', ')]);
     rows.push(['joints', arm.joints.map((v) => v.toFixed(3)).join(', ')]);
-    rows.push(['controller', `${arm.backend} · policy ${arm.policy_running ? 'running' : 'idle'}`]);
+    rows.push(['controller', `state ${arm.state} · mode ${arm.mode} · error ${arm.error_code}`]);
   } else rows.push(['arm', el('span', { style: 'color:var(--bad)' }, arm.error)]);
-  if (grip.ok || grip.width !== undefined) {
+  if (hand) {
+    rows.push(['Wuji hand', `${hand.serial || ''} · ${hand.mode} · ${hand.fresh ? 'fresh' : 'STALE'}`]);
+    rows.push(['hand profile', hand.profile_revision || 'unavailable']);
+    if (hand.positions) {
+      for (const [i, name] of ['thumb', 'index', 'middle', 'ring', 'pinky'].entries()) {
+        rows.push([`${name} (rad)`, hand.positions.slice(i * 4, i * 4 + 4).map(v => v.toFixed(3)).join(', ')]);
+      }
+    }
+    if (hand.fault || hand.faults?.length) {
+      rows.push(['hand fault', el('span', { style: 'color:var(--bad)' }, hand.fault || JSON.stringify(hand.faults))]);
+    }
+  } else if (grip.ok || grip.width !== undefined) {
     rows.push(['gripper', `${(grip.width * 1000).toFixed(1)} mm / ${(grip.max_width * 1000).toFixed(1)} mm` +
       `${grip.is_grasped ? ' · grasped' : ''}${grip.is_moving ? ' · moving' : ''}` +
       `${grip.stale ? ' · STALE (gripper client dead)' : ''}`]);

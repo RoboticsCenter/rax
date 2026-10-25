@@ -7,11 +7,12 @@ VOCAB = Vocab(memory='memory', notes='memory/PROGRESS.md', frames='runtime/frame
 # its observation mode ('depth' or 'rgb-only') and robot, the control skills of its robot,
 # and the auto-research skills. Agents see one flat set with robot-neutral names.
 SKILL_LAYERS = ('task', 'perception/common', 'perception/{perception}', 'perception/{perception}-{robot}',
-                'control/common', 'control/{robot}', 'auto-research')
+                'control/common', 'control/{robot}', 'end_effectors/{end_effector}', 'auto-research')
 
 # No OpenRouter key, no gemini_generate tool: leave its skill out instead of advertising it.
 AGENT = Recipe('real-robot/agent', PROJECT / 'auto_research_agent', SKILL_LAYERS, vocab=VOCAB,
-               omit_skills=(SkillRule('gemini', lambda setup: not setup.gemini),))
+               omit_skills=(SkillRule('gemini', lambda setup: not setup.gemini),
+                            SkillRule('hand-control', lambda setup: not setup.robot_facts['has_hand'])))
 
 
 def recipe_for(options=frozenset()):

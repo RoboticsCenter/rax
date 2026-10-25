@@ -1,12 +1,20 @@
-# RAX on a real Franka FR3
+# RAX on xArm + Wuji Hand 2
 
 **[Project website](https://robot-agent-exploration.com/)** · [Paper](https://robot-agent-exploration.com/rax.pdf) · [All branches](https://github.com/robot-agent-exploration/rax)
 
-This branch runs *RAX: Scaling Online Exploration for Robot Agents* on a real Franka
-FR3 arm with a parallel gripper and ZED cameras. A Claude Code agent learns a
+This branch ports *RAX: Scaling Online Exploration for Robot Agents* to the existing
+xArm 6 with a Wuji Hand 2 and RealSense cameras. The G2 configuration remains supported.
+A Claude Code agent learns a
 manipulation task through MCP tools served by a host-owned robot service. It first
 solves the task by hand, then writes and tests its own controller, keeping notes and
 verified skills in its workspace.
+
+**For this branch, start with the [xArm + Wuji setup and MCP testing guide](docs/xarm-wuji.md).**
+It covers the pinned SDK, operator preparation, hand tools, configuration, skills and
+hardware-free tests. [Initial real-hand tool results](docs/wuji-live-test-2026-10-25.md)
+are recorded; full commissioning remains pending.
+The [design plan](docs/xarm-wuji-backend-plan.md) records the research and rationale.
+The Franka-specific setup below is retained as reference for that backend.
 
 The simulation branches and the [real-robot adaptation guide](https://github.com/robot-agent-exploration/rax/blob/main/docs/REAL_ROBOT_ADAPTATION.md)
 (design principles for bringing the harness to another robot) are linked from the

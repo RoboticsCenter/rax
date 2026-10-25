@@ -13,7 +13,14 @@ A frame you looked at earlier describes the past, not the present.
 
 - `<camera>/<UTC minute>/<epoch_ms>.jpg`: every camera at 30 Hz (`left`, `right`, `wrist`);
   `<epoch_ms>_depth.png` once per second (uint16 millimetres, 0 = invalid).
-- `robot/<UTC minute>.jsonl`: TCP pose, joints and gripper width at 10 Hz.
+- `robot/<UTC minute>.jsonl`: TCP pose, arm joints and end-effector feedback at 10 Hz.
+{% if robot.has_hand %}
+  `hand` contains measured/target finger joints, effort in A, diagnostics, source
+  timestamps and freshness. These are sampled alongside the arm state, not exactly
+  synchronized with each camera exposure. Missing or stale state is not a zero pose.
+{% else %}
+  The scalar `gripper_width` is in metres.
+{% endif %}
 - `index.json`: the newest frame time per camera and the measured frame rates.
 
 Older data is deleted as time goes by; copy what you need to keep into `output/`.

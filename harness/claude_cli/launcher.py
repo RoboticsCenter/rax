@@ -50,7 +50,8 @@ SUBAGENT_TOOLS = ('Agent', 'Task')  # 'Task' is the tool's former name.
 RELAY_TOKEN = 'host-relay'  # Placeholder the relay replaces; not a credential.
 # Session files only the launcher and the robot service read.
 PRIVATE_FILES = ('configuration.json', 'model-relay.json', 'state.json', 'mcp.jsonl', 'frontend.log',
-                 'model-usage.jsonl', 'model-calls.json', 'agent-lifecycle.json', 'workspace-manifest.json')
+                 'model-usage.jsonl', 'model-calls.json', 'agent-lifecycle.json', 'workspace-manifest.json',
+                 'operator', 'operator-input.json', 'wuji-controller.log')
 # This repository and credentials: the agent's tools must never read them.
 HOME = Path.home()
 PROTECTED_PATHS = (PROJECT, HOME/'.config/rax', HOME/'.claude', HOME/'.claude.json', HOME/'.codex', HOME/'.ssh',
@@ -66,7 +67,8 @@ SITE_PATHS_ENVIRONMENT = 'RAX_PROTECTED_PATHS'
 UID = os.getuid()
 HIDDEN_SOCKETS = (Path('/run/docker.sock'), Path('/var/run/docker.sock'), Path('/run/containerd'),
                   Path('/run/dbus'), Path(f'/run/user/{UID}'), Path('/tmp/.X11-unix'),
-                  Path(f'/tmp/rax-cam-{UID}'))  # the camera server's private socket
+                  Path(f'/tmp/rax-cam-{UID}'), Path(f'/tmp/rax-xarm-cam-{UID}'),
+                  Path(f'/tmp/rax-wuji-{UID}'))
 MAX_USAGE_WAITS = 10
 # OpenRouter key for gemini_generate, read only by the host robot service (never the agent).
 DEFAULT_GEMINI_KEY = Path.home()/'.config/rax/openrouter.key'

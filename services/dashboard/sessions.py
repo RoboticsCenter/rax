@@ -304,15 +304,47 @@ class Sessions:
         return XArmDriver(self.backend_options())
 
     def hold(self):
+        from services.wuji.client import request, socket_path
+        import uuid
+        hand_reports = []
+        for root in self.roots():
+            if socket_path(root).exists():
+                try:
+                    request(socket_path(root), 'emergency', id=uuid.uuid4().hex)
+                    hand_reports.append(f'{root.name}: hand stop queued (confirmation pending)')
+                except Exception as exc:
+                    hand_reports.append(f'{root.name}: hand stop failed: {exc}')
+        arm = None
         try:
-            self.xarm_driver().hold()
-            return 'ok'
+            arm = self.xarm_driver()
+            arm.hold()
+            report = 'ok'
         except Exception as exc:  # report, never mask the disarm itself
-            return f'hold failed: {exc}'
+            report = f'hold failed: {exc}'
+        finally:
+            if arm is not None and self.robot_driver is None:
+                try:
+                    arm.close()
+                except Exception as exc:
+                    report += f'; arm disconnect failed: {exc}'
+        return '; '.join([report, *hand_reports])
 
     # ----- robot ---------------------------------------------------------------------------
     def robot(self):
         value = {'time': time.time()}
+        from services.xarm.end_effectors import kind
+        options = self.backend_options()
+        has_hand = kind(options) == 'wuji_hand2'
+        if has_hand:
+            from services.wuji.client import recorded_status
+            serial = options['end_effector']['serial']
+            candidates = [root for root in self.roots() if
+                          ((read_json(root/'operator-input.json', {}) or {}).get('backend_options', {})
+                           .get('end_effector') or {}).get('serial') == serial]
+            state = recorded_status(candidates[0]) if candidates else {
+                'fresh': False, 'enabled': False, 'mode': 'unavailable', 'fault': 'No Wuji session snapshot'}
+            value['hand'] = {'ok': bool(state.get('fresh')) and not state.get('fault') and not state.get('faults'), **state}
+        arm = None
         try:
             arm = self.xarm_driver()
             state = arm.state()
@@ -322,15 +354,23 @@ class Sessions:
                             'joints': [round(float(v), 4) for v in state['joints']],
                             'state': state.get('state'), 'mode': state.get('mode'),
                             'error_code': state.get('error_code'), 'warn_code': state.get('warn_code')}
-            try:
-                grip = arm.gripper_state()
-                value['gripper'] = {'ok': not grip.get('stale'), **{k: grip.get(k) for k in
-                                    ('width', 'max_width', 'raw_position', 'is_grasped', 'is_moving', 'stale')}}
-            except Exception as exc:
-                value['gripper'] = {'ok': False, 'error': str(exc)}
+            if not has_hand:
+                try:
+                    grip = arm.gripper_state()
+                    value['gripper'] = {'ok': not grip.get('stale'), **{k: grip.get(k) for k in
+                                        ('width', 'max_width', 'raw_position', 'is_grasped', 'is_moving', 'stale')}}
+                except Exception as exc:
+                    value['gripper'] = {'ok': False, 'error': str(exc)}
         except Exception as exc:
             value['arm'] = {'ok': False, 'error': str(exc)}
-            value['gripper'] = {'ok': False, 'error': str(exc)}
+            if not has_hand:
+                value['gripper'] = {'ok': False, 'error': str(exc)}
+        finally:
+            if arm is not None and self.robot_driver is None:
+                try:
+                    arm.close()
+                except Exception as exc:
+                    value['arm']['disconnect_error'] = str(exc)
         return value
 
     # ----- frames and activity ---------------------------------------------------------
