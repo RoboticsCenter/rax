@@ -76,6 +76,10 @@ RESUME_PROMPT = ("This session was interrupted and has now been resumed in the s
                  "work.")
 USAGE_PROMPT = ("The model usage limit paused this session until it reset. Call status, reread "
                 "memory/PROGRESS.md, and continue from the live state.")
+# Claude Code validates --model against its own catalog before the local relay sees the
+# request. For OpenAI-backed runs, start Claude Code on a known Claude model and use
+# modelOverrides in settings.json so the request sent to our relay carries the OpenAI id.
+OPENAI_CLI_MODEL = 'claude-opus-5'
 
 
 def claude_binary(path=None):
@@ -97,6 +101,18 @@ def agent_python(config):
     """Interpreter directory put first on the agent's PATH (operator choice)."""
     configured = config.backend_options.get('agent_python')
     return Path(configured or sys.executable).parent
+
+
+def provider_model(config, relay=None):
+    """Model id understood by the upstream provider/relay."""
+    if relay and relay.get('model'):
+        return relay['model']
+    return config.agent_model or PROVIDERS[config.agent_provider]['model']
+
+
+def claude_cli_model(provider, model):
+    """Model id safe to pass to Claude Code itself."""
+    return OPENAI_CLI_MODEL if provider == 'openai' else model
 
 
 def site_paths(config):
@@ -133,7 +149,7 @@ def settings(config, workspace, socket):
             if not path.suffix:  # Directories (or not yet created): everything below too.
                 deny.append(f'{tool}(/{path}/**)')
     timeout_ms = (config.session_seconds + 300) * 1000
-    return {
+    value = {
         'permissions': {'defaultMode': 'dontAsk', 'allow': allow, 'deny': deny},
         'sandbox': {
             'enabled': True, 'failIfUnavailable': True, 'autoAllowBashIfSandboxed': True,
@@ -155,6 +171,12 @@ def settings(config, workspace, socket):
             'CLAUDE_CODE_PRINT_BG_WAIT_CEILING_MS': '0',
             # Every MCP tool stays a local tool definition (the relay refuses server tools).
             'ENABLE_TOOL_SEARCH': 'false'}}
+    if config.agent_provider == 'openai':
+        value['modelOverrides'] = {OPENAI_CLI_MODEL: provider_model(config)}
+        value['modelPicker'] = {'replaceBuiltInOptions': False, 'options': [{
+            'model': OPENAI_CLI_MODEL, 'label': 'Astra via RAX',
+            'description': f"Routes {OPENAI_CLI_MODEL} to {provider_model(config)} through the RAX relay"}]}
+    return value
 
 
 def populate_workspace(config, workspace, *, gemini=True):
@@ -182,7 +204,7 @@ def deploy(config, *, key_file=None, gemini_key_file=None, claude=None):
     if (root/'state.json').exists() or workspace.exists():
         raise FileExistsError('Use a fresh session root')
     provider = config.agent_provider
-    model = config.agent_model or PROVIDERS[provider]['model']
+    model = provider_model(config)
     account = None
     if provider == 'claude-login':
         from harness.claude_cli import experiment_login
@@ -209,7 +231,7 @@ def deploy(config, *, key_file=None, gemini_key_file=None, claude=None):
     (home/'mcp.json').write_text(json.dumps({'mcpServers': {MCP_SERVER: {
         'type': 'stdio', 'command': sys.executable,
         'args': [str(PROJECT/'harness/claude_cli/mcp_bridge.py'), str(socket)]}}}))
-    return deployed_paths(config, binary, model)
+    return deployed_paths(config, binary, claude_cli_model(provider, model))
 
 
 def deployed_paths(config, binary, model):
@@ -223,7 +245,9 @@ def deployed_paths(config, binary, model):
 def redeploy(config, claude=None):
     """Reattach an existing session for a resumed launch."""
     relay_file = config.root/'model-relay.json'
-    deployed = deployed_paths(config, claude_binary(claude), json.loads(relay_file.read_text())['model'])
+    relay = json.loads(relay_file.read_text())
+    deployed = deployed_paths(config, claude_binary(claude),
+                              claude_cli_model(relay.get('provider', config.agent_provider), provider_model(config, relay)))
     for key in ('workspace', 'claude_home', 'configuration', 'relay_configuration'):
         if not deployed[key].exists():
             raise FileNotFoundError(f'Cannot resume: {deployed[key]} is missing')
