@@ -1,0 +1,333 @@
+#!/usr/bin/env python3
+"""Calibrate xArm RealSense extrinsics from a visible ChArUco board.
+
+This is the saved version of the active-TCP workflow used for the xArm + Gripper G2
+setup. It moves the wrist camera through small poses, solves the wrist hand-eye
+transform, then uses a final static observation to solve fixed left/right cameras
+against the same board pose.
+"""
+from __future__ import annotations
+
+import argparse
+import json
+import os
+import shutil
+import sys
+import time
+from pathlib import Path
+
+PROJECT = Path(__file__).resolve().parents[1]
+sys.path.insert(0, str(PROJECT))
+if os.environ.get("RAX_PYTHON") and Path(sys.executable).resolve() != Path(os.environ["RAX_PYTHON"]).resolve():
+    os.execv(os.environ["RAX_PYTHON"], [os.environ["RAX_PYTHON"], *sys.argv])
+
+import cv2 as cv  # noqa: E402
+import numpy as np  # noqa: E402
+import yaml  # noqa: E402
+from scipy.optimize import least_squares  # noqa: E402
+from scipy.spatial.transform import Rotation  # noqa: E402
+
+from services.controller.config import Configuration  # noqa: E402
+from services.storage_root import artifact_root  # noqa: E402
+from services.xarm import arming  # noqa: E402
+from services.xarm.backend import XArmBackend  # noqa: E402
+
+
+def invert(T):
+    out = np.eye(4)
+    out[:3, :3] = T[:3, :3].T
+    out[:3, 3] = -out[:3, :3] @ T[:3, 3]
+    return out
+
+
+def mat_from_pose(position, quaternion):
+    T = np.eye(4)
+    T[:3, :3] = Rotation.from_quat(np.asarray(quaternion, dtype=np.float64)).as_matrix()
+    T[:3, 3] = np.asarray(position, dtype=np.float64)
+    return T
+
+
+def T_from_params(rotvec, trans):
+    T = np.eye(4)
+    T[:3, :3] = Rotation.from_rotvec(rotvec).as_matrix()
+    T[:3, 3] = trans
+    return T
+
+
+def params_from_T(T):
+    return np.r_[Rotation.from_matrix(T[:3, :3]).as_rotvec(), T[:3, 3]]
+
+
+def pose_report(T):
+    return {
+        "translation_m": np.round(T[:3, 3], 6).tolist(),
+        "rpy_deg": np.round(Rotation.from_matrix(T[:3, :3]).as_euler("xyz", degrees=True), 4).tolist(),
+    }
+
+
+def board_detector(args):
+    dictionary = cv.aruco.getPredefinedDictionary(getattr(cv.aruco, args.dictionary))
+    board = cv.aruco.CharucoBoard((args.squares_x, args.squares_y), args.square_m, args.marker_m, dictionary)
+    if args.legacy_pattern:
+        board.setLegacyPattern(True)
+    return board, cv.aruco.CharucoDetector(board)
+
+
+def charuco_pose(frame_dir, camera, board, detector, *, overlay_dir=None):
+    meta = json.loads((frame_dir / "meta.json").read_text())
+    entry = meta["cameras"][camera]
+    K = np.asarray(entry["K"], dtype=np.float64)
+    image = cv.imread(str(frame_dir / entry["rgb"]))
+    if image is None:
+        return None, {"error": f"could not read {frame_dir / entry['rgb']}"}
+    gray = cv.cvtColor(image, cv.COLOR_BGR2GRAY)
+    charuco_corners, charuco_ids, marker_corners, marker_ids = detector.detectBoard(gray)
+    markers = 0 if marker_ids is None else int(len(marker_ids))
+    corners = 0 if charuco_ids is None else int(len(charuco_ids))
+
+    if overlay_dir is not None:
+        overlay = image.copy()
+        if marker_ids is not None and len(marker_ids):
+            cv.aruco.drawDetectedMarkers(overlay, marker_corners, marker_ids)
+        if charuco_ids is not None and len(charuco_ids):
+            cc = np.asarray(charuco_corners, dtype=np.float32).reshape(-1, 1, 2)
+            ids = np.asarray(charuco_ids, dtype=np.int32).reshape(-1, 1)
+            if len(cc) == len(ids):
+                cv.aruco.drawDetectedCornersCharuco(overlay, cc, ids, (0, 0, 255))
+        cv.imwrite(str(overlay_dir / f"{frame_dir.name}_{camera}_charuco.jpg"), overlay)
+
+    if charuco_ids is None or len(charuco_ids) < 6:
+        return None, {"markers": markers, "charuco_corners": corners}
+
+    obj, img = board.matchImagePoints(charuco_corners, charuco_ids)
+    obj = np.asarray(obj, dtype=np.float64).reshape(-1, 3)
+    img = np.asarray(img, dtype=np.float64).reshape(-1, 2)
+    ok, rvec, tvec = cv.solvePnP(obj, img, K, np.zeros(5), flags=cv.SOLVEPNP_ITERATIVE)
+    if not ok:
+        return None, {"markers": markers, "charuco_corners": corners, "solvepnp": False}
+
+    projected, _ = cv.projectPoints(obj, rvec, tvec, K, np.zeros(5))
+    err = np.linalg.norm(projected.reshape(-1, 2) - img, axis=1)
+    T = np.eye(4)
+    T[:3, :3] = Rotation.from_rotvec(np.asarray(rvec).reshape(3)).as_matrix()
+    T[:3, 3] = np.asarray(tvec).reshape(3)
+    return T, {
+        "markers": markers,
+        "charuco_corners": corners,
+        "reprojection_mean_px": float(err.mean()),
+        "reprojection_max_px": float(err.max()),
+    }
+
+
+def residual(params, samples):
+    T_tcp_cam = T_from_params(params[:3], params[3:6])
+    T_base_board = T_from_params(params[6:9], params[9:12])
+    out = []
+    for sample in samples:
+        pred = sample["T_base_tcp"] @ T_tcp_cam @ sample["T_cam_board"]
+        delta = invert(T_base_board) @ pred
+        out.extend((delta[:3, 3] / 0.01).tolist())
+        out.extend((Rotation.from_matrix(delta[:3, :3]).as_rotvec() / 0.02).tolist())
+    return np.asarray(out)
+
+
+def solve_hand_eye(samples):
+    best = None
+    first = samples[0]
+    guesses = [
+        [0, 0, 0], [np.pi, 0, 0], [0, np.pi, 0], [0, 0, np.pi],
+        [np.pi / 2, 0, 0], [-np.pi / 2, 0, 0],
+        [0, np.pi / 2, 0], [0, -np.pi / 2, 0],
+    ]
+    for euler in guesses:
+        T_tcp_cam0 = T_from_params(Rotation.from_euler("xyz", euler).as_rotvec(), np.array([0.0, 0.0, 0.05]))
+        T_base_board0 = first["T_base_tcp"] @ T_tcp_cam0 @ first["T_cam_board"]
+        guess = np.r_[params_from_T(T_tcp_cam0), params_from_T(T_base_board0)]
+        result = least_squares(residual, guess, args=(samples,), loss="soft_l1", f_scale=1.0, max_nfev=50000)
+        rms = float(np.sqrt(np.mean(residual(result.x, samples) ** 2)))
+        if best is None or rms < best[0]:
+            best = (rms, result)
+
+    rms, result = best
+    T_tcp_cam = T_from_params(result.x[:3], result.x[3:6])
+    T_base_board = T_from_params(result.x[6:9], result.x[9:12])
+    per_sample = []
+    for sample in samples:
+        pred = sample["T_base_tcp"] @ T_tcp_cam @ sample["T_cam_board"]
+        delta = invert(T_base_board) @ pred
+        per_sample.append({
+            "index": sample["index"],
+            "translation_error_m": float(np.linalg.norm(delta[:3, 3])),
+            "rotation_error_deg": float(np.degrees(np.linalg.norm(Rotation.from_matrix(delta[:3, :3]).as_rotvec()))),
+            **sample["detection"],
+        })
+    return T_tcp_cam, T_base_board, {"scaled_rms": rms, "samples": per_sample}
+
+
+def write_matrix(path, matrix, source):
+    path.parent.mkdir(parents=True, exist_ok=True)
+    if path.exists():
+        backup = path.with_suffix(path.suffix + f".bak-{time.strftime('%Y%m%dT%H%M%S')}")
+        shutil.copy2(path, backup)
+    path.write_text(yaml.safe_dump({"matrix": np.asarray(matrix, dtype=float).tolist(), "source": source}, sort_keys=False))
+
+
+def parse_args():
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--backend-options", type=Path, default=PROJECT / "examples/xarm.json")
+    parser.add_argument("--calibration-dir", type=Path, default=PROJECT / "calibration/xarm")
+    parser.add_argument("--root", type=Path, default=artifact_root() / "charuco-calibration-active-tcp")
+    parser.add_argument("--dictionary", default="DICT_4X4_100")
+    parser.add_argument("--squares-x", type=int, default=10)
+    parser.add_argument("--squares-y", type=int, default=14)
+    parser.add_argument("--square-m", type=float, default=0.020)
+    parser.add_argument("--marker-m", type=float, default=0.015)
+    parser.add_argument("--legacy-pattern", action=argparse.BooleanOptionalAction, default=True)
+    parser.add_argument("--yes", action="store_true", help="required: this script moves the robot")
+    return parser.parse_args()
+
+
+def main():
+    args = parse_args()
+    if not args.yes:
+        raise SystemExit("This calibration moves the robot. Re-run with --yes after clearing the workspace.")
+    if not args.root.resolve().is_relative_to(artifact_root()):
+        raise SystemExit(f"--root must be under {artifact_root()} (set RAX_ARTIFACT_ROOT if needed)")
+
+    root = args.root.resolve()
+    if root.exists():
+        shutil.rmtree(root)
+    root.mkdir(parents=True)
+    overlays = root / "overlays"
+    overlays.mkdir()
+    out = root / "result.json"
+    board, detector = board_detector(args)
+
+    opts = json.loads(args.backend_options.read_text())
+    config = Configuration(root=root, task="charuco_calibration_active_tcp", robot="xarm",
+                           backend_options=opts, observation_profile="rgbd")
+    backend = XArmBackend(config)
+    arming.write(root, True, minutes=15, by="xarm-charuco-calibrate")
+
+    status = backend.status()
+    p0 = np.asarray(status["tcp_position"], dtype=np.float64)
+    q0 = np.asarray(status["tcp_quaternion"], dtype=np.float64)
+    R0 = Rotation.from_quat(q0)
+    pose_specs = [
+        ([0.000, 0.000, 0.000], [0, 0, 0]),
+        ([0.000, 0.000, 0.030], [0, 0, 8]),
+        ([0.025, 0.000, 0.020], [6, 0, 0]),
+        ([-0.025, 0.000, 0.020], [-6, 0, 0]),
+        ([0.000, 0.025, 0.020], [0, 6, 0]),
+        ([0.000, -0.025, 0.020], [0, -6, 0]),
+        ([0.030, 0.020, 0.035], [5, -5, 10]),
+        ([-0.030, -0.020, 0.035], [-5, 5, -10]),
+        ([0.020, -0.030, 0.040], [8, 3, -8]),
+        ([-0.020, 0.030, 0.040], [-8, -3, 8]),
+        ([0.035, -0.005, 0.045], [0, 8, 12]),
+        ([-0.035, 0.005, 0.045], [0, -8, -12]),
+    ]
+
+    samples, log, final_frame_dir = [], [], None
+    try:
+        for index, (delta_p, delta_r_deg) in enumerate(pose_specs):
+            target_p = p0 + np.asarray(delta_p, dtype=np.float64)
+            target_q = (R0 * Rotation.from_euler("xyz", np.radians(delta_r_deg))).as_quat()
+            move, _ = backend.call("xarm_move_pose", {
+                "position": target_p.tolist(),
+                "quaternion": target_q.tolist(),
+                "timeout_s": 12,
+                "tolerance_mm": 2,
+            })
+            time.sleep(0.9)
+            obs, _ = backend.call("xarm_observe", {"cameras": ["left", "right", "wrist"]})
+            frame_dir = root / "agent-workspace" / obs["directory"]
+            final_frame_dir = frame_dir
+            T_cam_board, detection = charuco_pose(frame_dir, "wrist", board, detector, overlay_dir=overlays)
+            meta = json.loads((frame_dir / "meta.json").read_text())
+            entry = {
+                "index": index,
+                "target_position": np.round(target_p, 5).tolist(),
+                "target_rpy_delta_deg": delta_r_deg,
+                "frame_id": obs["frame_id"],
+                "move": move,
+                "wrist_detection": detection,
+            }
+            if T_cam_board is not None and detection["charuco_corners"] >= 12 and detection.get("reprojection_mean_px", 99) < 3:
+                samples.append({
+                    "index": index,
+                    "T_base_tcp": mat_from_pose(meta["tcp_position"], meta["tcp_quaternion"]),
+                    "T_cam_board": T_cam_board,
+                    "detection": detection,
+                })
+                entry["accepted"] = True
+            else:
+                entry["accepted"] = False
+            log.append(entry)
+            print(json.dumps(entry), flush=True)
+
+        backend.call("xarm_move_pose", {"position": p0.tolist(), "quaternion": q0.tolist(),
+                                        "timeout_s": 12, "tolerance_mm": 2})
+        time.sleep(0.5)
+        final_obs, _ = backend.call("xarm_observe", {"cameras": ["left", "right", "wrist"]})
+        final_frame_dir = root / "agent-workspace" / final_obs["directory"]
+    finally:
+        arming.write(root, False, reason="charuco calibration collection complete")
+        try:
+            backend.call("xarm_hold", {})
+        finally:
+            backend.close()
+
+    if len(samples) < 6:
+        result = {"ok": False, "reason": f"only {len(samples)} usable wrist samples", "log": log}
+        out.write_text(json.dumps(result, indent=2) + "\n")
+        print(json.dumps(result, indent=2))
+        return
+
+    T_tcp_cam, T_base_board, report = solve_hand_eye(samples)
+    T_cam_tcp = invert(T_tcp_cam)
+    T_board_base = invert(T_base_board)
+    fixed = {}
+    for camera in ("left", "right"):
+        T_cam_board, detection = charuco_pose(final_frame_dir, camera, board, detector, overlay_dir=overlays)
+        if T_cam_board is None:
+            fixed[camera] = {"ok": False, "detection": detection}
+            continue
+        T_cam_base = T_cam_board @ T_board_base
+        fixed[camera] = {
+            "ok": True,
+            "detection": detection,
+            "T_cam_base": T_cam_base.tolist(),
+            "T_base_cam": invert(T_cam_base).tolist(),
+            "pose": pose_report(invert(T_cam_base)),
+        }
+
+    result = {
+        "ok": True,
+        "root": str(root),
+        "usable_wrist_samples": len(samples),
+        "used_indices": [s["index"] for s in samples],
+        "T_tcp_cam": T_tcp_cam.tolist(),
+        "T_cam_tcp": T_cam_tcp.tolist(),
+        "T_base_board": T_base_board.tolist(),
+        "T_board_base": T_board_base.tolist(),
+        "wrist_pose": pose_report(T_tcp_cam),
+        "board_pose": pose_report(T_base_board),
+        "report": report,
+        "fixed": fixed,
+        "log": log,
+        "final_frame": str(final_frame_dir),
+    }
+    out.write_text(json.dumps(result, indent=2) + "\n")
+
+    source = f"ChArUco active TCP calibration, {time.strftime('%Y-%m-%d')}"
+    write_matrix(args.calibration_dir / "wrist_T_cam_tcp.yaml", T_cam_tcp, source)
+    for camera in ("left", "right"):
+        if fixed.get(camera, {}).get("ok"):
+            write_matrix(args.calibration_dir / f"{camera}_T_cam_base.yaml", fixed[camera]["T_cam_base"], source)
+
+    print(json.dumps(result, indent=2))
+
+
+if __name__ == "__main__":
+    main()

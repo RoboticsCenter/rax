@@ -125,6 +125,13 @@ def _media_is_inline(value):
     if isinstance(value, list):
         return all(_media_is_inline(item) for item in value)
     if isinstance(value, dict):
+        image_url = value.get('image_url')
+        if isinstance(image_url, str) and not image_url.startswith('data:'):
+            return False
+        if isinstance(image_url, dict):
+            url = image_url.get('url')
+            if not isinstance(url, str) or not url.startswith('data:'):
+                return False
         source = value.get('source')
         if isinstance(source, dict) and source.get('type') not in ('base64', 'text', 'content'):
             return False
@@ -252,34 +259,31 @@ def _openai_message(role, parts):
     return {'role': role if role == 'user' else 'user', 'content': parts}
 
 
-def _anthropic_tool_result_output(content):
+def _openai_tool_result_output(content):
     if isinstance(content, str):
         return content
     if not isinstance(content, list):
         return _json_text(content)
-    pieces = []
+    pieces, output = [], []
     for block in content:
         if isinstance(block, str):
             pieces.append(block)
         elif isinstance(block, dict) and block.get('type') == 'text':
             pieces.append(str(block.get('text', '')))
         elif isinstance(block, dict) and block.get('type') == 'image':
-            pieces.append('[inline image result]')
-        else:
-            pieces.append(_json_text(block))
-    return '\n'.join(piece for piece in pieces if piece)
-
-
-def _openai_tool_result_images(content):
-    if not isinstance(content, list):
-        return []
-    images = []
-    for block in content:
-        if isinstance(block, dict) and block.get('type') == 'image':
+            if pieces:
+                output.append({'type': 'input_text', 'text': '\n'.join(piece for piece in pieces if piece)})
+                pieces = []
             image = _openai_image(block)
             if image:
-                images.append(image)
-    return images
+                output.append(image)
+        else:
+            pieces.append(_json_text(block))
+    if pieces:
+        output.append({'type': 'input_text', 'text': '\n'.join(piece for piece in pieces if piece)})
+    if output and any(part.get('type') == 'input_image' for part in output):
+        return output
+    return '\n'.join(part.get('text', '') for part in output if part.get('type') == 'input_text')
 
 
 def _openai_input(messages):
@@ -317,13 +321,7 @@ def _openai_input(messages):
                 call_id = block.get('tool_use_id') or block.get('id') or 'call'
                 items.append({'type': 'function_call_output',
                               'call_id': call_id,
-                              'output': _anthropic_tool_result_output(block.get('content', ''))})
-                images = _openai_tool_result_images(block.get('content', ''))
-                if images:
-                    items.append({'role': 'user',
-                                  'content': [{'type': 'input_text',
-                                               'text': f'Inline images returned by tool {call_id}:'},
-                                              *images]})
+                              'output': _openai_tool_result_output(block.get('content', ''))})
         if (item := _openai_message(role, parts)) is not None:
             items.append(item)
     return items
@@ -346,7 +344,7 @@ def openai_request(payload):
         body['instructions'] = instructions
     if tools := _openai_tools(payload.get('tools', [])):
         body['tools'] = tools
-        body['parallel_tool_calls'] = True
+        body['parallel_tool_calls'] = False
         body['tool_choice'] = 'auto'
     if isinstance(payload.get('metadata'), dict):
         body['metadata'] = payload['metadata']

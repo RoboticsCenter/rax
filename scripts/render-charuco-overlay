@@ -1,0 +1,70 @@
+#!/usr/bin/env python3
+"""Render ChArUco detection overlays for an existing RAX frame directory."""
+from __future__ import annotations
+
+import argparse
+import json
+import os
+import sys
+from pathlib import Path
+
+if os.environ.get("RAX_PYTHON") and Path(sys.executable).resolve() != Path(os.environ["RAX_PYTHON"]).resolve():
+    os.execv(os.environ["RAX_PYTHON"], [os.environ["RAX_PYTHON"], *sys.argv])
+
+import cv2 as cv
+
+
+def parse_args():
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("frame_dir", type=Path)
+    parser.add_argument("out_dir", type=Path)
+    parser.add_argument("--dictionary", default="DICT_4X4_100")
+    parser.add_argument("--squares-x", type=int, default=10)
+    parser.add_argument("--squares-y", type=int, default=14)
+    parser.add_argument("--square-m", type=float, default=0.020)
+    parser.add_argument("--marker-m", type=float, default=0.015)
+    parser.add_argument("--legacy-pattern", action=argparse.BooleanOptionalAction, default=True)
+    return parser.parse_args()
+
+
+def main():
+    args = parse_args()
+    args.out_dir.mkdir(parents=True, exist_ok=True)
+    dictionary = cv.aruco.getPredefinedDictionary(getattr(cv.aruco, args.dictionary))
+    board = cv.aruco.CharucoBoard((args.squares_x, args.squares_y), args.square_m, args.marker_m, dictionary)
+    if args.legacy_pattern:
+        board.setLegacyPattern(True)
+    detector = cv.aruco.CharucoDetector(board)
+
+    summary = {}
+    for camera in ("left", "right", "wrist"):
+        image = cv.imread(str(args.frame_dir / f"{camera}.jpg"))
+        if image is None:
+            summary[camera] = {"error": f"could not read {args.frame_dir / f'{camera}.jpg'}"}
+            continue
+        gray = cv.cvtColor(image, cv.COLOR_BGR2GRAY)
+        charuco_corners, charuco_ids, marker_corners, marker_ids = detector.detectBoard(gray)
+        overlay = image.copy()
+        if marker_ids is not None and len(marker_ids):
+            cv.aruco.drawDetectedMarkers(overlay, marker_corners, marker_ids)
+        if charuco_ids is not None and len(charuco_ids):
+            pts = charuco_corners.reshape(-1, 2)
+            ids = charuco_ids.flatten()
+            for (x, y), cid in zip(pts, ids):
+                cv.circle(overlay, (int(round(x)), int(round(y))), 4, (0, 0, 255), -1)
+                cv.putText(overlay, str(int(cid)), (int(round(x)) + 5, int(round(y)) - 5),
+                           cv.FONT_HERSHEY_SIMPLEX, 0.35, (0, 0, 255), 1, cv.LINE_AA)
+        markers = 0 if marker_ids is None else int(len(marker_ids))
+        corners = 0 if charuco_ids is None else int(len(charuco_ids))
+        text = f"{camera}: {markers} markers, {corners} charuco corners"
+        cv.putText(overlay, text, (12, 30), cv.FONT_HERSHEY_SIMPLEX, 0.75, (255, 255, 255), 3, cv.LINE_AA)
+        cv.putText(overlay, text, (12, 30), cv.FONT_HERSHEY_SIMPLEX, 0.75, (0, 0, 0), 1, cv.LINE_AA)
+        cv.imwrite(str(args.out_dir / f"{camera}_charuco_overlay.jpg"), overlay)
+        summary[camera] = {"markers": markers, "charuco_corners": corners}
+
+    (args.out_dir / "summary.json").write_text(json.dumps(summary, indent=2) + "\n")
+    print(json.dumps({"out_dir": str(args.out_dir), "summary": summary}, indent=2))
+
+
+if __name__ == "__main__":
+    main()

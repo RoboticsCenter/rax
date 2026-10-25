@@ -1,0 +1,98 @@
+#!/usr/bin/env python3
+"""No-motion ChArUco visibility and pose check for the xArm cameras."""
+from __future__ import annotations
+
+import argparse
+import json
+import os
+import shutil
+import sys
+from pathlib import Path
+
+PROJECT = Path(__file__).resolve().parents[1]
+sys.path.insert(0, str(PROJECT))
+if os.environ.get("RAX_PYTHON") and Path(sys.executable).resolve() != Path(os.environ["RAX_PYTHON"]).resolve():
+    os.execv(os.environ["RAX_PYTHON"], [os.environ["RAX_PYTHON"], *sys.argv])
+
+import cv2 as cv  # noqa: E402
+import numpy as np  # noqa: E402
+
+from services.controller.config import Configuration  # noqa: E402
+from services.storage_root import artifact_root  # noqa: E402
+from services.xarm.backend import XArmBackend  # noqa: E402
+
+
+def parse_args():
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--backend-options", type=Path, default=PROJECT / "examples/xarm.json")
+    parser.add_argument("--root", type=Path, default=artifact_root() / "charuco-static-check")
+    parser.add_argument("--dictionary", default="DICT_4X4_100")
+    parser.add_argument("--squares-x", type=int, default=10)
+    parser.add_argument("--squares-y", type=int, default=14)
+    parser.add_argument("--square-m", type=float, default=0.020)
+    parser.add_argument("--marker-m", type=float, default=0.015)
+    parser.add_argument("--legacy-pattern", action=argparse.BooleanOptionalAction, default=True)
+    return parser.parse_args()
+
+
+def main():
+    args = parse_args()
+    if not args.root.resolve().is_relative_to(artifact_root()):
+        raise SystemExit(f"--root must be under {artifact_root()} (set RAX_ARTIFACT_ROOT if needed)")
+    root = args.root.resolve()
+    if root.exists():
+        shutil.rmtree(root)
+    root.mkdir(parents=True)
+
+    opts = json.loads(args.backend_options.read_text())
+    config = Configuration(root=root, task="charuco_static_check", robot="xarm",
+                           backend_options=opts, observation_profile="rgbd")
+    backend = XArmBackend(config)
+    dictionary = cv.aruco.getPredefinedDictionary(getattr(cv.aruco, args.dictionary))
+    board = cv.aruco.CharucoBoard((args.squares_x, args.squares_y), args.square_m, args.marker_m, dictionary)
+    if args.legacy_pattern:
+        board.setLegacyPattern(True)
+    detector = cv.aruco.CharucoDetector(board)
+
+    try:
+        value, _ = backend.call("xarm_observe", {"cameras": ["left", "right", "wrist"]})
+        frame_dir = root / "agent-workspace" / value["directory"]
+        meta = json.loads((frame_dir / "meta.json").read_text())
+        out = {"frame_dir": str(frame_dir), "frame_id": value["frame_id"], "cameras": {}}
+        for camera in ("left", "right", "wrist"):
+            entry = meta["cameras"][camera]
+            image = cv.imread(str(frame_dir / entry["rgb"]))
+            gray = cv.cvtColor(image, cv.COLOR_BGR2GRAY)
+            charuco_corners, charuco_ids, marker_corners, marker_ids = detector.detectBoard(gray)
+            markers = 0 if marker_ids is None else int(len(marker_ids))
+            corners = 0 if charuco_ids is None else int(len(charuco_ids))
+            cam_out = {"markers": markers, "charuco_corners": corners}
+            if marker_ids is not None and len(marker_ids):
+                cv.aruco.drawDetectedMarkers(image, marker_corners, marker_ids)
+            if charuco_ids is not None and len(charuco_ids):
+                cc = np.asarray(charuco_corners, dtype=np.float32).reshape(-1, 1, 2)
+                ids = np.asarray(charuco_ids, dtype=np.int32).reshape(-1, 1)
+                if len(cc) == len(ids):
+                    cv.aruco.drawDetectedCornersCharuco(image, cc, ids, (0, 0, 255))
+            cv.imwrite(str(root / f"{camera}_charuco_overlay.jpg"), image)
+            if charuco_ids is not None and len(charuco_ids) >= 4:
+                obj, img = board.matchImagePoints(charuco_corners, charuco_ids)
+                K = np.asarray(entry["K"], dtype=float)
+                ok, rvec, tvec = cv.solvePnP(np.asarray(obj, float).reshape(-1, 3),
+                                             np.asarray(img, float).reshape(-1, 2), K, np.zeros(5))
+                cam_out["solvepnp"] = bool(ok)
+                if ok:
+                    proj, _ = cv.projectPoints(np.asarray(obj, float).reshape(-1, 3), rvec, tvec, K, np.zeros(5))
+                    err = np.linalg.norm(proj.reshape(-1, 2) - np.asarray(img, float).reshape(-1, 2), axis=1)
+                    cam_out["reprojection_mean_px"] = float(err.mean())
+                    cam_out["reprojection_max_px"] = float(err.max())
+                    cam_out["t_cam_board_m"] = np.asarray(tvec).reshape(3).round(4).tolist()
+            out["cameras"][camera] = cam_out
+        (root / "summary.json").write_text(json.dumps(out, indent=2) + "\n")
+        print(json.dumps(out, indent=2))
+    finally:
+        backend.close()
+
+
+if __name__ == "__main__":
+    main()

@@ -116,6 +116,8 @@ def test_budget_counts_messages_but_not_token_counting(relay):
     {'model': MODEL, 'max_tokens': 64, 'messages': [], 'mcp_servers': [{'url': 'https://x'}]},
     {'model': MODEL, 'max_tokens': 64, 'messages': [{'role': 'user', 'content': [
         {'type': 'image', 'source': {'type': 'url', 'url': 'https://example.com/a.png'}}]}]},
+    {'model': MODEL, 'max_tokens': 64, 'messages': [{'role': 'user', 'content': [
+        {'type': 'image_url', 'image_url': {'url': 'https://example.com/a.png'}}]}]},
     {'model': MODEL, 'max_tokens': 64, 'messages': [{'role': 'user', 'content': [{'type': 'tool_result', 'content': [
         {'type': 'document', 'source': {'type': 'file', 'file_id': 'f'}}]}]}]},
     {'model': MODEL, 'max_tokens': 10**6, 'messages': []},
@@ -200,12 +202,14 @@ def test_openai_provider_translates_messages_tools_and_usage(tmp_path):
         assert upstream_body['model'] == 'gpt-6-astra'
         assert upstream_body['instructions'] == 'You are inside RAX.'
         assert upstream_body['tools'][0]['type'] == 'function'
+        assert upstream_body['parallel_tool_calls'] is False
         assert upstream_body['input'][1]['type'] == 'function_call'
-        assert upstream_body['input'][2] == {'type': 'function_call_output', 'call_id': 'toolu_1',
-                                             'output': 'ok\n[inline image result]'}
-        assert upstream_body['input'][3]['role'] == 'user'
-        assert upstream_body['input'][3]['content'][1]['type'] == 'input_image'
-        assert upstream_body['input'][3]['content'][1]['image_url'] == 'data:image/jpeg;base64,AA=='
+        assert upstream_body['input'][2] == {
+            'type': 'function_call_output',
+            'call_id': 'toolu_1',
+            'output': [{'type': 'input_text', 'text': 'ok'},
+                       {'type': 'input_image', 'image_url': 'data:image/jpeg;base64,AA=='}]}
+        assert len(upstream_body['input']) == 3
         row = json.loads((tmp_path/'usage.jsonl').read_text())
         assert row['model'] == OPENAI_MODEL and row['input_tokens'] == 5
         assert row['cache_read_input_tokens'] == 2 and row['output_tokens'] == 7
