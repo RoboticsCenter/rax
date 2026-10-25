@@ -12,6 +12,7 @@ import json
 import os
 from pathlib import Path
 import re
+import shutil
 import time
 import uuid
 
@@ -38,6 +39,59 @@ def _read(path):
         return None
 
 
+def snapshot_learning(session_root, label='manual', *, request=None, reply=None):
+    """Archive session-local agent learning outside the agent's writable workspace.
+
+    This captures the evolving memory/code/output plus the copied skill instructions. Large
+    runtime streams, frame captures, motion videos, tmp files and pyc caches are intentionally
+    omitted; those already live elsewhere in the session artifacts.
+    """
+    root = Path(session_root)
+    workspace = root/'agent-workspace'
+    if not workspace.is_dir():
+        return None
+    safe = ''.join(c if c.isalnum() or c in '-_.' else '_' for c in str(label))[:80] or 'snapshot'
+    folder = root/'learning-snapshots'
+    folder.mkdir(mode=0o700, exist_ok=True)
+    stamp = time.strftime('%Y%m%dT%H%M%S', time.localtime())
+    dest = folder/f'{stamp}_{safe}'
+    suffix = 1
+    while dest.exists():
+        suffix += 1
+        dest = folder/f'{stamp}_{safe}_{suffix}'
+    dest.mkdir(mode=0o700)
+
+    ignore = shutil.ignore_patterns('__pycache__', '*.pyc', 'runtime', 'tmp')
+    copied = []
+    for name in ('memory', 'code', 'output'):
+        source = workspace/name
+        if source.exists():
+            shutil.copytree(source, dest/name, ignore=ignore)
+            copied.append(name)
+    skills = workspace/'.agents'/'skills'
+    if skills.exists():
+        shutil.copytree(skills, dest/'skills', ignore=ignore)
+        copied.append('skills')
+    for name in ('TASK.md', 'AGENTS.md', 'MCP_SESSION.md', 'MCP_CONTRACT.json', 'START_PROMPT.md'):
+        source = workspace/name
+        if source.is_file():
+            shutil.copy2(source, dest/name)
+            copied.append(name)
+    manifest = {
+        'time': time.time(),
+        'session': root.name,
+        'source_workspace': str(workspace),
+        'label': label,
+        'copied': copied,
+        'request': request,
+        'reply': reply,
+        'note': 'Session-local learning snapshot: memory, code, output, copied skills, and task/contract files. '
+                'Runtime frames, streams, videos, tmp files and pyc caches are intentionally omitted.',
+    }
+    (dest/'manifest.json').write_text(json.dumps(manifest, indent=2) + '\n')
+    return dest
+
+
 def open_request(session_root, kind, message):
     if kind not in KINDS:
         raise ValueError(f'kind must be one of {KINDS}')
@@ -61,6 +115,13 @@ def reply(session_root, request_id, text='', *, done=True, by=None):
         raise ValueError(f"request {request_id} is {request.get('status')}, not pending")
     answer = {'reply': str(text)[:4000], 'done': bool(done), 'by': by or os.environ.get('USER'), 'time': time.time()}
     _write(directory(session_root)/f'{request_id}.reply.json', answer)
+    try:
+        snapshot = snapshot_learning(session_root, f"{request.get('kind', 'request')}_{request_id}",
+                                     request=request, reply=answer['reply'])
+        if snapshot is not None:
+            answer['learning_snapshot'] = str(snapshot)
+    except Exception as exc:
+        answer['learning_snapshot_error'] = f'{type(exc).__name__}: {exc}'
     return answer
 
 

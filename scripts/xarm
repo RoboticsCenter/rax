@@ -160,6 +160,13 @@ elif action == 'clean-streams':
             shutil.rmtree(stream)
             stream.mkdir()
             print(f'deleted {size:.1f} GB  {root.name}')
+elif action == 'snapshot-learning':
+    if not sessions:
+        sys.exit('no sessions')
+    root = sessions[-1]
+    label = sys.argv[2] if len(sys.argv) > 2 else 'manual'
+    path = operator.snapshot_learning(root, label)
+    print(f'saved learning snapshot {path}')
 elif action in ('requests', 'reply'):
     open_requests = sorted(((r['created'], root, r) for root in sessions for r in operator.pending(root)),
                            key=lambda item: item[0])
@@ -173,8 +180,13 @@ elif action in ('requests', 'reply'):
         text = ' '.join(sys.argv[2:]) or ('Scene reset done.' if r['kind'] == 'reset' else '')
         if not text:
             text = ask(f"{r['kind'].upper()}: {r['message']}\nYour answer: ")
-        operator.reply(root, r['id'], text, by='xarm-cli')
+        answer = operator.reply(root, r['id'], text, by='xarm-cli')
         print(f"answered {r['kind']} request {r['id']}")
+        if answer.get('learning_snapshot'):
+            print(f"saved learning snapshot {answer['learning_snapshot']}")
+        elif answer.get('learning_snapshot_error'):
+            print(f"learning snapshot failed: {answer['learning_snapshot_error']}")
 else:
-    sys.exit('usage: xarm ready | arm [minutes] | disarm | status | requests | reply [text] | clean-streams | home [--open]')
+    sys.exit('usage: xarm ready | arm [minutes] | disarm | status | requests | reply [text] | '
+             'snapshot-learning [label] | clean-streams | home [--open]')
 PY
