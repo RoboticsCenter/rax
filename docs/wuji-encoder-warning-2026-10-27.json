@@ -1,0 +1,68 @@
+{
+  "date": "2026-10-27",
+  "device": {
+    "model": "Wuji Hand 2",
+    "serial": "WH2KA01260823017",
+    "firmware": "2.13.1",
+    "sdk": "2026.10.12"
+  },
+  "trial": "flexion-stiff-ring",
+  "active_joints": [
+    12,
+    14,
+    15
+  ],
+  "joint": {
+    "flat_index": 12,
+    "nid": 16,
+    "label": "ring_S1"
+  },
+  "phase": "center-from-negative-1-hold",
+  "diagnostic": {
+    "code": 3,
+    "name": "Enc1BitRate",
+    "severity": "Warning",
+    "clear_policy": "AutoClear",
+    "is_test": false,
+    "desc": "Encoder 1 data-quality flag rate is high",
+    "cause": "A high proportion of frames from Encoder 1 have the chip's data-quality warning flag set.",
+    "resolution": "Inspect Encoder 1 and verify that its magnet is correctly positioned, seated, and aligned. The warning clears automatically when signal quality recovers."
+  },
+  "profile_readback": {
+    "kp": 15.0,
+    "kd": 0.15000000596046448,
+    "current_limit_a": 1.5
+  },
+  "at_warning": {
+    "position_rad": 0.02907407283782959,
+    "target_rad": 0.03363931179046631,
+    "reported_current_a": -0.13000273704528809,
+    "reported_velocity_rad_s": 1.0041985511779785,
+    "mcu_temperature_c": 55.00400924682617,
+    "bus_voltage_v": 12.393869400024414,
+    "current_limit_active": false,
+    "communication_response_rate_pct": 100,
+    "communication_timeout_total": 0
+  },
+  "automatic_stop": {
+    "all20_disabled_confirmed": true,
+    "guard_to_disabled_feedback_s": 0.023994600000150967,
+    "warning_still_present_at_initial_disable": true
+  },
+  "followup": {
+    "error_absent_at_check_seconds_after_guard": 100.11137134599994,
+    "all20_disabled": true,
+    "original_profile_restored": true,
+    "disabled_monitor_seconds": 15,
+    "monitor_samples": 300,
+    "monitor_observed_codes": [],
+    "manual_fault_clears": 0,
+    "flash_frames": 1698,
+    "full_stream_callback_counts": {
+      "state": 15165,
+      "diag": 15165
+    },
+    "full_stream_observed_codes": []
+  },
+  "interpretation": "Intermittent encoder-quality warning; root cause unproven. Cleared while disabled; no further motion performed. No causal link established to earlier thumb error or suspected ring/pinky contact."
+}

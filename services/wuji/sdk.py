@@ -64,6 +64,8 @@ class WujiDriver:
         self.subscriptions = []
         self.lock = threading.Lock()
         self.frames, self.received, self.headers, self.errors, self.offsets = {}, {}, {}, {}, {}
+        self.error_details, self.warning_history, self.latched_faults = {}, {}, {}
+        self.warnings = []
         self.identity = {'serial': config['serial'], 'handedness': config['handedness'], 'sdk_version': SDK_VERSION}
         self.profile = None
 
@@ -102,7 +104,7 @@ class WujiDriver:
         with self.lock:
             self.errors[stream] = str(error)
 
-    def _save(self, stream, frame, data):
+    def _save(self, stream, frame, data, *, warnings=(), faults=()):
         now = self.clock()
         sequence, timestamp = int(frame.header.seq), int(frame.header.timestamp_us)
         with self.lock:
@@ -122,6 +124,16 @@ class WujiDriver:
             self.received[stream] = now
             self.headers[stream] = {'sequence': sequence, 'timestamp_us': timestamp}
             self.errors.pop(stream, None)
+            if stream == 'diagnostics':
+                self.warnings = list(warnings)
+                for warning in warnings:
+                    key = (warning['joint'], warning['code'])
+                    record = self.warning_history.setdefault(key, {**warning, 'frames': 0, 'first_seen': now})
+                    record.update(frames=record['frames']+1, last_seen=now)
+                # A brief device fault must not disappear between controller ticks.
+                # Only explicit reconnect clears this history, after disable confirmation.
+                for fault in faults:
+                    self.latched_faults[(fault['joint'], fault.get('code'), fault.get('reason'))] = fault
 
     def _state(self, frame):
         try:
@@ -145,30 +157,53 @@ class WujiDriver:
                     raise ValueError('nonfinite diagnostics')
                 data[key] = values
             data['error_code_current'] = [int(v) for v in data['error_code_current']]
-            self._save('diagnostics', frame, data)
+            warnings, faults = [], []
+            for i, code in enumerate(data['error_code_current']):
+                if not code:
+                    continue
+                if code not in self.error_details:
+                    describe = getattr(self.sdk.WujiHand2, 'describe_error', lambda _: None)
+                    detail = describe(code)
+                    self.error_details[code] = ({k: detail.get(k) for k in ('name', 'severity', 'clear_policy')}
+                                                if isinstance(detail, dict) else {})
+                detail = self.error_details[code]
+                record = {'joint': JOINT_NAMES[i], 'code': code, **detail}
+                permitted = (self.cfg['allow_encoder_warning'] and code == 3
+                             and detail.get('name') == 'Enc1BitRate' and detail.get('severity') == 'Warning'
+                             and detail.get('clear_policy') == 'AutoClear')
+                (warnings if permitted else faults).append(record)
+            for i, temperature in enumerate(data['mcu_temp_c_fb']):
+                if temperature >= self.cfg['max_temperature_c']:
+                    faults.append({'joint': JOINT_NAMES[i], 'reason': 'temperature limit exceeded',
+                                   'temperature_c': temperature})
+            self._save('diagnostics', frame, data, warnings=warnings, faults=faults)
         except Exception as exc:
             self._error('diagnostics', exc)
 
     def snapshot(self):
         now = self.clock()
         with self.lock:
-            state = deepcopy(self.frames.get('state', {}))
-            diag = deepcopy(self.frames.get('diagnostics', {}))
+            # Frame values are lists of immutable scalars. Copy those lists rather
+            # than recursively copying every scalar several times per 1 kHz tick.
+            state = {k: list(v) for k, v in self.frames.get('state', {}).items()}
+            diag = {k: list(v) for k, v in self.frames.get('diagnostics', {}).items()}
             ages = {key: None if key not in self.received else max(0., now-self.received[key])
                     for key in ('state', 'diagnostics')}
             errors = dict(self.errors)
-            headers, received = deepcopy(self.headers), dict(self.received)
+            headers, received = {k: dict(v) for k, v in self.headers.items()}, dict(self.received)
+            faults = [dict(v) for v in self.latched_faults.values()]
+            warnings = [dict(v) for v in self.warnings]
+            warning_history = [dict(v) for v in self.warning_history.values()]
         fresh = self.hand is not None and not errors and all(
             age is not None and age <= self.cfg['max_feedback_age_s'] for age in ages.values())
-        faults = [{'joint': JOINT_NAMES[i], 'code': code} for i, code in
-                  enumerate(diag.get('error_code_current', [])) if code]
         return {**deepcopy(self.identity), 'connected': self.hand is not None,
                 'positions': state.get('position'), 'velocity_rad_s': state.get('velocity'),
                 'effort_a': state.get('effort'), 'diagnostics': diag,
                 'fresh': fresh, 'age_s': ages, 'stream_errors': errors, 'faults': faults,
+                'warnings': warnings, 'warning_history': warning_history,
                 'enabled': fresh and diag.get('states') == [2]*20,
                 'received_monotonic': received, 'source_headers': headers,
-                'parameters': deepcopy(self.profile)}
+                'parameters': None if self.profile is None else {k: list(v) for k, v in self.profile.items()}}
 
     def apply_profile(self):
         self.hand.effort_limit().set(self.cfg['current_limit_a'])
@@ -183,10 +218,14 @@ class WujiDriver:
                 raise RuntimeError(f'{key} readback mismatch; hand remains unprepared')
         self.profile = actual
 
-    def send(self, positions):
+    def send(self, positions, velocities=None):
+        q = vector(positions)
+        v = [0.]*20 if velocities is None else vector(velocities, 'velocities')
+        if any(abs(x) > self.cfg['max_velocity_rad_s']+1e-9 for x in v):
+            raise ValueError('command velocity exceeds configured reference limit')
         if self.publisher is None:
             self.publisher = self.hand.joint_command().publish()
-        self.publisher.send([self.sdk.JointCommand(v, 0., 0.) for v in vector(positions)])
+        self.publisher.send([self.sdk.JointCommand(position, velocity, 0.) for position, velocity in zip(q, v)])
 
     def enable(self):
         self.hand.enable()
@@ -231,6 +270,10 @@ class WujiDriver:
             self.headers.clear()
             self.offsets.clear()
             self.errors.clear()
+            self.error_details.clear()
+            self.warning_history.clear()
+            self.latched_faults.clear()
+            self.warnings.clear()
         self.profile = None
         if errors:
             raise RuntimeError('; '.join(errors))

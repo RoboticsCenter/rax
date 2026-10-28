@@ -26,6 +26,7 @@ class FakeHand:
         self.connected = False
         self.q, self.goal = [0.]*20, [0.]*20
         self.velocity = [0.]*20
+        self.command_velocity = [0.]*20
         self.states, self.names = [1]*20, ['Ready']*20
         self.writes = []
         self.follow = True
@@ -66,9 +67,10 @@ class FakeHand:
         self.writes.append(('enable',))
         self.states, self.names = [2]*20, ['Enabled']*20
 
-    def send(self, q):
+    def send(self, q, velocity=None):
         self.writes.append(('send', list(q)))
         self.goal = list(q)
+        self.command_velocity = [0.]*20 if velocity is None else list(velocity)
         if self.on_send:
             self.on_send()
 
@@ -94,7 +96,7 @@ class FakeHandClient:
                 'target_positions': list(self.target), 'profile_revision': self.cfg['profile_revision']}
 
     def require_ready(self):
-        pass
+        return self.status()
 
     def move(self, positions, duration_s=None):
         self.moves.append(list(positions))

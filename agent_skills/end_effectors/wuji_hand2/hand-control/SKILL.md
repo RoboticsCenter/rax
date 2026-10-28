@@ -24,6 +24,13 @@ acceleration and tracking error. Optional `duration_s` must allow those bounds;
 omitting it lets the backend choose. A rejection calls for revising the target,
 not retrying the same command.
 
+With `motion_mode: scurve`, the backend also limits reference jerk and sends
+matching position/velocity commands. Movements start from the preceding commanded
+state and finish at zero reference velocity/acceleration. Requested durations may
+round up to a control tick; measured settling can take extra time. Status exposes
+motion progress, reference derivatives and actual `command_timing`. These are
+reference limits, not measured tracking guarantees or permission to change gains.
+
 `wuji_pose(name=...)` uses an operator-commissioned posture listed in `postures`.
 The list can be empty. Never invent names or assume an untested open/grasp pose.
 Both motion tools wait for measured settling and keep the final target afterward.
@@ -53,8 +60,10 @@ contact. Use images and actual object motion to assess a grasp.
 
 ## Hold and failures
 
-`wuji_hold` retains the current commanded posture when dispatched and
-control is healthy. It requests emergency stop if the session is disarmed or state
+`wuji_hold` retains a stationary commanded posture when control is healthy.
+If an S-curve is still moving when dispatched, it brakes smoothly to a nearby
+bounded rest target and reports that target; physical settling is not confirmed.
+It requests emergency stop if bounded braking is unavailable, the session is disarmed or state
 is unreliable. `xarm_hold` requests stops on both the arm and hand. These calls
 report request, SDK return and confirmation separately. Grip retention after an
 emergency stop, disable, session end or lost connection is not guaranteed.
@@ -68,6 +77,10 @@ A fault, stale feedback, unexpected enabled state or `control_uncertain` means s
 and request operator help. A timeout/target-not-reached is not grasp success. The
 backend can stop both devices after a failed motion; check status again before
 planning recovery. Reconnection never resumes an interrupted trajectory.
+
+An operator may configure the specific auto-clearing encoder warning to be logged
+under `warnings`/`warning_history`. This does not waive other faults or establish
+encoder accuracy. Agent tools cannot change that policy or clear latched faults.
 
 Record successful postures with the side, profile revision, serial, firmware,
 mount/TCP and camera-calibration context, and decisive before/after frames in

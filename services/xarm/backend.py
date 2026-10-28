@@ -426,8 +426,7 @@ class XArmBackend:
             goal = validate_tool(name, arguments, self.hand_config)
             if name in MOTION_TOOLS:
                 self._require_armed()
-                self.end_effector.require_ready()
-                state = self.end_effector.status()
+                state = self.end_effector.require_ready()
                 Trajectory(state['target_positions'], goal['positions'], self.hand_config, goal['duration_s'])
             return
         if name == 'xarm_gripper' and self.has_hand:

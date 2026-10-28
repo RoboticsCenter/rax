@@ -70,6 +70,18 @@ def test_frontend_validation_and_uncertain_failure_are_distinct(make_backend):
     assert hand.closed
 
 
+def test_hand_admission_uses_target_from_same_fresh_owner_snapshot(make_backend, monkeypatch):
+    backend, arm, hand, root = make_wuji(make_backend)
+    arming.write(root, True)
+    fresh = {**hand.status(), 'target_positions': [.4]*20}
+    monkeypatch.setattr(hand, 'require_ready', lambda: fresh)
+    # Simulate a parent cache predating preparation. The next move must use
+    # the owner's reference, not this missing/stale target.
+    monkeypatch.setattr(hand, 'status', lambda: {**fresh, 'target_positions': None})
+    result, _ = backend.call('wuji_move_joints', {'positions': [.5]*20})
+    assert result['reached'] and hand.moves == [[.5]*20]
+
+
 def test_each_device_is_stopped_even_when_the_other_stop_fails(make_backend):
     backend, arm, hand, root = make_wuji(make_backend)
     hand.fail_stop = True

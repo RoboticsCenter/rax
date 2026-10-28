@@ -12,9 +12,10 @@ from services.xarm import arming
 
 
 def child(config, root, path, events, block, entered, release):
+    events.cancel_join_thread()  # The parent does not drain the high-rate send trace on shutdown.
     class RecordingHand(FakeHand):
-        def send(self, q):
-            super().send(q)
+        def send(self, q, velocity=None):
+            super().send(q, velocity)
             events.put(('send', q))
             if block.is_set():
                 entered.set()
@@ -36,13 +37,19 @@ def until(check, timeout=3):
     raise AssertionError('timed out awaiting fake service')
 
 
+@pytest.fixture(params=['timed', 'feedback', 'scurve'])
+def motion_mode(request):
+    return request.param
+
+
 @pytest.fixture
-def service(tmp_path, monkeypatch):
+def service(tmp_path, monkeypatch, motion_mode):
     context = multiprocessing.get_context('fork')
     events = context.Queue()
     block, entered, release = context.Event(), context.Event(), context.Event()
     path = tmp_path/'hand.sock'
-    cfg = hand_config(parent_timeout_s=.3, max_scheduler_gap_s=.2, stop_timeout_s=.3)
+    cfg = hand_config(parent_timeout_s=.3, max_scheduler_gap_s=.2, stop_timeout_s=.3,
+                      motion_mode=motion_mode, command_hz=1000 if motion_mode == 'scurve' else 120)
     process = context.Process(target=child, args=(cfg, tmp_path, path, events, block, entered, release))
     process.start()
     stop_heartbeat = threading.Event()

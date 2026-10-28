@@ -18,6 +18,8 @@ from pathlib import Path
 from services.xarm import arming
 
 from .config import JOINT_NAMES, number, target, validate_config
+from .motion import FeedbackPath, SettlingWindow, smooth_minimum_duration
+from .scurve import SCurvePath, next_deadline, require_ruckig
 from .sdk import WujiDriver
 
 
@@ -34,10 +36,12 @@ class Trajectory:
             raise ValueError(f'hand move exceeds max_step_rad={cfg["max_step_rad"]}')
         minimum = max(.1, 1.875*distance/cfg['max_velocity_rad_s'],
                       math.sqrt(5.773503*distance/cfg['max_acceleration_rad_s2']))
+        if cfg['motion_mode'] == 'feedback':
+            minimum = max(minimum, smooth_minimum_duration(distance, cfg))
         if duration is not None:
             duration = number(duration, 'duration_s', .1, cfg['max_duration_s'])
             if duration < minimum-1e-9:
-                raise ValueError(f'duration_s must be at least {minimum:.3f} for the configured rate limits')
+                raise ValueError(f'duration_s must be at least {minimum:.3f} for the configured reference limits')
         self.duration = minimum if duration is None else duration
         if self.duration > cfg['max_duration_s']:
             raise ValueError('trajectory exceeds max_duration_s')
@@ -59,6 +63,11 @@ class Controller:
         self.results = OrderedDict()
         self.active = self.stopping = None
         self.target = None
+        self.command_velocity = [0.]*20
+        self.command_acceleration = [0.]*20
+        self.first_command_at = self.last_command_at = None
+        self.command_count = self.skipped_slots = 0
+        self.max_command_interval = 0.
         self.mode = 'disconnected'
         self.fault = None
         self.owns_control = False
@@ -128,13 +137,24 @@ class Controller:
 
     def _publish(self):
         sample = self.driver.snapshot()
+        path = (self.active.get('scurve') or self.active.get('feedback')) if self.active else None
         value = {**sample, 'mode': self.mode, 'fault': self.fault, 'target_positions': deepcopy(self.target),
+                 'command_velocity_rad_s': list(self.command_velocity), 'motion_mode': self.cfg['motion_mode'],
+                 'command_acceleration_rad_s2': (list(self.command_acceleration)
+                                                 if self.cfg['motion_mode'] == 'scurve' else None),
+                 'motion': path.status() if path else None,
+                 'command_timing': {'requested_hz': self.cfg['command_hz'], 'commands': self.command_count,
+                                    'observed_hz': ((self.command_count-1)/(self.last_command_at-self.first_command_at)
+                                                    if self.command_count > 1 and self.last_command_at > self.first_command_at else None),
+                                    'max_interval_s': self.max_command_interval, 'skipped_slots': self.skipped_slots},
                  'joint_names': list(JOINT_NAMES), 'profile_revision': self.cfg['profile_revision'],
                  'postures': sorted(self.cfg['postures']), 'owns_control': self.owns_control,
                  'action': self.active['id'] if self.active else None,
                  'limits': {k: deepcopy(self.cfg[k]) for k in ('lower_rad', 'upper_rad', 'max_velocity_rad_s',
-                            'max_acceleration_rad_s2', 'max_step_rad', 'max_tracking_error_rad')},
+                            'max_acceleration_rad_s2', 'max_jerk_rad_s3', 'max_step_rad', 'max_tracking_error_rad',
+                            'tolerance_rad', 'settle_s', 'settle_timeout_s', 'settle_position_range_rad')},
                  'control_parameters': {k: deepcopy(self.cfg[k]) for k in ('kp', 'kd', 'current_limit_a')},
+                 'diagnostics_policy': {k: self.cfg[k] for k in ('allow_encoder_warning', 'max_temperature_c')},
                  'stop': deepcopy(self.stopping)}
         with self.lock:
             self.cached, self.updated = value, self.clock()
@@ -162,6 +182,28 @@ class Controller:
         if streaming and self.clock()-started > self.cfg['max_scheduler_gap_s']:
             raise RuntimeError('native hand write exceeded the scheduling deadline')
 
+    def _send(self, epoch, *, seed=False):
+        def publish():
+            # Cover planning, feedback processing and scheduling, not just time
+            # spent inside the native send call itself.
+            if (not seed and self.mode in ('holding', 'executing', 'enabling') and self.last_command_at is not None
+                    and self.clock()-self.last_command_at > self.cfg['max_scheduler_gap_s']):
+                raise RuntimeError('hand command gap exceeded the scheduling deadline')
+            if self.cfg['motion_mode'] in ('feedback', 'scurve'):
+                self.driver.send(self.target, self.command_velocity)
+            else:
+                self.driver.send(self.target)
+            if seed:
+                return  # The one disabled seed precedes enable RPCs, not the periodic stream.
+            sent = self.clock()
+            if self.first_command_at is None:
+                self.first_command_at = sent
+            if self.last_command_at is not None:
+                self.max_command_interval = max(self.max_command_interval, sent-self.last_command_at)
+            self.last_command_at = sent
+            self.command_count += 1
+        self._write(publish, epoch)
+
     def _fail(self, reason):
         self.fault = str(reason)
         self._finish(self.active, 'fault', reason=self.fault, control_certain=False)
@@ -179,16 +221,31 @@ class Controller:
     def _start_stop(self, job):
         self.active = self.stopping = None
         state = self.driver.snapshot()
-        healthy_hold = (job['op'] == 'hold' and self.armed() and state['fresh'] and state['enabled']
+        healthy_hold = (job['op'] == 'hold' and self.fault is None and self.armed() and state['fresh'] and state['enabled']
                         and not state['faults'] and self.target is not None
                         and max(abs(a-b) for a, b in zip(self.target, state['positions']))
                         <= self.cfg['max_tracking_error_rad'])
         if healthy_hold:
-            self._write(lambda: self.driver.send(self.target), job['epoch'])
-            self.mode = 'holding'
-            self._finish(job, 'held', requested='hold', sdk_returned=True, confirmed=False,
-                         target_positions=list(self.target), note='stationary command; physical settling not confirmed')
-            return
+            moving = any(abs(x) > 1e-10 for x in [*self.command_velocity, *self.command_acceleration])
+            if self.cfg['motion_mode'] == 'scurve' and moving:
+                try:
+                    path = SCurvePath(self.target, self.target, self.cfg, velocity=self.command_velocity,
+                                      acceleration=self.command_acceleration, brake=True)
+                except Exception as exc:  # noqa: BLE001 -- native planning failure must still request emergency stop.
+                    job = {**job, 'hold_fallback_reason': str(exc)}
+                else:
+                    self.active = {**job, 'trajectory': path, 'scurve': path, 'braking': True,
+                                   'started': self.clock()}
+                    self.mode = 'executing'
+                    return
+            else:
+                self.command_velocity, self.command_acceleration = [0.]*20, [0.]*20
+                self._send(job['epoch'])
+                self.mode = 'holding'
+                self._finish(job, 'held', requested='hold', sdk_returned=True, confirmed=False,
+                             target_positions=list(self.target), note='stationary command; physical settling not confirmed')
+                return
+        self.command_velocity, self.command_acceleration = [0.]*20, [0.]*20
         behavior = 'disable' if job['op'] == 'disable' else 'emergency'
         self.mode = 'stopping'
         self.target = None
@@ -217,7 +274,8 @@ class Controller:
         if confirmed or self.clock() >= job['deadline']:
             self.mode = ('faulted' if self.fault else 'disabled') if confirmed else 'uncertain'
             self._finish(job, 'stopped' if confirmed else 'uncertain', requested=job['behavior'],
-                         sdk_returned=True, confirmed=bool(confirmed), control_certain=bool(confirmed))
+                         sdk_returned=True, confirmed=bool(confirmed), control_certain=bool(confirmed),
+                         **({'hold_fallback_reason': job['hold_fallback_reason']} if 'hold_fallback_reason' in job else {}))
             self.stopping = None
             self.owns_control = not confirmed
 
@@ -237,10 +295,26 @@ class Controller:
             names = state['diagnostics'].get('state_names', [])
             if len(names) != 20 or not all(n.lower() in ('ready', 'stopped', 'disabled') for n in names):
                 raise ValueError('all joints must be disabled/Ready before operator preparation')
+            if self.cfg['motion_mode'] == 'scurve':
+                require_ruckig()  # Refuse missing/incompatible planner before enabling.
+                if max(map(abs, state['velocity_rad_s'])) > self.cfg['stopped_velocity_rad_s']:
+                    raise ValueError('S-curve initialization requires a measured stationary hand')
             self.target = target(state['positions'], self.cfg)
+            self.command_velocity = [0.]*20
+            self.command_acceleration = [0.]*20
+            self.first_command_at = self.last_command_at = None
+            self.command_count = self.skipped_slots = 0
+            self.max_command_interval = 0.
             self.active, self.fault = job, None
             self._write(self.driver.apply_profile, job['epoch'])
-            self._write(lambda: self.driver.send(self.target), job['epoch'])
+            if self.cfg['motion_mode'] == 'scurve':
+                # Parameter RPCs may take time while the hand is disabled. Seed
+                # from a fresh measurement immediately before enabling.
+                state = self._admit(job['epoch'])
+                if max(map(abs, state['velocity_rad_s'])) > self.cfg['stopped_velocity_rad_s']:
+                    raise ValueError('hand moved during preparation')
+                self.target = target(state['positions'], self.cfg)
+            self._send(job['epoch'], seed=True)
             self._write(self.driver.enable, job['epoch'])
             self.mode = 'enabling'
             job['started'] = self.clock()
@@ -249,16 +323,78 @@ class Controller:
             raise RuntimeError('hand requires explicit operator preparation before motion')
         if max(abs(a-b) for a, b in zip(self.target, state['positions'])) > self.cfg['max_tracking_error_rad']:
             raise RuntimeError('unresolved tracking error before hand motion')
-        trajectory = Trajectory(self.target, job['args']['positions'], self.cfg, job['args'].get('duration_s'))
+        if self.cfg['motion_mode'] == 'scurve':
+            trajectory = SCurvePath(self.target, job['args']['positions'], self.cfg, job['args'].get('duration_s'),
+                                    velocity=self.command_velocity, acceleration=self.command_acceleration)
+        else:
+            trajectory = Trajectory(self.target, job['args']['positions'], self.cfg, job['args'].get('duration_s'))
         self.active = {**job, 'trajectory': trajectory, 'started': self.clock(), 'settled_since': None}
+        if self.cfg['motion_mode'] == 'feedback':
+            self.active['feedback'] = FeedbackPath(trajectory, self.cfg, self.active['started'])
+        elif self.cfg['motion_mode'] == 'scurve':
+            self.active['scurve'] = trajectory
+        if self.cfg['motion_mode'] in ('feedback', 'scurve'):
+            self.active['settler'] = SettlingWindow(trajectory.goal, self.cfg['tolerance_rad'],
+                                                  self.cfg['settle_s'], self.cfg['settle_position_range_rad'])
         self.mode = 'executing'
 
-    def tick(self):
+    def _advance_scurve(self, job, state, elapsed):
+        path = job['scurve']
+        self.target, self.command_velocity, self.command_acceleration = path.advance()
+        if job.get('braking'):
+            if path.complete:
+                job['completion'] = ('held', {'requested': 'hold', 'sdk_returned': True, 'confirmed': False,
+                                             'target_positions': list(self.target), 'braking_duration_s': path.duration,
+                                             'note': 'reference brake completed; physical settling not confirmed'})
+            elif elapsed > self.cfg['stop_timeout_s']:
+                raise RuntimeError('S-curve hold braking exceeded its stop deadline')
+            return
+        if max(map(abs, state['velocity_rad_s'])) > self.cfg['stopped_velocity_rad_s']:
+            job['settler'].rows.clear()
+            settled = False
+        else:
+            settled = path.complete and job['settler'].update(state['received_monotonic']['state'], state['positions'])
+        expired = elapsed > path.duration+self.cfg['settle_timeout_s']
+        if expired and not path.complete:
+            raise RuntimeError('S-curve reference missed its wall-time deadline; emergency stop required')
+        if settled or expired:
+            error = max(abs(a-b) for a, b in zip(path.goal, state['positions']))
+            result = {'reached': bool(settled), 'positions': state['positions'],
+                      'target_positions': list(path.goal), 'command_positions': list(self.target),
+                      'max_joint_error_rad': error, 'seconds': elapsed, 'motion_mode': 'scurve',
+                      'profile_revision': self.cfg['profile_revision'],
+                      'accepted_tolerance_rad': self.cfg['tolerance_rad'], 'trajectory_complete': path.complete,
+                      **path.status()}
+            if not settled:
+                result['reason'] = 'S-curve finished but measured joints did not settle within tolerance'
+            job['completion'] = ('reached' if settled else 'target_not_reached', result)
+
+    def _advance_feedback(self, job, state, elapsed):
+        path = job['feedback']
+        self.target, self.command_velocity = path.advance(self.clock(), state['positions'])
+        error = max(abs(a-b) for a, b in zip(path.path.goal, state['positions']))
+        settled = path.complete and job['settler'].update(state['received_monotonic']['state'], state['positions'])
+        if settled or elapsed > path.path.duration+self.cfg['settle_timeout_s']:
+            result = {'reached': bool(settled), 'positions': state['positions'],
+                      'target_positions': list(path.path.goal), 'command_positions': list(self.target),
+                      'max_joint_error_rad': error, 'seconds': elapsed,
+                      'profile_revision': self.cfg['profile_revision'], 'motion_mode': 'feedback',
+                      'accepted_tolerance_rad': self.cfg['tolerance_rad'],
+                      'trajectory_complete': path.complete, **path.status()}
+            if not settled:
+                result['reason'] = 'feedback motion did not reach stable tolerance within its bounded time budget'
+            self._finish(job, 'reached' if settled else 'target_not_reached', **result)
+            self.active, self.mode = None, 'holding'
+            self.command_velocity = [0.]*20
+
+    def tick(self, *, publish=True):
         now = self.clock()
+        previous = (self.mode, id(self.active), id(self.stopping), self.fault, self.epoch)
         try:
             with self.lock:
                 stop = self.stop_request
                 self.stop_request = None
+                tick_epoch = self.epoch
             if stop is not None:
                 self._start_stop(stop)
             state = self.driver.snapshot()
@@ -290,8 +426,13 @@ class Controller:
                     raise RuntimeError('enable not confirmed by all twenty joints')
             elif job and self.mode == 'executing':
                 elapsed = self.clock()-job['started']
-                self.target = job['trajectory'].sample(elapsed)
-                if elapsed >= job['trajectory'].duration:
+                if 'scurve' in job:
+                    self._advance_scurve(job, state, elapsed)
+                elif 'feedback' in job:
+                    self._advance_feedback(job, state, elapsed)
+                else:
+                    self.target = job['trajectory'].sample(elapsed)
+                if 'feedback' not in job and 'scurve' not in job and elapsed >= job['trajectory'].duration:
                     error = max(abs(a-b) for a, b in zip(self.target, state['positions']))
                     job['settled_since'] = (job['settled_since'] or self.clock()) if error <= self.cfg['tolerance_rad'] else None
                     if job['settled_since'] is not None and self.clock()-job['settled_since'] >= self.cfg['settle_s']:
@@ -308,12 +449,23 @@ class Controller:
                 state = self._admit(self.epoch)
                 if max(abs(a-b) for a, b in zip(self.target, state['positions'])) > self.cfg['max_tracking_error_rad']:
                     raise RuntimeError('hand tracking error exceeded the configured bound')
-                self._write(lambda: self.driver.send(self.target), self.epoch)
+                self._send(tick_epoch)
+                with self.lock:
+                    # Do not report success until the final write returned, and
+                    # never replace a priority cancellation with a late success.
+                    if self.active and 'completion' in self.active:
+                        if self.active['epoch'] != self.epoch:
+                            raise Cancelled('stop arrived before command completion')
+                        outcome, result = self.active['completion']
+                        self._finish(self.active, outcome, **result)
+                        self.active, self.mode = None, 'holding'
         except Exception as exc:
             self._fail(exc)
         finally:
             self.previous_tick = self.clock()
-            self._publish()
+            current = (self.mode, id(self.active), id(self.stopping), self.fault, self.epoch)
+            if publish or previous != current or self.clock()-self.updated >= .01:
+                self._publish()
 
     def run(self, stop):
         try:
@@ -323,10 +475,18 @@ class Controller:
             except Exception as exc:
                 self.fault = f'connection failed: {exc}'
             self._publish()
+            due = self.clock()
+            period = 1/self.cfg['command_hz']
             while not stop.is_set():
-                start = self.clock()
-                self.tick()
-                stop.wait(max(0., 1/self.cfg['command_hz']-(self.clock()-start)))
+                self.tick(publish=False)
+                due, skipped = next_deadline(due, self.clock(), period)
+                self.skipped_slots += skipped
+                while not stop.is_set():
+                    remaining = due-self.clock()
+                    if remaining <= 0:
+                        break
+                    if remaining > .0002:
+                        stop.wait(remaining-.0002)
         finally:
             try:
                 if self.owns_control:

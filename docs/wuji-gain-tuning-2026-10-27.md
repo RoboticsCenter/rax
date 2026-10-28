@@ -1,5 +1,10 @@
 # Wuji home-return gain trials — 2026-10-27
 
+Later evidence: the [expanded firmware-2.13.1 parameter study](wuji-parameter-sweep-2026-10-27.md)
+found substantially better repeated thumb-home tracking with higher stiffness
+and motion feed-forward, then stopped coordinated testing on a ring S1 encoder
+warning. The measurements below describe the earlier, narrower gain trials.
+
 The operator requested impedance tuning with repeated home returns. The initial
 five gain combinations failed to reach whole-hand home. After the operator
 confirmed the thumb was clear, seven additional isolated thumb S2 trials showed
@@ -7,6 +12,24 @@ that **lower damping improves some moves, but no tested profile provides reliabl
 bidirectional returns to the saved home**. At kp 4.0, kd 0.05, thumb S2 reached
 its home target twice from the positive side with about 0.0284 rad (1.63°) residual
 error, then stalled on the negative-side probe. The sweep was stopped.
+
+A subsequent controlled comparison at kp 4.0 and kd 0.05/0.06/0.075 used one
+shared posture and the same positive-side target sequence. **All three failed
+their first thumb-home return at 0.06049–0.06072 rad error.** The other thumb
+joints had been repositioned since the earlier sweep, so this is a separate
+comparison, not a reversal of the earlier successful measurements. No profile
+was promoted; the original gains were restored again with motors disabled.
+
+The later [native SDK isolation tests](wuji-sdk-isolation-2026-10-27.md) reproduced
+the same approximately 0.061 rad error without MCP or any RAX control modules,
+at both 120/200 Hz and with quintic/linear interpolation. The tested configuration
+and SDK/firmware/actuator behavior remain candidates; a RAX wrapper is not needed
+to reproduce the symptom.
+
+Subsequent [Hand 2 controls research](wuji-hand2-controls-research-2026-10-27.md)
+found relevant friction/feedforward implementations and an apparent current-law
+scale in the saved native traces. All velocity peaks below are SDK-reported;
+they have not been independently verified as physical output speeds.
 
 The hand was confirmed disabled after every motion trial, with the xArm stopped
 at its original pose. The original kp 1.5, kd 0.1, 0.5 A profile was restored and
@@ -97,9 +120,10 @@ return from home +0.08 rad. The subsequent home −0.08 rad target was −0.0154
 thumb S2 stalled near +0.06247 rad with approximately −0.497 A measured current.
 RAX disabled the hand on diagnostic code 7. It did not accept that move as reached.
 
-Lower damping also increased brief measured thumb-speed peaks: 1.91 rad/s in the
-four-call success and 2.09 rad/s in the final trial. The nominal 0.5 rad/s bound
-limits the commanded trajectory, not these measured breakaway motions. Successful
+Lower damping also increased brief SDK-reported thumb-velocity peaks: 1.91 rad/s
+in the four-call success and 2.09 rad/s in the final trial. The nominal 0.5 rad/s
+bound limits the commanded trajectory; these telemetry peaks require validation
+against physical output motion. Successful
 one-second holds were steady (maximum observed joint peak-to-peak motion below
 0.00020 rad), but that does not qualify transient speed or other starting poses.
 Across the continuation, peak sampled current was 0.533 A and maximum temperature
@@ -113,6 +137,79 @@ Read-only firmware inspection found thumb S2 `soft_limit_enabled=0`; the zero
 clamps. Position/current/velocity limit flags were inactive when inspected with
 the hand disabled. This does not establish their state during motion. No origin,
 firmware, software limits or fault-clear parameters were changed.
+
+## Controlled positive-side comparison
+
+The operator then authorized the proposed repeatability test. Each candidate
+kept thumb S2 kp at 4.0 and selected kd 0.05, 0.06 or 0.075. All twenty current
+caps remained 0.5 A. The intended sequence was five repetitions of the same two
+targets: thumb S2 at home +0.12 rad (0.184535 rad), then at saved home
+(0.064535 rad). Each trajectory took two seconds, with the unchanged 0.040 rad
+tolerance and three-second settling timeout. Each candidate stopped on its
+first unsuccessful motion; retries were not forced through a failure.
+
+The other nineteen joints used one shared target vector captured at the start
+of this comparison, at kp 1.5 and kd 0.1. This posture differed substantially
+from the previous sweep: for example, thumb S1/S3 were approximately
+−0.203/−0.384 rad rather than +0.175/+0.254 rad. It was retained rather than
+commanding a whole-hand reposition. Non-probed starting angles between candidates
+varied by at most 0.00345 rad. The saved-home approaches began at measured thumb
+S2 angles of 0.15710, 0.15600 and 0.15701 rad—a spread of only 0.00110 rad.
+
+| Thumb kd | Outward move | Home attempts passed | Home error | Peak speed over trial | Peak speed during home approach |
+| ---: | --- | ---: | ---: | ---: | ---: |
+| 0.050 | Passed | 0/1 | 0.060495 rad / 3.466° | 1.969 rad/s | 0.300 rad/s |
+| 0.060 | Passed | 0/1 | 0.060594 rad / 3.472° | 1.728 rad/s | 1.728 rad/s |
+| 0.075 | Passed | 0/1 | 0.060725 rad / 3.479° | 0.963 rad/s | 0.963 rad/s |
+
+The remaining four repetitions for each candidate were unattempted, so these
+are three failed first-return tests, not fifteen executed returns or an estimate
+of long-run success probability. All calls used `wuji_move_joints` to isolate the
+thumb-home angle; whole-hand `wuji_pose(name="home")` was not exercised here.
+
+All three stopped moving near 0.125 rad against the 0.064535 rad target. During
+the final second of enabled holding, thumb S2 position varied by just
+0.000014–0.000018 rad, while mean measured current was −0.478, −0.481 and
+−0.482 A respectively. This is near the 0.5 A cap, but the traces alone do not
+prove that a firmware current-limit flag was active. Every candidate failed
+settling; **none produced a firmware diagnostic warning in this comparison**.
+Peak measured current was 0.508 A and maximum reported temperature was 55.95 °C.
+
+The experiment added an immediate sampled-speed stop above 2.0 rad/s and kept
+the previous stop above 1.0 rad/s sustained for over 0.12 seconds. Neither guard
+triggered. These are experiment stop thresholds, not qualified operating speed
+limits. Speeds were sampled through the independent status observer, so a shorter
+peak could be missed. The first outward move began at a different thumb angle
+from the later candidates; whole-trial peaks therefore do not isolate a damping
+effect. Home-only speed peaks are shown separately and were not monotonic in kd.
+
+The matched home approaches establish that this damping range did not materially
+improve final error in the tested posture. They do not explain why the earlier
+posture permitted successful returns. Posture-dependent load/friction remains a
+hypothesis, not a diagnosed fault. Expanding the kd grid has little support from
+these results; the persistent near-cap, stationary residual needs diagnosis.
+
+Each trial confirmed disabled hand feedback and xArm state 4. The original
+kp 1.5, kd 0.1, 0.5 A profile was restored and read back for all twenty joints;
+the final arm readback had no error or warning and the same recorded pose.
+No production controller or configuration changed. Evidence is separate from
+the earlier sweep:
+
+```text
+.local-runtime/wuji-repeatability-20261027/
+  repeatability.py
+  shared-baseline.json
+  comparison.json
+  kp4-kd005/
+  kp4-kd006/
+  kp4-kd0075/
+  final-restored-profile.json
+```
+
+Each candidate directory contains its exact configuration, full MCP responses,
+parameter readback, feedback trace, measurements and stop confirmation. Error
+figures above use the controller's failed-settling snapshot; a later status
+snapshot can already reflect relaxation after disable.
 
 ## Interpretation and next step
 

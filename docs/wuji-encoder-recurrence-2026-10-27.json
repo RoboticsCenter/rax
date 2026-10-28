@@ -1,0 +1,64 @@
+{
+  "date": "2026-10-27",
+  "device": {
+    "model": "Wuji Hand 2",
+    "serial": "WH2KA01260823017",
+    "firmware": "2.13.1",
+    "sdk": "2026.10.12"
+  },
+  "trial": "flex04-ring-stiff",
+  "preceding_trial": "ring-s1-gentle-check passed",
+  "joint": {
+    "flat_index": 14,
+    "nid": 18,
+    "label": "ring_S3"
+  },
+  "phase": "center-from-negative-1",
+  "diagnostic": {
+    "code": 3,
+    "name": "Enc1BitRate",
+    "severity": "Warning",
+    "clear_policy": "AutoClear",
+    "is_test": false,
+    "desc": "Encoder 1 data-quality flag rate is high",
+    "cause": "A high proportion of frames from Encoder 1 have the chip's data-quality warning flag set.",
+    "resolution": "Inspect Encoder 1 and verify that its magnet is correctly positioned, seated, and aligned. The warning clears automatically when signal quality recovers."
+  },
+  "profile": {
+    "kp": 15.0,
+    "kd": 0.15000000596046448,
+    "current_limit_a": 1.5
+  },
+  "at_warning": {
+    "position_rad": 0.36777567863464355,
+    "final_waypoint_target_rad": 0.35708868503570557,
+    "reported_velocity_rad_s": -0.1043577566742897,
+    "current": 0.040190018713474274,
+    "temperature": 53.52082824707031,
+    "voltage": 12.393869400024414,
+    "current_limit": false,
+    "comm_response_rate": 100,
+    "comm_timeout_total": 0,
+    "native_sequence": 1624322,
+    "native_timestamp_us": 1793163100263816
+  },
+  "automatic_stop": {
+    "all20_disabled_confirmed": true,
+    "guard_to_disabled_feedback_s": 0.028775489001418464,
+    "warning_present_at_first_disabled_snapshot": true
+  },
+  "followup": {
+    "clean_at_inspection_seconds_after_warning": 48.0977532830002,
+    "exact_clearance_time_measured": false,
+    "all20_disabled": true,
+    "original_profile_restored_and_verified": true,
+    "disabled_monitor_seconds": 15,
+    "callback_counts": {
+      "state": 15152,
+      "diag": 15152
+    },
+    "observed_codes": [],
+    "manual_fault_clears": 0
+  },
+  "interpretation": "Second observed Enc1BitRate event during coordinated ring flexion, on S3 rather than prior S1. Root cause unproven; cannot treat warning as isolated. Comparison stopped before remaining shortlist trials."
+}

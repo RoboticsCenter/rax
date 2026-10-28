@@ -157,9 +157,14 @@ class WujiClient:
         return value
 
     def require_ready(self):
-        state = self.status()
+        # The supervisor polls at 20 Hz. Immediately after a completed move its
+        # cache can still say "executing", or miss a more recent stop/fault.
+        # Admission needs the owner's current snapshot; this read never enables
+        # the hand and the owner independently validates every submitted move.
+        state = request(self.path, 'status')
         if not state.get('fresh') or not state.get('enabled') or state.get('fault') or state.get('mode') != 'holding':
             raise RuntimeError('Wuji hand is not prepared and holding with fresh fault-free feedback; ask the operator')
+        return state
 
     def move(self, positions, duration_s=None):
         result = operation(self.root, 'move', {'positions': positions, 'duration_s': duration_s},

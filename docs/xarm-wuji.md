@@ -13,12 +13,16 @@ self-check is separate historical evidence. The research and design rationale ar
 The [October 27 backend verification](xarm-wuji-live-mcp-2026-10-27.md) exercises
 all eleven tools with the calibrated cameras. xArm checks passed after corrections;
 the hand's nonzero positioning trial failed its existing settling tolerance.
+The [October 28 v13 qualification](wuji-rax-qualification-2026-10-28.md) now
+passes five saved home/fist commands and disarm during actual finger motion,
+with both cameras streaming. The operator reported smooth, acceptable motion.
+See the [cube task handoff](xarm-wuji-cube-handoff-2026-10-28.md) for the next run.
 
 ## Environment and configuration
 
 Use a Linux Python environment containing the existing xArm/RealSense dependencies
 (`xarm-python-sdk`, `pyrealsense2`, `numpy`, `scipy`, `opencv-python` or its headless
-variant, `pyyaml`, `jinja2`, `pillow`). Install the pinned hand SDK into that same
+variant, `pyyaml`, `jinja2`, `pillow`). Install the pinned hand SDK and S-curve planner into that same
 environment:
 
 ```bash
@@ -29,6 +33,7 @@ export RAX_PYTHON=/path/to/robot-env/bin/python
 Python 3.12 with `wuji-sdk==2026.10.12` matches the successful local hand deployment.
 The backend checks the SDK version at connection. It does not import or connect
 the SDK when generating workspaces or validating configuration.
+S-curve preparation also checks `ruckig==0.19.4` before any motor write.
 
 On this host, `/home/jerry/rax/.venv/bin/python` is prepared with that SDK,
 `xarm-python-sdk==1.18.4`, `pyrealsense2==2.59.1.11053` and the test dependencies.
@@ -61,24 +66,81 @@ configuration location and review it before running:
   `calibration/xarm-wuji/`; the G2 transforms are not used. Follow the
   [bring-up checklist](xarm-wuji-bringup-checklist.md) and installed
   [camera calibration report](../calibration/xarm-wuji/README.md).
-- It selects right hand `WH2KA01260823017` at `192.168.1.111:7447`. Connection verifies
+- It selects right hand `WH2KA01260823017` at `192.168.1.111:50001`. Connection verifies
   serial and side even when the endpoint is supplied. Set `address` to null to
-  discover by serial. The port matches the recorded firmware 2.6.0 deployment;
-  do not replace it with a newer SDK example's default without checking the device.
+  discover by serial. The endpoint was verified after the
+  [firmware 2.13.1 upgrade](wuji-firmware-upgrade-2026-10-27.md); earlier firmware
+  2.6.0 sessions used port 7447. Generate new sessions from the current config.
 - Its joint bounds follow the published Hand 2 SDK table. They are a commissioning
   profile, not a measured SDK-to-model mapping or self-collision model. Check actual
   joint directions, origin, mounting orientation, TCP, payload and swept clearance.
-- The example applies 0.5 A, kp 1.5, kd 0.1 only on explicit `prepare`. These values
-  need real-world qualification. Current is not fingertip force. Gains/current
+- The example selects the [v13 S-curve profile](wuji-scurve-2026-10-28.md):
+  Kp 8/Kd 0.15 and 1.5 A caps on all twenty joints, with 1 kHz position/velocity
+  commands from local Ruckig trajectories. Reference velocity, acceleration and
+  jerk limits are 0.6 rad/s, 3 rad/s² and 2 rad/s³. The operator approved this pace
+  and gentler starts/stops in the standalone hand test. The RAX integration is
+  tested with simulated hardware and now qualified on the saved home/fist paths
+  through live RAX. Five commands passed with a worst endpoint error of
+  0.038747 rad. Empty-hand qualification does not establish a cube grasp.
+  The example explicitly permits only SDK-classified `0x0003` / `Enc1BitRate` /
+  `Warning` / `AutoClear`, retaining those events in status. This carries over the
+  standalone operator setting; other configurations stop on all nonzero codes by
+  default. The encoder issue remains unresolved. See the linked integration note.
+  The previous
+  [v12 profile](wuji-feedback-motion-2026-10-28.md) used Kp 6/Kd 0.15 on the
+  thumb and Kp 5/Kd 0.15 on the other sixteen joints, with 1.5 A caps throughout.
+  Feedback-paced trajectories allow stable 0.060 rad endpoint error and up to
+  eight extra seconds. Reference speed/acceleration/jerk limits are
+  0.12 rad/s, 0.2 rad/s² and 0.8 rad/s³. The per-command displacement limit is
+  2.1 rad, enabling full continuous moves on reviewed paths.
+  Five small-motion commands and a full arbitrary-pose → fist transition passed
+  with these gains; fist error was 0.059642 rad on thumb S2. Softer gains reduced
+  measured burst counts in the small-motion comparison, but the operator still
+  observed jerkiness on the continuous large move. Smoothness remains unresolved.
+  The hand ended disabled; passive retention of the fist is not claimed.
+  The preceding [v9 test](wuji-ring-damping-2026-10-28.md) passed one broad
+  random-home cycle and stopped the next initialization on pinky S2 error
+  of 0.054443 rad. The new tolerance admitted that same target at 0.052530 rad;
+  it did not eliminate the static offset.
+  The previous [v7 profile](wuji-per-joint-profile-2026-10-27.md), with the thumb
+  at 8/0.15, passed all nine near-home whole-hand commands;
+  worst error was 0.02223 rad. Measured speed bursts remain, so smoothness is
+  still unresolved. The subsequent
+  [broad random-pose test](wuji-random-home-2026-10-27.md) failed during its first
+  initialization on thumb S2 (0.042127 rad error); no random-home cycle completed.
+  The hand was disabled away from home and v7 was retained. The preceding
+  [whole-hand test](wuji-uniform-profile-2026-10-27.md) at Kd 0.15 passed eleven commands,
+  including a staged home return and two short repeats, but the operator reported
+  jerky motion. Increasing Kd to 0.20 modestly reduced measured burst counts in
+  two comparisons; peak-speed ranges overlapped. Smoothness remains unresolved.
+  RAX applies profiles only on explicit `prepare`. The earlier profiles were also
+  read back on disabled hardware. Current is not fingertip force. Gains/current
   limits are read back for every joint before enabling; partial failure refuses
   preparation and requests stop. It does not silently restore unknown old settings.
   The [October 27 gain trials](wuji-gain-tuning-2026-10-27.md) found that lower
   thumb damping helped some moves but did not resolve thumb S2 stalling or qualify
-  repeatable home. No tuned gains were promoted.
+  repeatable home. The later [vendor-profile test](wuji-vendor-profile-test-2026-10-27.md)
+  on firmware 2.13.1 also failed thumb-home settling at Kp 5/Kd 0.1/1.5 A.
+  The [expanded parameter study](wuji-parameter-sweep-2026-10-27.md) subsequently
+  improved repeated thumb-home error to 0.00864–0.00984 rad at Kp 15/Kd 0.15,
+  and all twenty joints passed isolated local motions. Coordinated tests stopped
+  on a ring S1 encoder-quality warning, which auto-cleared while disabled.
+  A [guarded resumption](wuji-shortlist-validation-2026-10-27.md) produced the same
+  warning on ring S3 and stopped that comparison. The later moderate-gain ring
+  sweep completed 38 returns without detected repeated oscillation or encoder
+  warnings. Its earlier ring-only selection was superseded by the uniform
+  whole-hand profile; the encoder warning's root cause remains unresolved.
+  The [selected-profile home retest](wuji-home-retest-2026-10-27.md) stopped at
+  an intermediate pose with thumb/pinky settling errors up to 0.045738 rad
+  against the 0.040 rad tolerance, without an encoder event or oscillation stop.
+  It also exposed a likely cached-mode race between consecutive MCP moves.
 - `postures.home` contains the twenty measured angles selected by the operator
-  on October 27, under profile `right-hand2-home-20261027-v2`. It is a saved joint
-  posture; returns from task poses still need qualification. There is no configured
-  "open" or "grasp" posture. Change `profile_revision` when changing limits,
+  on October 27, originally under profile `right-hand2-home-20261027-v2`. The
+  current `right-hand2-scurve-20261028-v13` retains those same
+  angles and the `fist` posture with the thumb outside the curled fingers.
+  These are saved joint postures; returns from other task poses still need path
+  qualification. There is no configured "open" or force-controlled "grasp"
+  posture. Change `profile_revision` when changing limits,
   gains, origin conventions or postures.
 - The optional `lock_paths` entry coordinates with the local teleop checkout.
   Remove or update it on another host. Parent directories must exist. Also stop
@@ -161,7 +223,7 @@ and parent liveness while the agent is thinking or waiting for an operator.
 | `wuji_status` | none | Measured/target positions, rad/s velocities, effort in A, diagnostics, independent stream ages, profile, limits, posture names, mode and current action. |
 | `wuji_move_joints` | `positions`: 20 finite radians; optional `duration_s` | Smooth bounded move and measured settling. Holds the final target afterward. |
 | `wuji_pose` | `name`; optional `duration_s` | Same motion path using an operator-configured posture. Unknown names refuse before dispatch. |
-| `wuji_hold` | none | Retain the current bounded commanded posture when dispatched and healthy. Falls back to emergency stop when disarmed/unreliable. |
+| `wuji_hold` | none | Retain a stationary target; brake a moving S-curve to a bounded rest target. Falls back to emergency stop when disarmed/unreliable or bounded braking is unavailable. |
 | `xarm_hold` | none | Independently request arm hold and hand emergency stop; report both outcomes. |
 
 Joint order is thumb S1–S4, index S1–S4, middle S1–S4, ring S1–S4, pinky S1–S4.
@@ -180,7 +242,7 @@ not a synchronized arm/hand trajectory.
 The saved hand home is requested through MCP after operator arming and preparation:
 
 ```python
-ctx.value('wuji_pose', name='home', duration_s=2.0)
+ctx.value('wuji_pose', name='home')
 ```
 
 New sessions created from `examples/xarm-wuji.json` include this posture; existing
@@ -189,10 +251,32 @@ session configurations are snapshots and do not reload edits to the example.
 measured posture, so it does not automatically move to `home`.
 
 The home capture read the disabled hand without enabling motors. Its angles differ
-from the earlier tested `test_start` posture by up to 1.00035 rad. Saving the new
-target does not qualify the return path: the existing 0.35 rad per-call step limit
-still applies, and larger returns require reviewed intermediate targets. The
-previous settling failure remains unresolved.
+from the earlier tested `test_start` posture by up to 1.00035 rad. Saving a target
+does not qualify its return path. The current example admits up to 2.1 rad per
+joint per call and chooses a duration that respects the reference limits; larger
+commands are rejected. Calls follow one straight path in joint space, without
+automatic collision planning or intermediate endpoint stops.
+
+In the selected `scurve` mode, Ruckig produces jerk-limited position/velocity
+references, initialized from the measured stationary hand during preparation.
+Consecutive commands preserve the commanded position, velocity and acceleration.
+At rest, movements are phase synchronized; endpoints have zero velocity and
+acceleration. Each published tick advances one nominal millisecond, and missed
+slots are skipped without catch-up bursts. Python/Linux scheduling is best effort:
+inspect `command_timing` in status for observed rate and maximum gap. The selected
+50 ms command-gap guard stops on long stalls. Completion also requires fresh,
+stable measured positions within tolerance and low measured velocity. See the
+[S-curve integration note](wuji-scurve-2026-10-28.md) for settings and validation.
+
+In the older `feedback` mode, lag smoothly reduces path speed, and matching position and
+velocity commands are sent with zero current feedforward. Completion requires
+fresh positions inside tolerance with low motion over the full settling window.
+The nominal duration plus `settle_timeout_s` bounds the entire call. Status exposes
+path progress and speed scale, and results preserve the requested target and
+measured error even when catching up times out. Persistent static error is not
+guaranteed to disappear. The historical `timed` mode remains the default for
+configurations that do not select a motion mode. See the
+[implementation and hardware report](wuji-feedback-motion-2026-10-28.md).
 
 During your tool tests, check invalid shapes/limits, disabled and disarmed admission,
 small single-joint moves in clear space, posture execution, holding between calls,
@@ -225,7 +309,9 @@ requires new complete feedback, disabled/stopped joint states and low measured
 velocity. On the tested firmware 2.6.0 hand, the SDK emergency-stop call left joints
 Enabled. The RAX emergency path therefore requests SDK emergency stop followed by
 explicit disable, including an attempt to disable if the emergency RPC raises.
-A normal `wuji_hold` reports its stationary command with
+A healthy S-curve hold brakes the current reference to a nearby rest target within
+the configured joint and derivative limits. If bounded braking is unavailable,
+it requests emergency stop. A normal `wuji_hold` reports its rest target with
 `confirmed: false`; it does not claim that the hand has physically settled.
 If stop delivery or confirmation fails, the service reports uncertainty and does
 not resume. A late native SDK return cannot resume an old trajectory.
@@ -244,7 +330,8 @@ the device-level lease prevents a second service from acquiring the same hand.
 
 ## Validation and recording
 
-Run the hardware-free suite in an environment with pytest and the base dependencies:
+Run the hardware-free suite in an environment with pytest, the base dependencies,
+and the pinned local planner from `requirements-wuji.txt`:
 
 ```bash
 "$RAX_PYTHON" -m pytest -q

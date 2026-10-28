@@ -14,6 +14,10 @@ DEFAULTS = {
     'max_step_rad': .35, 'max_tracking_error_rad': .35,
     'tolerance_rad': .04, 'settle_s': .2, 'settle_timeout_s': 3.,
     'max_duration_s': 60., 'stop_timeout_s': 2., 'stopped_velocity_rad_s': .05,
+    'motion_mode': 'timed', 'max_jerk_rad_s3': .8,
+    'feedback_transition_s': 1., 'feedback_slow_error_rad': .06,
+    'feedback_pause_error_rad': .10, 'settle_position_range_rad': .004,
+    'allow_encoder_warning': False, 'max_temperature_c': 65.,
     'postures': {}, 'lock_paths': [],
 }
 REQUIRED = {'serial', 'profile_revision', 'lower_rad', 'upper_rad', 'current_limit_a', 'kp', 'kd'}
@@ -49,6 +53,10 @@ def validate_config(value):
         raise ValueError('Wuji serial is required and must be an exact device serial')
     if cfg['handedness'] not in ('left', 'right'):
         raise ValueError('handedness must be left or right')
+    if cfg['motion_mode'] not in ('timed', 'feedback', 'scurve'):
+        raise ValueError('motion_mode must be timed, feedback or scurve')
+    if type(cfg['allow_encoder_warning']) is not bool:
+        raise ValueError('allow_encoder_warning must be a boolean')
     if not isinstance(cfg['profile_revision'], str) or not re.fullmatch(r'[A-Za-z0-9_.-]{1,80}', cfg['profile_revision']):
         raise ValueError('profile_revision must identify the operator control profile')
     if cfg['address'] is not None:
@@ -61,16 +69,25 @@ def validate_config(value):
         except (AttributeError, ValueError):
             raise ValueError('address must be an IPv4 address and port, e.g. 192.168.1.111:7447') from None
     bounds = {
-        'command_hz': (20, 250), 'max_feedback_age_s': (.02, 1), 'max_scheduler_gap_s': (.02, .5),
+        'command_hz': (20, 1000), 'max_feedback_age_s': (.02, 1), 'max_scheduler_gap_s': (.02, .5),
         'parent_timeout_s': (.3, 5), 'max_velocity_rad_s': (.01, 3), 'max_acceleration_rad_s2': (.01, 25),
         'max_step_rad': (.001, math.pi), 'max_tracking_error_rad': (.01, 1),
         'tolerance_rad': (.001, .2), 'settle_s': (.01, 2), 'settle_timeout_s': (.1, 10),
         'max_duration_s': (.1, 60), 'stop_timeout_s': (.1, 5), 'stopped_velocity_rad_s': (.001, .2),
+        'max_jerk_rad_s3': (.01, 100), 'feedback_transition_s': (.2, 3),
+        'feedback_slow_error_rad': (.001, .3), 'feedback_pause_error_rad': (.002, .34),
+        'settle_position_range_rad': (.0001, .05),
+        'max_temperature_c': (20, 90),
     }
     for key, (lo, hi) in bounds.items():
         cfg[key] = number(cfg[key], key, lo, hi)
     if cfg['max_scheduler_gap_s'] <= 1 / cfg['command_hz']:
         raise ValueError('max_scheduler_gap_s must exceed the command period')
+    if (cfg['motion_mode'] == 'feedback'
+            and not cfg['feedback_slow_error_rad'] < cfg['feedback_pause_error_rad'] < cfg['max_tracking_error_rad']):
+        raise ValueError('feedback slow/pause errors must increase and stay below max_tracking_error_rad')
+    if cfg['motion_mode'] in ('feedback', 'scurve') and cfg['settle_position_range_rad'] > cfg['tolerance_rad']:
+        raise ValueError('settle_position_range_rad must not exceed tolerance_rad')
     for key in ('lower_rad', 'upper_rad'):
         cfg[key] = vector(cfg[key], key)
     if any(lo >= hi for lo, hi in zip(cfg['lower_rad'], cfg['upper_rad'])):
@@ -127,11 +144,15 @@ def tools(cfg):
             'type': 'object', 'properties': properties or {}, 'required': list(required),
             'additionalProperties': False}}
     duration = {'type': 'number', 'minimum': .1, 'maximum': cfg['max_duration_s'],
-                'description': 'Optional duration; rejected if too short for the configured speed/acceleration.'}
+                'description': 'Optional nominal duration; rejected if too short for configured reference limits. '
+                               'Measured settling may add time, bounded by settle_timeout_s. '
+                               'S-curve durations are rounded up to a control tick.'}
     return [
         tool('wuji_status', 'Right/left Wuji Hand 2 measured and commanded joints (rad), effort (A), '
              'freshness, faults, current action, limits and commissioned postures. Does not enable or move.'),
         tool('wuji_move_joints', 'Move all 20 joints with bounded interpolation and wait for measured settling. '
+             'Configured S-curve mode limits jerk and publishes matching position/velocity references. '
+             'Configured feedback mode slows progress when measured joints lag and requires stable final positions. '
              'Order: thumb S1..S4, index S1..S4, middle S1..S4, ring S1..S4, pinky S1..S4. '
              'Absolute radians. Requires operator preparation and arming. Holds target after completion; '
              'convergence does not prove a grasp. No collision planning.',
@@ -141,6 +162,8 @@ def tools(cfg):
              f'Available names: {", ".join(sorted(cfg["postures"])) or "none commissioned"}.',
              {'name': {'type': 'string'}, 'duration_s': duration}, ['name']),
         tool('wuji_hold', 'Retain the current bounded commanded posture when dispatched. '
+             'During S-curve motion, brake smoothly to a nearby bounded resting target; '
+             'if bounded braking is unavailable, request emergency stop. '
              'MCP calls are serialized: this call waits for an active MCP call; operator stop/disarm '
              'is required to interrupt it. '
              'Disarmed, stale or faulty control requests emergency stop instead. Always allowed. '

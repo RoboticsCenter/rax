@@ -3,6 +3,8 @@ import threading
 import time
 from copy import deepcopy
 
+import pytest
+
 from wuji_fakes import hand_config
 
 from services.wuji.client import WujiClient, operation
@@ -62,6 +64,45 @@ def test_parent_snapshot_ages_both_feedback_streams():
     assert not status['fresh'] and not status['enabled']
     assert status['age_s']['diagnostics'] >= .3
     assert value.cached['fresh']  # Reading aged data must not mutate the source snapshot.
+
+
+def test_next_move_admission_reads_owner_after_previous_move_completed(monkeypatch):
+    value = client()
+    value.cached = {'fresh': True, 'enabled': True, 'mode': 'executing'}
+    calls = []
+
+    def request(path, op):
+        calls.append((path, op))
+        return {'fresh': True, 'enabled': True, 'mode': 'holding', 'fault': None}
+
+    monkeypatch.setattr('services.wuji.client.request', request)
+    assert value.require_ready()['mode'] == 'holding'
+    assert calls == [(value.path, 'status')]
+    assert value.cached['mode'] == 'executing'  # Do not race the supervisor's cache writes.
+
+
+@pytest.mark.parametrize('changed', [
+    {'mode': 'executing'}, {'mode': 'disabled'}, {'fresh': False},
+    {'enabled': False}, {'fault': 'tracking error'},
+])
+def test_admission_does_not_trust_healthy_parent_cache(monkeypatch, changed):
+    value = client()
+    value.cached = {'fresh': True, 'enabled': True, 'mode': 'holding', 'fault': None}
+    monkeypatch.setattr('services.wuji.client.request', lambda *a: {**value.cached, **changed})
+    with pytest.raises(RuntimeError, match='not prepared and holding'):
+        value.require_ready()
+
+
+def test_admission_refuses_unreachable_owner_despite_healthy_cache(monkeypatch):
+    value = client()
+    value.cached = {'fresh': True, 'enabled': True, 'mode': 'holding', 'fault': None}
+
+    def unavailable(*args):
+        raise ConnectionError('owner unavailable')
+
+    monkeypatch.setattr('services.wuji.client.request', unavailable)
+    with pytest.raises(ConnectionError, match='owner unavailable'):
+        value.require_ready()
 
 
 def test_delayed_result_is_polled_without_resending_the_hardware_operation(monkeypatch):

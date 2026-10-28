@@ -74,15 +74,103 @@ class Hand:
         self.disconnected = True
 
 
-def driver_setup():
+def driver_setup(**options):
     hand, clock, connection = Hand(), Clock(), {}
     def connect(**kwargs):
         connection.update(kwargs)
         return hand
     sdk = NS(WujiHand2=Hand, SdkManager=NS(instance=lambda: NS(connect=connect)), ConnectOptions=lambda **kw: kw)
     lease = NS(close=lambda: None)
-    driver = WujiDriver(hand_config(), sdk=sdk, clock=clock, lease_factory=lambda *a: lease)
+    driver = WujiDriver(hand_config(**options), sdk=sdk, clock=clock, lease_factory=lambda *a: lease)
     return driver, hand, clock, connection
+
+
+@pytest.mark.parametrize('allowed,detail,expected', [
+    (True, {'name': 'Enc1BitRate', 'severity': 'Warning', 'clear_policy': 'AutoClear'}, True),
+    (False, {'name': 'Enc1BitRate', 'severity': 'Warning', 'clear_policy': 'AutoClear'}, False),
+    (True, {'name': 'Other', 'severity': 'Warning', 'clear_policy': 'AutoClear'}, False),
+    (True, {'name': 'Enc1BitRate', 'severity': 'Fault', 'clear_policy': 'AutoClear'}, False),
+    (True, {'name': 'Enc1BitRate', 'severity': 'Warning', 'clear_policy': 'ManualClear'}, False),
+    (True, None, False),
+])
+def test_encoder_warning_requires_explicit_opt_in_and_exact_metadata(monkeypatch, allowed, detail, expected):
+    driver, hand, clock, _ = driver_setup(allow_encoder_warning=allowed)
+    monkeypatch.setattr(Hand, 'describe_error', staticmethod(lambda _: detail), raising=False)
+    driver.connect()
+    value = frame(clock)
+    value.joints[1].error_code_current = 3
+    hand.states.callback(value)
+    hand.diagnostics.callback(value)
+    status = driver.snapshot()
+    assert bool(status['warnings']) is expected and bool(status['faults']) is not expected
+    assert status['fresh']  # Warning classification never masks a missing feedback stream.
+    if expected:
+        hand.diagnostics.callback(value)  # A duplicate must not count as another event.
+        assert driver.snapshot()['warning_history'][0]['frames'] == 1
+        clock.now += .001
+        hand.diagnostics.callback(frame(clock, 2))
+        assert not driver.snapshot()['warnings'] and driver.snapshot()['warning_history'][0]['frames'] == 1
+    else:
+        clock.now += .001
+        hand.diagnostics.callback(frame(clock, 2))
+        assert driver.snapshot()['faults']  # A transient fault persists until reconnect.
+
+
+def test_other_codes_are_never_exempt_and_reconnect_clears_history(monkeypatch):
+    driver, hand, clock, _ = driver_setup(allow_encoder_warning=True)
+    monkeypatch.setattr(Hand, 'describe_error', staticmethod(lambda _: {
+        'name': 'Enc1BitRate', 'severity': 'Warning', 'clear_policy': 'AutoClear'}), raising=False)
+    driver.connect()
+    value = frame(clock)
+    value.joints[-1].error_code_current = 4
+    hand.states.callback(value)
+    hand.diagnostics.callback(value)
+    assert driver.snapshot()['faults'][0]['joint'] == 'pinky_S4'
+    assert not driver.snapshot()['warnings']
+    driver.close()
+    driver.connect()
+    assert not driver.snapshot()['faults']
+
+
+@pytest.mark.parametrize('temperature', [65., 100., float('nan')])
+def test_overtemperature_and_invalid_diagnostics_refuse_control(temperature):
+    driver, hand, clock, _ = driver_setup()
+    driver.connect()
+    value = frame(clock)
+    value.joints[0].mcu_temp_c_fb = temperature
+    hand.states.callback(value)
+    hand.diagnostics.callback(value)
+    status = driver.snapshot()
+    assert status['faults'] or not status['fresh']
+
+
+def test_snapshot_does_not_expose_mutable_callback_cache():
+    driver, hand, clock, _ = driver_setup()
+    driver.connect()
+    hand.states.callback(frame(clock))
+    hand.diagnostics.callback(frame(clock))
+    status = driver.snapshot()
+    status['positions'][0] = 99
+    status['diagnostics']['states'][0] = 2
+    status['source_headers']['state']['sequence'] = 99
+    fresh = driver.snapshot()
+    assert fresh['positions'][0] == 0 and fresh['diagnostics']['states'][0] == 1
+    assert fresh['source_headers']['state']['sequence'] == 1
+
+
+def test_position_velocity_command_has_zero_feedforward_and_validates_before_write():
+    driver, _, _, _ = driver_setup()
+    sent = []
+    driver.sdk.JointCommand = lambda q, v, effort: (q, v, effort)
+    driver.publisher = NS(send=sent.append)
+    driver.send([.1]*20, [.2]*20)
+    assert sent == [[(.1, .2, 0.)]*20]
+    driver.send([.1]*20)
+    assert sent[-1] == [(.1, 0., 0.)]*20
+    for bad in [[.6]*20, [float('nan')]*20, [True]*20, [.2]*19]:
+        with pytest.raises(ValueError):
+            driver.send([.1]*20, bad)
+    assert len(sent) == 2
 
 
 def test_serial_side_and_private_connection_without_motor_commands():

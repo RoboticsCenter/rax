@@ -121,8 +121,9 @@ def test_move_settles_and_target_persists_between_calls_and_hold():
 
 @pytest.mark.parametrize('failure', ['disarm', 'diagnostics', 'positions', 'parent', 'heartbeat', 'fault', 'enabled', 'scheduler'])
 @pytest.mark.parametrize('moving', [False, True])
-def test_idle_and_active_watchdogs_stop_without_another_tool_call(failure, moving):
-    rig = Rig(stop_timeout_s=.15)
+@pytest.mark.parametrize('motion_mode', ['timed', 'feedback', 'scurve'])
+def test_idle_and_active_watchdogs_stop_without_another_tool_call(failure, moving, motion_mode):
+    rig = Rig(stop_timeout_s=.15, motion_mode=motion_mode)
     rig.prepare()
     if moving:
         rig.engine.submit('motion', 'move', {'positions': [.2]*20})

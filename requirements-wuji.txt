@@ -1,3 +1,4 @@
 # Use the same interpreter/environment as the RAX frontend.
 # Base xArm/camera dependencies are documented in docs/xarm-wuji.md.
 wuji-sdk==2026.10.12
+ruckig==0.19.4
