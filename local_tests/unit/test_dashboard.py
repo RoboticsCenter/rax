@@ -13,6 +13,7 @@ import pytest
 from services.dashboard import sessions as sessions_module
 from services.dashboard.server import COOKIE, make_server
 from services.dashboard.sessions import Sessions
+from services.controller import operator
 from services.xarm import arming
 
 PROJECT = Path(__file__).resolve().parents[2]
@@ -160,6 +161,8 @@ def test_disarm_all(dashboard, robot):
     first, second = configure(base, 'a')['id'], configure(base, 'b')['id']
     for session_id in (first, second):
         call(base, f'/api/session/{session_id}/arm', {'estop_confirmed': True})
+        state = arming.read(sessions.root(session_id))
+        assert state['until'] - state['since'] == pytest.approx(3600)
     status, value = call(base, '/api/disarm-all', {})
     assert status == 200 and sorted(value['disarmed']) == sorted([first, second])
     assert all(not arming.read(root)['armed'] for root in sessions.roots())
@@ -249,3 +252,133 @@ def test_frames_and_activity(dashboard):
     assert '[image]' in value['transcript'][2]['text']
     assert value['mcp'][0]['tool'] == 'xarm_observe'
     assert call(base, '/api/session/nope/activity')[0] == 404
+
+
+@pytest.fixture
+def wuji_reply(dashboard, monkeypatch):
+    from types import SimpleNamespace
+    base, _, sessions = dashboard
+    root = sessions.base/'wuji_reply_test'
+    root.mkdir(parents=True)
+    (root/'operator-input.json').write_text(json.dumps({
+        'task': 'cube_into_bowl', 'backend_options': {
+            'xarm_ip': '192.0.2.16', 'end_effector': {'type': 'wuji_hand2'}}}))
+    request = operator.open_request(root, 'help', 'Ready to continue?')
+    scenario = SimpleNamespace(calls=[], signals=[], fail=False, timeout=False, after=lambda: None)
+
+    class Preparation:
+        pid = 123456789
+        returncode = None
+
+        def communicate(self, timeout):
+            assert timeout == 60
+            assert not (operator.directory(root)/f"{request['id']}.reply.json").exists()
+            arming.write(root, True, minutes=60)
+            if scenario.timeout:
+                raise subprocess.TimeoutExpired('fake preparation', timeout)
+            self.returncode = 1 if scenario.fail else 0
+            scenario.after()
+            return '', 'hand prepare failed' if scenario.fail else ''
+
+        def wait(self, timeout):
+            self.returncode = -15
+            return self.returncode
+
+    def popen(command, **kwargs):
+        scenario.calls.append(command)
+        assert command == [sessions.python, str(PROJECT/'scripts/prepare_xarm_wuji.py'),
+                           '--session', str(root), '--minutes', '60', '--yes']
+        assert kwargs['start_new_session'] and kwargs['stdin'] == subprocess.DEVNULL
+        return Preparation()
+
+    monkeypatch.setattr(sessions_module.subprocess, 'Popen', popen)
+    monkeypatch.setattr(sessions_module.os, 'killpg', lambda pid, sig: scenario.signals.append((pid, sig)))
+    scenario.base, scenario.sessions, scenario.root, scenario.request = base, sessions, root, request
+    scenario.path = f'/api/session/{root.name}/prepare-reply'
+    scenario.body = {'request_id': request['id'], 'text': 'Continue with bounded probes.',
+                     'estop_confirmed': True}
+    return scenario
+
+
+def test_reply_prepares_before_publishing_and_rejects_duplicate(wuji_reply):
+    s = wuji_reply
+    assert s.sessions.summary(s.root)['prepare_on_reply']
+    status, result = call(s.base, s.path, s.body)
+    assert status == 200 and result['reply'] == s.body['text']
+    assert arming.read(s.root)['armed'] and not operator.pending(s.root)
+    assert call(s.base, s.path, s.body)[0] == 400
+    assert len(s.calls) == 1
+
+
+@pytest.mark.parametrize('confirmed', [None, False, 'yes'])
+def test_reply_preparation_requires_real_confirmation(wuji_reply, confirmed):
+    s = wuji_reply
+    assert call(s.base, s.path, {**s.body, 'estop_confirmed': confirmed})[0] == 403
+    assert not s.calls and operator.pending(s.root)
+
+
+def test_reply_only_does_not_prepare_or_arm(wuji_reply):
+    s = wuji_reply
+    assert call(s.base, s.path.replace('/prepare-reply', '/reply'), s.body)[0] == 200
+    assert not s.calls and not arming.read(s.root)['armed']
+
+
+@pytest.mark.parametrize('failure', ['fail', 'timeout'])
+def test_preparation_failure_leaves_reply_pending_and_disarms(wuji_reply, failure):
+    s = wuji_reply
+    setattr(s, failure, True)
+    status, result = call(s.base, s.path, s.body)
+    assert status == 409 and 'reply was not sent' in result['error']
+    assert operator.pending(s.root) and not arming.read(s.root)['armed']
+    assert s.sessions.preparation_process is None
+
+
+def test_disarm_during_preparation_cancels_script_tree(wuji_reply):
+    s = wuji_reply
+    s.after = s.sessions.disarm_all
+    status, _ = call(s.base, s.path, s.body)
+    assert status == 409 and s.signals
+    assert operator.pending(s.root) and not arming.read(s.root)['armed']
+
+
+def test_disarm_before_script_spawn_prevents_later_rearm(wuji_reply, monkeypatch):
+    s = wuji_reply
+    original = s.sessions.prepare_for_reply
+
+    def prepare(root, generation):
+        s.sessions.disarm_all()
+        original(root, generation)
+
+    monkeypatch.setattr(s.sessions, 'prepare_for_reply', prepare)
+    assert call(s.base, s.path, s.body)[0] == 409
+    assert not s.calls and operator.pending(s.root) and not arming.read(s.root)['armed']
+
+
+def test_expired_request_during_preparation_is_not_answered(wuji_reply):
+    s = wuji_reply
+    s.after = lambda: (operator.directory(s.root)/f"{s.request['id']}.json").write_text(
+        json.dumps({**s.request, 'status': 'expired'}))
+    status, result = call(s.base, s.path, s.body)
+    assert status == 409 and 'expired' in result['error']
+    assert not arming.read(s.root)['armed']
+    assert not (operator.directory(s.root)/f"{s.request['id']}.reply.json").exists()
+
+
+def test_concurrent_submit_does_not_start_second_preparation(wuji_reply):
+    s = wuji_reply
+    with s.sessions.preparation_lock:
+        assert call(s.base, s.path, s.body)[0] == 409
+    assert not s.calls and operator.pending(s.root)
+
+
+def test_disarm_still_revokes_and_holds_if_cancelling_script_fails(wuji_reply, robot, monkeypatch):
+    s = wuji_reply
+    arming.write(s.root, True, minutes=10)
+
+    def broken_cancel():
+        raise RuntimeError('cannot terminate preparation')
+
+    monkeypatch.setattr(s.sessions, 'cancel_preparation', broken_cancel)
+    with pytest.raises(RuntimeError, match='cannot terminate'):
+        s.sessions.disarm(s.root.name)
+    assert not arming.read(s.root)['armed'] and robot.holds == 1

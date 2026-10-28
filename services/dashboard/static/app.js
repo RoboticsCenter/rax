@@ -213,27 +213,60 @@ function beep() {
   } catch { /* audio blocked until the page was clicked */ }
 }
 
+const submittingRequests = new Set();
+const requestDrafts = new Map();
+
 function renderRequests(value) {
   const box = $('requests');
-  const open = value.sessions.flatMap((s) => (s.requests || []).map((r) => ({ ...r, session: s.id, task: s.task })));
+  if (submittingRequests.size) return;  // Keep the in-progress controls disabled across refreshes.
+  const open = value.sessions.flatMap((s) => (s.requests || []).map((r) => ({
+    ...r, session: s.id, task: s.task, prepare: s.prepare_on_reply,
+  })));
   box.hidden = open.length === 0;
   document.title = open.length ? `(${open.length}) Agent needs you - xArm` : 'xArm operator';
   if (open.some((r) => !seenRequests.has(r.id))) beep();
   open.forEach((r) => seenRequests.add(r.id));
-  if (box.contains(document.activeElement)) return;  // do not wipe a reply being typed
+  if (document.activeElement?.tagName === 'TEXTAREA' && box.contains(document.activeElement)) return;
   box.replaceChildren(el('h2', {}, `The agent is asking for ${open.length > 1 ? 'you (' + open.length + ')' : 'you'}`),
     ...open.map((r) => {
+      const key = `${r.session}/${r.id}`;
       const input = el('textarea', { placeholder: r.kind === 'reset' ? 'Optional note, e.g. "both cubes back on the left"' : 'Your answer' });
-      const send = async (text) => {
-        try { await api(`/api/session/${r.session}/reply`, { request_id: r.id, text, done: true }); toast('Reply sent'); refresh(); }
-        catch (error) { toast(error.message, true); }
+      input.value = requestDrafts.get(key) || '';
+      input.addEventListener('input', () => requestDrafts.set(key, input.value));
+      const buttons = [];
+      const send = async (text, prepare = r.prepare) => {
+        if (submittingRequests.has(key)) return;
+        if (prepare && !confirm(`Ready the arm, arm for 60 minutes, prepare the hand, then send this reply?\n\nSession: ${r.session}\n\nConfirm a person is at the emergency stop and the arm workspace and whole-hand sweep are clear. The agent may move after receiving the reply.`)) return;
+        submittingRequests.add(key);
+        requestDrafts.set(key, input.value);
+        input.disabled = true;
+        buttons.forEach((button) => { button.disabled = true; });
+        if (prepare) toast('Preparing arm and hand… Reply will be sent after success.');
+        try {
+          await api(`/api/session/${r.session}/${prepare ? 'prepare-reply' : 'reply'}`, {
+            request_id: r.id, text, done: true, estop_confirmed: !!prepare,
+          });
+          requestDrafts.delete(key);
+          toast(prepare ? 'Arm and hand ready; reply sent.' : 'Reply sent.');
+        } catch (error) { toast(error.message, true); }
+        finally {
+          submittingRequests.delete(key);
+          input.disabled = false;
+          buttons.forEach((button) => { button.disabled = false; });
+          refresh();
+        }
       };
+      if (r.kind === 'reset') buttons.push(el('button', {
+        class: 'primary', onclick: () => send(input.value || 'Scene reset done.'),
+      }, r.prepare ? 'Ready & reset done' : 'Reset done'));
+      buttons.push(el('button', {
+        class: r.kind === 'reset' ? null : 'primary', onclick: () => send(input.value),
+      }, r.prepare ? 'Ready & send reply' : 'Send reply'));
+      if (r.prepare) buttons.push(el('button', { onclick: () => send(input.value, false) }, 'Send reply only'));
       return el('div', { class: 'request' },
         el('div', {}, el('b', {}, r.kind === 'reset' ? 'SCENE RESET' : 'HELP'), ` · ${r.task} · ${when(r.created)}`),
         el('pre', {}, r.message), input,
-        el('div', { class: 'row', style: 'margin-top:6px' },
-          r.kind === 'reset' ? el('button', { class: 'primary', onclick: () => send(input.value || 'Scene reset done.') }, 'Reset done') : null,
-          el('button', { class: r.kind === 'reset' ? null : 'primary', onclick: () => send(input.value) }, 'Send reply')));
+        el('div', { class: 'row', style: 'margin-top:6px' }, ...buttons));
     }));
 }
 
@@ -264,8 +297,8 @@ $('new-session').addEventListener('submit', async (event) => {
 
 $('arm').addEventListener('click', async () => {
   if (!$('estop').checked) { toast('Tick the emergency-stop confirmation first.', true); return; }
-  if (!confirm('ARM robot motion for this session? The agent can then move the real robot.')) return;
-  const minutes = $('arm-minutes').value ? Number($('arm-minutes').value) : null;
+  const minutes = $('arm-minutes').value ? Number($('arm-minutes').value) : 60;
+  if (!confirm(`ARM robot motion for ${minutes} minutes? The agent can then move the real robot.`)) return;
   try {
     await api(`/api/session/${state.selected}/arm`, { estop_confirmed: true, minutes });
     $('estop').checked = false;

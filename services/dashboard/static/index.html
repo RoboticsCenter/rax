@@ -105,7 +105,7 @@ table.kv td { padding:1px 8px 1px 0; vertical-align:top; } table.kv td:first-chi
           <input type="checkbox" id="estop" style="width:auto"> A person is at the emergency stop and the workspace is clear</label>
       </div>
       <div class="row" style="margin-top:6px">
-        <input id="arm-minutes" type="number" min="1" step="1" placeholder="expires after N minutes (optional)" style="max-width:280px">
+        <input id="arm-minutes" type="number" min="1" max="1440" step="1" value="60" placeholder="60 minutes" aria-label="Arming duration in minutes" style="max-width:280px">
         <button id="arm" class="primary">ARM motion</button>
       </div>
     </section>

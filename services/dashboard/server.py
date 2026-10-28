@@ -170,9 +170,11 @@ class Handler(BaseHTTPRequestHandler):
                                                            minutes=body.get('minutes')))
                 elif action == 'disarm':
                     self._json(HTTPStatus.OK, sessions.disarm(session_id))
-                elif action == 'reply':
+                elif action in ('reply', 'prepare-reply'):
                     self._json(HTTPStatus.OK, sessions.reply(session_id, body.get('request_id'),
-                                                             str(body.get('text', '')), done=body.get('done', True)))
+                                                             str(body.get('text', '')), done=body.get('done', True),
+                                                             prepare=action == 'prepare-reply',
+                                                             confirmed=body.get('estop_confirmed')))
                 else:
                     self._error(HTTPStatus.NOT_FOUND, 'not found')
             else:

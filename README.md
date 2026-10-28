@@ -88,6 +88,11 @@ ln -s /large-disk/rax-franka-runtime runtime   # or: export RAX_ARTIFACT_ROOT=/l
 Sessions, logs and camera recordings go under the *artifact root*: `$RAX_ARTIFACT_ROOT`,
 else the repository's `runtime/` directory. A session records every camera, so use a
 disk with room (about 0.6 GB per hour for three cameras, plus a 10-minute raw window).
+For Claude Code sessions, the resolved artifact directory must be outside this
+repository and the other protected directories. The agent is denied access to
+the source checkout, including any workspace nested beneath it. A `runtime`
+symlink to an external directory works; an ordinary directory inside the checkout
+does not. The launcher checks this before creating a launch record or services.
 
 ### 2. Robot Python environment
 
@@ -183,6 +188,9 @@ client on the robot service's socket, so they need no vendor SDK. By default the
 agent's Bash finds the robot environment's Python first on `PATH`. To give the agent its
 own environment (for example `numpy`, `scipy`, `opencv-python`), set the backend option
 `agent_python` to that interpreter.
+Its executable and packages must also be accessible outside protected paths. If
+the robot environment is a `.venv` inside this checkout, use a separate agent
+environment outside the checkout; leave `RAX_PYTHON` pointing to the robot environment.
 
 ### 7. Agent CLI and credentials
 

@@ -23,9 +23,18 @@ task is cube into bowl; the operator will start Claude Code using the
   and scene localization. Cube-top estimates agreed within approximately 2.34 mm.
 - [x] Prepare the current cube task and a fresh v13 session with 15 mm/s arm speed,
   50 mm translation limit per call and both calibrated cameras.
-- [ ] Operator sets up the launcher's experiment login and starts Claude Code.
-  A bundled CLI exists in the VS Code extension but is not on this shell's PATH;
-  the launcher's experiment token is absent. Instructions are in the handoff.
+- [x] Select the inherited `openai` provider and `openai/gpt-6-astra` model for
+  the prepared Claude Code session; document CLI PATH and OpenAI API key setup
+  for the official `scripts/start_agent.sh`. No Claude experiment login is needed.
+- [x] Operator provides the OpenAI API key and starts Claude Code. Astra reached
+  MCP status; workspace reads were blocked by the session's location inside the
+  protected source checkout. No motion occurred in that attempt.
+- [x] Prepare a corrected session and agent Python environment under
+  `/home/jerry/rax-runtime`, outside the protected checkout. Bubblewrap read/write
+  and import checks passed while source/private files remained hidden. Add an
+  early launcher check for protected ancestors; 23 targeted regressions passed.
+- [ ] Operator exits the first session and launches the corrected session from
+  the handoff. The new session has not been started.
 - [ ] Verify mounted payload/CoG, physical contact reference and swept clearance.
 - [ ] Establish cube-specific opening, grasp and release; qualify short-lift
   retention, transport, placement and task-pose resets. Saved home/fist alone

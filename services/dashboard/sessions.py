@@ -93,6 +93,9 @@ class Sessions:
         self.http_get = http_get or _http_get
         self.robot_driver = robot_driver
         self.lock = threading.Lock()
+        self.preparation_lock = threading.Lock()
+        self.preparation_process = None
+        self.preparation_generation = 0
 
     # ----- discovery -------------------------------------------------------------------
     @property
@@ -165,6 +168,7 @@ class Sessions:
             'running': bool(process), 'process': process,
             'motion': arming.read(root),
             'requests': operator.pending(root),
+            'prepare_on_reply': (config.get('backend_options', {}).get('end_effector') or {}).get('type') == 'wuji_hand2',
             'model': config.get('agent_model') or 'provider default',
             'provider': config.get('agent_provider'), 'effort': config.get('agent_effort'),
             'session_hours': round(config.get('session_seconds', 0) / 3600, 2),
@@ -264,28 +268,110 @@ class Sessions:
         if confirmed is not True:
             raise PermissionError('confirm that a person is at the emergency stop and the workspace is clear')
         root = self.root(session_id)
-        if minutes is not None:
-            minutes = float(minutes)
-            if not 0 < minutes <= 24 * 60:
-                raise ValueError('minutes must be in (0, 1440]')
+        minutes = 60.0 if minutes is None else float(minutes)
+        if not 0 < minutes <= 24 * 60:
+            raise ValueError('minutes must be in (0, 1440]')
         arming.write(root, True, minutes=minutes, by='dashboard')
         return arming.read(root)
 
-    def reply(self, session_id, request_id, text, *, done=True):
-        return operator.reply(self.root(session_id), request_id, text, done=done, by='dashboard')
+    def reply(self, session_id, request_id, text, *, done=True, prepare=False, confirmed=None):
+        root = self.root(session_id)
+        if prepare and confirmed is not True:
+            raise PermissionError('confirm a person is at the emergency stop and the arm/hand workspace is clear')
+        if not self.preparation_lock.acquire(blocking=False):
+            raise RuntimeError('robot preparation is already in progress; wait before submitting another reply')
+        try:
+            with self.lock:
+                generation = self.preparation_generation
+            if not any(r['id'] == request_id for r in operator.pending(root)):
+                raise ValueError('request is no longer pending; refresh the dashboard')
+            if not prepare:
+                return operator.reply(root, request_id, text, done=done, by='dashboard')
+            options = (read_json(root/'operator-input.json', {}) or {}).get('backend_options', {})
+            if (options.get('end_effector') or {}).get('type') != 'wuji_hand2':
+                raise ValueError('combined preparation requires an xArm + Wuji session')
+            try:
+                self.prepare_for_reply(root, generation)
+                # A disarm or request timeout during preparation must not release the agent.
+                with self.lock:
+                    if generation != self.preparation_generation or not arming.read(root)['armed']:
+                        raise RuntimeError('session disarmed during preparation; reply was not sent')
+                    if not any(r['id'] == request_id for r in operator.pending(root)):
+                        raise RuntimeError('request expired during preparation; reply was not sent')
+                    return operator.reply(root, request_id, text, done=done, by='dashboard')
+            except Exception:
+                self.disarm(session_id)
+                raise
+        finally:
+            self.preparation_lock.release()
+
+    def prepare_for_reply(self, root, generation):
+        """Run the operator shortcut after the browser's explicit confirmation."""
+        command = [self.python, str(self.project/'scripts/prepare_xarm_wuji.py'),
+                   '--session', str(root), '--minutes', '60', '--yes']
+        with self.lock:
+            if generation != self.preparation_generation:
+                raise RuntimeError('preparation cancelled by disarm; reply was not sent')
+            process = subprocess.Popen(command, cwd=self.project, stdin=subprocess.DEVNULL,
+                                       stdout=subprocess.PIPE, stderr=subprocess.PIPE,
+                                       text=True, start_new_session=True)
+            self.preparation_process = process
+        try:
+            try:
+                stdout, stderr = process.communicate(timeout=60)
+            except subprocess.TimeoutExpired:
+                self.cancel_preparation()
+                raise RuntimeError('robot preparation timed out; reply was not sent') from None
+            if process.returncode != 0:
+                detail = (stderr or stdout or 'preparation cancelled').strip()[-3000:]
+                raise RuntimeError(f'Robot preparation failed; reply was not sent.\n{detail}')
+        finally:
+            with self.lock:
+                if self.preparation_process is process:
+                    self.preparation_process = None
+
+    def cancel_preparation(self):
+        # Stop the full script tree before disarming so it cannot rearm afterward.
+        # Do not take preparation_lock: emergency disarm must interrupt preparation.
+        with self.lock:
+            self.preparation_generation += 1
+            process = self.preparation_process
+            if process is not None:
+                try:
+                    os.killpg(process.pid, signal.SIGTERM)
+                except ProcessLookupError:
+                    pass
+                try:
+                    process.wait(timeout=2)
+                except subprocess.TimeoutExpired:
+                    pass
+                # Also kill descendants if the parent exited before they did.
+                try:
+                    os.killpg(process.pid, signal.SIGKILL)
+                except ProcessLookupError:
+                    pass
+                process.wait(timeout=2)
 
     def disarm(self, session_id):
         root = self.root(session_id)
-        arming.write(root, False, by='dashboard', reason='disarmed from the dashboard')
-        return {'motion': arming.read(root), 'hold': self.hold()}
+        try:
+            self.cancel_preparation()
+        finally:
+            arming.write(root, False, by='dashboard', reason='disarmed from the dashboard')
+            hold = self.hold()
+        return {'motion': arming.read(root), 'hold': hold}
 
     def disarm_all(self):
         disarmed = []
-        for root in self.roots():
-            if arming.arm_file(root).exists() or self.process(root):
-                arming.write(root, False, by='dashboard', reason='DISARM ALL from the dashboard')
-                disarmed.append(root.name)
-        return {'disarmed': disarmed, 'hold': self.hold()}
+        try:
+            self.cancel_preparation()
+        finally:
+            for root in self.roots():
+                if arming.arm_file(root).exists() or self.process(root):
+                    arming.write(root, False, by='dashboard', reason='DISARM ALL from the dashboard')
+                    disarmed.append(root.name)
+            hold = self.hold()
+        return {'disarmed': disarmed, 'hold': hold}
 
     def backend_options(self):
         options = {}

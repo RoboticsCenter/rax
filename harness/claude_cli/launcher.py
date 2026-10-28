@@ -135,8 +135,28 @@ def protected_paths(config):
     return [*PROTECTED_PATHS, *site_paths(config), *(config.root/name for name in PRIVATE_FILES)]
 
 
+def validate_workspace_location(config, workspace=None):
+    """Refuse layouts where a protected ancestor hides the agent's own files.
+
+    Claude's deny rules also cover descendants; a workspace allow rule cannot
+    reopen a session stored inside the protected source checkout. Check before
+    provisioning or writing a launch record so a bad location is retryable.
+    """
+    protected = [*protected_paths(config), *HIDDEN_SOCKETS]
+    for readable in (Path(workspace) if workspace is not None else config.root/WORKSPACE_NAME,
+                     config.root/'stream'):
+        resolved = readable.resolve()
+        for path in protected:
+            if resolved.is_relative_to(Path(path).resolve()):
+                raise ValueError(
+                    f'Agent-readable path {readable} is inside protected path {path}. '
+                    'Set RAX_ARTIFACT_ROOT outside the repository and other protected directories, '
+                    'then configure a new session there.')
+
+
 def settings(config, workspace, socket):
     """Claude Code settings: dontAsk permissions confined to the workspace, sandboxed Bash."""
+    validate_workspace_location(config, workspace)
     ws = f'/{workspace}'  # Permission rules spell absolute paths //like/this.
     allow = [f'Read({ws}/**)', f'Edit({ws}/**)',  # Edit rules cover every file-editing tool.
              f'Read(/{config.root}/stream/**)',  # the read-only live recording (runtime/stream)
@@ -199,6 +219,7 @@ def populate_workspace(config, workspace, *, gemini=True):
 
 def deploy(config, *, key_file=None, gemini_key_file=None, claude=None):
     """Prepare a new session without starting the robot service or a model."""
+    validate_workspace_location(config)
     binary = claude_binary(claude)
     root = config.root
     root.mkdir(parents=True, exist_ok=True, mode=0o700)
@@ -436,6 +457,7 @@ def main():
     parser.add_argument('--resume', action='store_true', help="Continue a stopped session's own conversation")
     args = parser.parse_args()
     config = Configuration.load(args.config)
+    validate_workspace_location(config)
     signal.signal(signal.SIGTERM, _interrupt)
     config.root.mkdir(parents=True, exist_ok=True, mode=0o700)
     with (config.root/'launch.lock').open('a') as lock:

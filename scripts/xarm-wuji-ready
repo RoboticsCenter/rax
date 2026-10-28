@@ -1,0 +1,7 @@
+#!/usr/bin/env bash
+# Operator shortcut: ready xArm, arm this session, prepare its existing Wuji owner.
+set -euo pipefail
+SCRIPT="$(readlink -f "${BASH_SOURCE[0]}")"
+PROJECT_ROOT="$(cd "$(dirname "$SCRIPT")/.." && pwd)"
+PYTHON="${RAX_PYTHON:-$PROJECT_ROOT/.venv/bin/python}"
+exec "$PYTHON" "$PROJECT_ROOT/scripts/prepare_xarm_wuji.py" "$@"

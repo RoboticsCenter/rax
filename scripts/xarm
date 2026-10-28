@@ -79,7 +79,8 @@ if action == 'ready':
     opts = options()
     arm = XArmAPI(opts['xarm_ip'], is_radian=True)
     print(f"xArm SDK connected to {opts['xarm_ip']}")
-    if ask('Person at the emergency stop and workspace clear? Type READY: ') != 'READY':
+    # --yes is for a trusted operator frontend that already confirmed readiness.
+    if '--yes' not in sys.argv[2:] and ask('Person at the emergency stop and workspace clear? Type READY: ') != 'READY':
         sys.exit('not changed')
     for call, args in ((arm.clean_error, ()), (arm.clean_warn, ()), (arm.set_mode, (0,)),
                        (arm.set_state, (0,)), (arm.motion_enable, (True,)), (arm.set_state, (0,))):

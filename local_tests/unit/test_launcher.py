@@ -1,6 +1,7 @@
 """Host-run Claude Code launcher: workspace confinement, sandbox, credentials and resume."""
 import json
 from pathlib import Path
+import sys
 import time
 
 import pytest
@@ -74,6 +75,56 @@ def test_relative_protected_paths_are_refused(tmp_path, monkeypatch):
     monkeypatch.delenv('RAX_PROTECTED_PATHS')
     monkeypatch.delenv('FRANKA_CALIBRATION_DIR', raising=False)
     assert launcher.site_paths(configuration(tmp_path)) == []
+
+
+@pytest.mark.parametrize('protected_source', ['repository', 'site'])
+def test_session_below_protected_directory_refused_before_provisioning(tmp_path, monkeypatch, protected_source):
+    protected = tmp_path/'protected'
+    if protected_source == 'repository':
+        monkeypatch.setattr(launcher, 'PROTECTED_PATHS', (protected,))
+        options = {}
+    else:
+        options = {'protected_paths': [str(protected)]}
+    config = configuration(protected/'runtime', backend_options=options)
+    with pytest.raises(ValueError, match='RAX_ARTIFACT_ROOT outside'):
+        launcher.deploy(config)
+    assert not config.root.exists()
+    with pytest.raises(ValueError, match='inside protected path'):
+        launcher.settings(config, config.root/launcher.WORKSPACE_NAME, tmp_path/'mcp.sock')
+
+
+def test_protected_ancestor_checks_resolve_symlinks(tmp_path, monkeypatch):
+    protected = tmp_path/'protected'
+    protected.mkdir()
+    alias = tmp_path/'alias'
+    alias.symlink_to(protected, target_is_directory=True)
+    monkeypatch.setattr(launcher, 'PROTECTED_PATHS', (alias,))
+    config = configuration(protected/'runtime')
+    with pytest.raises(ValueError, match='inside protected path'):
+        launcher.validate_workspace_location(config)
+
+
+def test_read_only_stream_cannot_resolve_into_protected_directory(tmp_path, monkeypatch):
+    protected = tmp_path/'protected'
+    protected.mkdir()
+    monkeypatch.setattr(launcher, 'PROTECTED_PATHS', (protected,))
+    config = configuration(tmp_path)
+    config.root.mkdir()
+    (config.root/'stream').symlink_to(protected, target_is_directory=True)
+    with pytest.raises(ValueError, match='inside protected path'):
+        launcher.validate_workspace_location(config)
+
+
+def test_bad_workspace_location_does_not_leave_failed_launch_marker(tmp_path, monkeypatch):
+    protected = tmp_path/'protected'
+    monkeypatch.setattr(launcher, 'PROTECTED_PATHS', (protected,))
+    config = configuration(protected/'runtime')
+    source = tmp_path/'operator-input.json'
+    source.write_text(json.dumps(config.to_dict()))
+    monkeypatch.setattr(sys, 'argv', ['launcher', '--config', str(source)])
+    with pytest.raises(ValueError, match='RAX_ARTIFACT_ROOT outside'):
+        launcher.main()
+    assert not config.root.exists()
 
 
 def test_mcp_config_bridges_to_the_robot_service_socket(deployed):
