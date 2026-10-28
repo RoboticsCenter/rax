@@ -1,0 +1,125 @@
+{
+  "serial": "348522070593",
+  "device": "RealSense D435",
+  "firmware": "5.15.1.55",
+  "usb_type_at_capture": "2.1",
+  "source": "realsense_factory_readback",
+  "captured_utc": "2026-10-27T23:07:41.181063+00:00",
+  "evidence": "/home/jerry/rax/.local-runtime/camera-commission-20261027T230741Z",
+  "color_profiles": {
+    "640x480@6": {
+      "width": 640,
+      "height": 480,
+      "K": [
+        [
+          608.1727294921875,
+          0.0,
+          330.3124694824219
+        ],
+        [
+          0.0,
+          607.8192749023438,
+          252.4546356201172
+        ],
+        [
+          0.0,
+          0.0,
+          1.0
+        ]
+      ],
+      "distortion_model": "inverse_brown_conrady",
+      "distortion_coeffs": [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "fps": 6,
+      "format": "format.bgr8"
+    },
+    "1280x720@6": {
+      "K": [
+        [
+          912.2591552734375,
+          0.0,
+          655.4686889648438
+        ],
+        [
+          0.0,
+          911.7289428710938,
+          378.68194580078125
+        ],
+        [
+          0.0,
+          0.0,
+          1.0
+        ]
+      ],
+      "width": 1280,
+      "height": 720,
+      "fps": 6,
+      "distortion_model": "inverse_brown_conrady",
+      "distortion_coeffs": [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ]
+    }
+  },
+  "native_depth_640x480_6fps": {
+    "width": 640,
+    "height": 480,
+    "K": [
+      [
+        386.9497985839844,
+        0.0,
+        322.1881103515625
+      ],
+      [
+        0.0,
+        386.9497985839844,
+        240.5101776123047
+      ],
+      [
+        0.0,
+        0.0,
+        1.0
+      ]
+    ],
+    "distortion_model": "brown_conrady",
+    "distortion_coeffs": [
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0
+    ],
+    "fps": 6,
+    "format": "format.z16"
+  },
+  "depth_units_m": 0.0010000000474974513,
+  "depth_to_color": {
+    "rotation_column_major": [
+      0.999991774559021,
+      -0.004033581353724003,
+      0.0004509100108407438,
+      0.004032188560813665,
+      0.9999872446060181,
+      0.0030485608149319887,
+      -0.00046320087858475745,
+      -0.003046717494726181,
+      0.999995231628418
+    ],
+    "translation_m": [
+      0.014859996736049652,
+      0.0002884599380195141,
+      0.00039309743442572653
+    ]
+  },
+  "runtime_depth_alignment": "color",
+  "validation": "Qualified on 2026-10-27: held-out calibration poses and live 640x480 RGB-D MCP metric checks passed",
+  "metric_validation_source": "/home/jerry/rax/.local-runtime/sessions/camera-mcp-check-20261027-installed/report.json"
+}

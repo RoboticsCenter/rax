@@ -8,7 +8,8 @@ description: Locate visible object points in the xArm base frame from calibrated
 This session has no depth. Each `{{ robot.observe }}` frame saves RGB images and a
 `meta.json` with each camera's intrinsics `K` and pose `T_base_cam`.
 
-- Triangulate: find the same object point in the `left` and `right` images and
+- Triangulate: find the same object point in two configured camera images
+  (`{{ robot.cameras | join('`, `') }}`) and
   intersect the two camera rays (from `K` and `T_base_cam`) in your own Python.
 - Or intersect one ray with a known plane, such as the table top for a point on the
   table, or the table plus a known object height.

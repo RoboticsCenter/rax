@@ -4,8 +4,13 @@ import argparse
 import json
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
+import signal
+import sys
+import time
 from urllib.parse import urlparse
 
+PROJECT = Path(__file__).resolve().parents[1]
+sys.path.insert(0, str(PROJECT))
 
 PAGE = """<!doctype html>
 <html>
@@ -17,10 +22,10 @@ PAGE = """<!doctype html>
     body { margin: 0; font: 14px system-ui, sans-serif; background: #111; color: #eee; }
     header { height: 44px; display: flex; align-items: center; gap: 18px; padding: 0 14px; background: #202020; }
     #status { color: #bbb; }
-    main { display: grid; grid-template-columns: repeat(3, minmax(260px, 1fr)); gap: 10px; padding: 10px; }
+    main { display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 10px; padding: 10px; }
     section { background: #1b1b1b; border: 1px solid #333; border-radius: 6px; overflow: hidden; }
     h2 { margin: 0; padding: 8px 10px; font-size: 15px; font-weight: 650; background: #252525; }
-    img { width: 100%; display: block; background: #050505; aspect-ratio: 4 / 3; object-fit: contain; }
+    img { width: 100%; display: block; background: #050505; object-fit: contain; }
     .depth { border-top: 1px solid #333; }
     @media (max-width: 900px) { main { grid-template-columns: 1fr; } }
   </style>
@@ -30,10 +35,12 @@ PAGE = """<!doctype html>
   <main id="grid"></main>
   <script>
     const cameras = CAMERAS;
+    const showDepth = SHOW_DEPTH;
     const grid = document.getElementById('grid');
     for (const camera of cameras) {
       const section = document.createElement('section');
-      section.innerHTML = `<h2>${camera}</h2><img id="rgb-${camera}"><img class="depth" id="depth-${camera}">`;
+      section.innerHTML = `<h2>${camera}</h2><img id="rgb-${camera}" alt="${camera} live camera">` +
+        (showDepth ? `<img class="depth" id="depth-${camera}" alt="${camera} depth">` : '');
       grid.appendChild(section);
     }
     function refreshImages() {
@@ -54,16 +61,17 @@ PAGE = """<!doctype html>
         const value = await response.json();
         const parts = cameras.map(c => {
           const info = value.cameras?.[c] || {};
-          return `${c}: ${info.fps_measured ?? '?'} fps, drops ${info.dropped_frames ?? '?'}`;
+          const age = info.latest_ms == null ? Infinity : (Date.now() - info.latest_ms) / 1000;
+          return `${c}: ${age < 2 ? 'LIVE' : 'STALE'} · ${info.fps_measured ?? '?'} fps · ${Number.isFinite(age) ? age.toFixed(1) + 's old' : 'waiting'}`;
         });
         document.getElementById('status').textContent = parts.join(' | ');
       } catch (err) {
         document.getElementById('status').textContent = String(err);
       }
     }
-    refreshImages(); refreshDepth(); refreshStatus();
+    refreshImages(); refreshStatus();
     setInterval(refreshImages, 250);
-    setInterval(refreshDepth, 1000);
+    if (showDepth) { refreshDepth(); setInterval(refreshDepth, 1000); }
     setInterval(refreshStatus, 1000);
   </script>
 </body>
@@ -105,14 +113,35 @@ def colorize_depth(path):
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument("--stream", required=True)
+    source = parser.add_mutually_exclusive_group(required=True)
+    source.add_argument("--stream", help="view an existing sliding-window stream")
+    source.add_argument("--backend-options", type=Path, help="start cameras only from this configuration")
+    parser.add_argument("--root", type=Path, help="new artifact directory for a camera-only stream")
+    parser.add_argument("--rgb-only", action="store_true", help="capture/display color without depth")
     parser.add_argument("--host", default="127.0.0.1")
     parser.add_argument("--port", type=int, default=8765)
     parser.add_argument("--cameras", default="left,right,wrist")
     args = parser.parse_args()
-    stream = Path(args.stream).resolve()
-    cameras = [name for name in args.cameras.split(",") if name]
-    page = PAGE.replace("CAMERAS", json.dumps(cameras))
+    camera_owner = None
+    if args.backend_options:
+        from services.storage_root import artifact_root
+        from services.xarm.camera_server import Cameras
+        options = json.loads(args.backend_options.read_text())
+        root = (args.root or artifact_root()/f'camera-live-{time.time_ns()}').resolve()
+        if not root.is_relative_to(artifact_root()):
+            raise SystemExit('--root must be inside RAX_ARTIFACT_ROOT')
+        root.mkdir(parents=True, exist_ok=False)
+        stream = root/'stream'
+        stream.mkdir()
+        cameras = [spec['name'] for spec in options['cameras']]
+        camera_owner = Cameras(options['cameras'], depth_mode='NONE' if args.rgb_only else 'Z16',
+                               fps=int(options.get('stream_fps', 6)), frames_root=root/'frames',
+                               stream=stream, window_s=30, stream_quality=85,
+                               depth_hz=0 if args.rgb_only else 1)
+    else:
+        stream = Path(args.stream).resolve()
+        cameras = [name for name in args.cameras.split(",") if name]
+    page = PAGE.replace("CAMERAS", json.dumps(cameras)).replace("SHOW_DEPTH", json.dumps(not args.rgb_only))
 
     class Handler(BaseHTTPRequestHandler):
         def log_message(self, *_):
@@ -138,6 +167,9 @@ def main():
                 return
             if path.startswith("/latest/") and path.endswith(".jpg"):
                 camera = path.removeprefix("/latest/").removesuffix(".jpg")
+                if camera not in cameras:
+                    self.send_error(404)
+                    return
                 file = newest_file(stream, camera, ".jpg")
                 if file:
                     self.send_bytes(file.read_bytes(), "image/jpeg")
@@ -146,6 +178,9 @@ def main():
                 return
             if path.startswith("/depth/") and path.endswith(".jpg"):
                 camera = path.removeprefix("/depth/").removesuffix(".jpg")
+                if camera not in cameras or args.rgb_only:
+                    self.send_error(404)
+                    return
                 file = newest_file(stream, camera, "_depth.png")
                 data = colorize_depth(file) if file else None
                 if data:
@@ -155,9 +190,16 @@ def main():
                 return
             self.send_error(404)
 
-    server = ThreadingHTTPServer((args.host, args.port), Handler)
-    print(f"live camera viewer: http://{args.host}:{args.port}", flush=True)
-    server.serve_forever()
+    def stop(*_):
+        raise SystemExit(0)
+    signal.signal(signal.SIGTERM, stop)
+    try:
+        with ThreadingHTTPServer((args.host, args.port), Handler) as server:
+            print(f"live camera viewer: http://{args.host}:{args.port}", flush=True)
+            server.serve_forever()
+    finally:
+        if camera_owner is not None:
+            camera_owner.close()
 
 
 if __name__ == "__main__":

@@ -11,8 +11,9 @@ A frame you looked at earlier describes the past, not the present.
 
 `runtime/stream/` (read-only) holds the last 10 minutes, continuously:
 
-- `<camera>/<UTC minute>/<epoch_ms>.jpg`: every camera at 30 Hz (`left`, `right`, `wrist`);
-  `<epoch_ms>_depth.png` once per second (uint16 millimetres, 0 = invalid).
+- `<camera>/<UTC minute>/<epoch_ms>.jpg`: the configured cameras at the configured
+  stream rate; inspect `index.json` for their names and measured rates.
+  `<epoch_ms>_depth.png` at the configured depth rate (uint16 millimetres, 0 = invalid).
 - `robot/<UTC minute>.jsonl`: TCP pose, arm joints and end-effector feedback at 10 Hz.
 {% if robot.has_hand %}
   `hand` contains measured/target finger joints, effort in A, diagnostics, source

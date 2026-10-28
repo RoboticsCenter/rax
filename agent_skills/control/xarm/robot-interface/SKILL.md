@@ -5,8 +5,8 @@ description: The real UFactory xArm 6 motion tools, configured end effector, fra
 
 # UFactory xArm 6 robot interface
 
-One 6-DoF UFactory xArm 6 arm with a {{ robot.effector_name }} and three Intel RealSense D435i
-cameras. A person stands at the emergency stop. Everything you command happens
+One 6-DoF UFactory xArm 6 arm with a {{ robot.effector_name }} and the configured Intel RealSense
+cameras: `{{ robot.cameras | join('`, `') }}`. A person stands at the emergency stop. Everything you command happens
 physically.
 
 ## Frames and units
@@ -23,7 +23,7 @@ physically.
 
 - `{{ robot.status }}`: pose, joints, end-effector feedback, controller state/error codes, whether
   motion is armed, workspace box.
-- `{{ robot.observe }}`: camera images now (`left`, `right`, `wrist`).
+- `{{ robot.observe }}`: camera images now (`{{ robot.cameras | join('`, `') }}`).
 - `xarm_move_pose {position, quaternion?, relative?, tolerance_mm?, timeout_s?}`:
   Cartesian TCP move through the xArm controller and wait until settled. At most
   0.35 m per call, default cap 50 mm/s. `relative: true` adds `position` to the current

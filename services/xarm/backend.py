@@ -174,7 +174,7 @@ class CameraService:
 class XArmBackend:
     mutating = frozenset({'xarm_move_pose', 'xarm_move_joints', 'xarm_gripper'})
 
-    def __init__(self, config, *, arm=None, cameras=None, hand=None):
+    def __init__(self, config, *, arm=None, cameras=None, hand=None, camera_models=None):
         self.config = config
         unknown = set(config.backend_options) - set(DEFAULTS) - set(LAUNCHER_OPTIONS)
         if unknown:
@@ -193,7 +193,10 @@ class XArmBackend:
         self.box_max = np.asarray(self.options['workspace_max'], dtype=np.float64)
         if not np.all(self.box_min < self.box_max):
             raise ValueError('workspace_min must be below workspace_max on every axis')
-        self.models = {spec['name']: CameraModel.from_spec(spec) for spec in camera_specs(self.options)}
+        # Operator calibration can inject an empty model map and capture raw
+        # camera frames directly, without pretending old extrinsics are valid.
+        self.models = camera_models if camera_models is not None else {
+            spec['name']: CameraModel.from_spec(spec) for spec in camera_specs(self.options)}
         self.arm = arm or XArmDriver(self.options)
         try:
             self.end_effector = hand if hand is not None else end_effectors.make(config, self.arm, on_fault=self.arm.hold)
@@ -669,6 +672,8 @@ class XArmBackend:
         return path
 
     def _observe(self, cameras=None, project=None):
+        if not self.models:
+            raise ValueError('camera geometry is unavailable; operator calibration must capture raw frames')
         names = list(cameras or sorted(self.models))
         frame_id = time.strftime('%Y%m%d%H%M%S') + uuid.uuid4().hex[:6]
         out_dir = self.frames_root/frame_id
@@ -692,7 +697,10 @@ class XArmBackend:
             meta['cameras'][name] = {'rgb': Path(entry['rgb']).name,
                                      'depth': Path(entry['depth']).name if entry['depth'] else None,
                                      'K': entry['K'], 'width': entry['width'], 'height': entry['height'],
-                                     'T_base_cam': T_base_cam.tolist(), 'timestamp_ns': entry['timestamp_ns']}
+                                     'T_base_cam': T_base_cam.tolist(), 'timestamp_ns': entry['timestamp_ns'],
+                                     **{key: entry[key] for key in ('distortion_model', 'distortion_coeffs',
+                                        'serial', 'fps', 'depth_scale_m', 'depth_alignment',
+                                        'intrinsics_source', 'depth_registration_source') if key in entry}}
             image = cv.imread(entry['rgb'])
             marks = []
             for point in project or []:

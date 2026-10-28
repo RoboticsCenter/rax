@@ -1,0 +1,313 @@
+{
+  "serial": "262422074331",
+  "device": "RealSense D435",
+  "firmware": "5.15.1.55",
+  "usb_type_at_capture": "2.1",
+  "source": "realsense_factory_readback",
+  "captured_utc": "2026-10-27T23:07:41.181063+00:00",
+  "evidence": "/home/jerry/rax/.local-runtime/camera-commission-20261027T230741Z",
+  "color_profiles": {
+    "640x480@6": {
+      "width": 640,
+      "height": 480,
+      "K": [
+        [
+          605.3082275390625,
+          0.0,
+          325.4765319824219
+        ],
+        [
+          0.0,
+          603.8328857421875,
+          250.21878051757812
+        ],
+        [
+          0.0,
+          0.0,
+          1.0
+        ]
+      ],
+      "distortion_model": "inverse_brown_conrady",
+      "distortion_coeffs": [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "fps": 6,
+      "format": "format.bgr8"
+    },
+    "1280x720@6": {
+      "K": [
+        [
+          907.9623413085938,
+          0.0,
+          648.2147827148438
+        ],
+        [
+          0.0,
+          905.749267578125,
+          375.3281555175781
+        ],
+        [
+          0.0,
+          0.0,
+          1.0
+        ]
+      ],
+      "width": 1280,
+      "height": 720,
+      "fps": 6,
+      "distortion_model": "inverse_brown_conrady",
+      "distortion_coeffs": [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ]
+    }
+  },
+  "native_depth_640x480_6fps": {
+    "width": 640,
+    "height": 480,
+    "K": [
+      [
+        395.0991516113281,
+        0.0,
+        317.8541259765625
+      ],
+      [
+        0.0,
+        395.0991516113281,
+        241.8014373779297
+      ],
+      [
+        0.0,
+        0.0,
+        1.0
+      ]
+    ],
+    "distortion_model": "brown_conrady",
+    "distortion_coeffs": [
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0
+    ],
+    "fps": 6,
+    "format": "format.z16"
+  },
+  "depth_units_m": 0.0010000000474974513,
+  "depth_to_color": {
+    "rotation_column_major": [
+      0.9999712109565735,
+      -0.007083567325025797,
+      0.002725541125983,
+      0.007088951766490936,
+      0.999972939491272,
+      -0.001971004530787468,
+      -0.0027115056291222572,
+      0.001990269171074033,
+      0.9999943375587463
+    ],
+    "translation_m": [
+      0.014935214072465897,
+      8.681536564836279e-05,
+      0.0001485492684878409
+    ]
+  },
+  "runtime_depth_alignment": "color",
+  "validation": "Qualified on 2026-10-27: held-out calibration poses and live 640x480 RGB-D MCP metric checks passed",
+  "calibrated_color_profiles": {
+    "640x480@6": {
+      "width": 640,
+      "height": 480,
+      "fps": 6,
+      "K": [
+        [
+          610.9968983720685,
+          0.0,
+          340.1297610559031
+        ],
+        [
+          0.0,
+          610.2806603653,
+          245.33407590178905
+        ],
+        [
+          0.0,
+          0.0,
+          1.0
+        ]
+      ],
+      "distortion_model": "brown_conrady",
+      "distortion_coeffs": [
+        0.10643799459674912,
+        -0.10231883820350178,
+        -0.0018403067054186294,
+        0.0076143185726001835,
+        -0.341313637220918
+      ],
+      "source_profile": "1280x720@6",
+      "profile_pixel_affine": [
+        [
+          0.6666666666666666,
+          0.0,
+          -106.66665649414057
+        ],
+        [
+          0.0,
+          0.6666667115909141,
+          -6.688808895205511e-06
+        ],
+        [
+          0.0,
+          0.0,
+          1.0
+        ]
+      ]
+    },
+    "1280x720@6": {
+      "width": 1280,
+      "height": 720,
+      "fps": 6,
+      "K": [
+        [
+          916.4953475581027,
+          0.0,
+          670.1946263250657
+        ],
+        [
+          0.0,
+          915.4209288610557,
+          368.0010990876383
+        ],
+        [
+          0.0,
+          0.0,
+          1.0
+        ]
+      ],
+      "distortion_model": "brown_conrady",
+      "distortion_coeffs": [
+        0.10643799459674912,
+        -0.10231883820350178,
+        -0.0018403067054186294,
+        0.0076143185726001835,
+        -0.341313637220918
+      ],
+      "source_profile": "1280x720@6",
+      "profile_pixel_affine": [
+        [
+          1.0,
+          0.0,
+          1.1368683772161603e-13
+        ],
+        [
+          0.0,
+          1.0,
+          0.0
+        ],
+        [
+          0.0,
+          0.0,
+          1.0
+        ]
+      ]
+    }
+  },
+  "calibrated_source": {
+    "method": "training-only Brown5 color intrinsic fit and hand-eye; three reserved views",
+    "result": "/home/jerry/rax/.local-runtime/sessions/charuco-wuji-20261027-run06-fit/result.json",
+    "board": {
+      "dictionary": "DICT_4X4_100",
+      "squares_x": 10,
+      "squares_y": 13,
+      "square_m": 0.02,
+      "marker_m": 0.015,
+      "legacy_pattern": true,
+      "layout_squares_y": 14,
+      "layout_note": "Physical board has 13 rows. Live marker positions match the legacy 14-row layout with the final row absent; preserve its ID coordinates and exclude missing-row corners.",
+      "dimension_source": "Operator supplied a new accurately printed 10 x 13 board on 2026-10-27, confirming the intended 20 mm squares and 15 mm markers.",
+      "nominal_design_square_m": 0.02,
+      "nominal_design_marker_m": 0.015,
+      "marker_dimension_source": "New print at intended dimensions; operator confirmation, replacing the prior undersized print.",
+      "layout_source": ".local-runtime/camera-new-board-20261027/layout-check.json"
+    },
+    "tcp_offset_mm_rad": [
+      0.0,
+      0.0,
+      172.0,
+      0.0,
+      0.0,
+      0.0
+    ],
+    "quality_check_passed": true
+  },
+  "runtime_rectification": "RGB rectified to fitted K; native depth projected through calibrated infrared-to-color transform into fitted color K",
+  "calibrated_depth_to_color": {
+    "T_color_depth": [
+      [
+        0.999737893171179,
+        0.007744406486530438,
+        -0.021544584605505547,
+        0.012167603980571417
+      ],
+      [
+        -0.007504798785558734,
+        0.9999093365241024,
+        0.011180193518791666,
+        -0.0007024774327437809
+      ],
+      [
+        0.021629215261786024,
+        -0.01101557534134011,
+        0.9997053736711925,
+        0.010077585117615962
+      ],
+      [
+        0.0,
+        0.0,
+        0.0,
+        1.0
+      ]
+    ],
+    "native_depth_profile": {
+      "K": [
+        [
+          395.0991516113281,
+          0.0,
+          317.8541259765625
+        ],
+        [
+          0.0,
+          395.0991516113281,
+          241.8014373779297
+        ],
+        [
+          0.0,
+          0.0,
+          1.0
+        ]
+      ],
+      "distortion_coeffs": [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "width": 640,
+      "height": 480,
+      "fps": 6
+    },
+    "method": "ChArUco infrared/RGB stereo with fixed intrinsic models; training views only",
+    "source": "/home/jerry/rax/.local-runtime/sessions/charuco-wuji-20261027-run07-stereo-reproduced/result.json",
+    "stereo_rms_px": 0.3675279969552859,
+    "validation": "Reserved depth and live 640x480 MCP metric checks passed; depth units unchanged"
+  },
+  "metric_validation_source": "/home/jerry/rax/.local-runtime/sessions/camera-mcp-check-20261027-installed/report.json"
+}

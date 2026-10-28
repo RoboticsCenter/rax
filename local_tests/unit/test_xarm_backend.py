@@ -230,3 +230,10 @@ def test_pixel_to_position_inverts_projection(make_backend):
     assert value['points'][1]['error'] == 'outside the image'
     with pytest.raises(ValueError):
         backend.validate('xarm_pixel_to_position', {'frame_id': '../x', 'camera': 'left', 'pixels': [[1, 1]]})
+
+
+def test_no_geometry_cannot_publish_placeholder_base_coordinates(make_backend):
+    backend, _, _ = make_backend()
+    backend.models = {}
+    with pytest.raises(ValueError, match='geometry is unavailable'):
+        backend.call('xarm_observe', {})

@@ -35,8 +35,11 @@ connect to either device.
 Copy [examples/xarm-wuji.json](../examples/xarm-wuji.json) into your operator
 configuration location and review it before running:
 
-- The example retains RAX's existing arm IP and camera calibration paths. Verify
-  the current arm address and the physical camera configuration.
+- The example targets the observed arm at `192.168.100.16`, wrist D435
+  `262422074331`, and fixed side D435 `348522070593`. Camera references live in
+  `calibration/xarm-wuji/`; the G2 transforms are not used. Follow the
+  [bring-up checklist](xarm-wuji-bringup-checklist.md) and installed
+  [camera calibration report](../calibration/xarm-wuji/README.md).
 - It selects right hand `WH2KA01260823017` at `192.168.1.111:7447`. Connection verifies
   serial and side even when the endpoint is supplied. Set `address` to null to
   discover by serial. The port matches the recorded firmware 2.6.0 deployment;

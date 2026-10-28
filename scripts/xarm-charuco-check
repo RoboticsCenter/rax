@@ -5,7 +5,6 @@ from __future__ import annotations
 import argparse
 import json
 import os
-import shutil
 import sys
 from pathlib import Path
 
@@ -17,9 +16,9 @@ if os.environ.get("RAX_PYTHON") and Path(sys.executable).resolve() != Path(os.en
 import cv2 as cv  # noqa: E402
 import numpy as np  # noqa: E402
 
-from services.controller.config import Configuration  # noqa: E402
 from services.storage_root import artifact_root  # noqa: E402
-from services.xarm.backend import XArmBackend  # noqa: E402
+from services.xarm.backend import CameraService, DEFAULTS  # noqa: E402
+from services.xarm.charuco import board_settings, make_board, detect_board, distortion  # noqa: E402
 
 
 def parse_args():
@@ -32,6 +31,9 @@ def parse_args():
     parser.add_argument("--square-m", type=float, default=0.020)
     parser.add_argument("--marker-m", type=float, default=0.015)
     parser.add_argument("--legacy-pattern", action=argparse.BooleanOptionalAction, default=True)
+    parser.add_argument("--width", type=int, help="optional capture-width override")
+    parser.add_argument("--height", type=int, help="optional capture-height override")
+    parser.add_argument("--board", type=Path, help="board JSON; overrides individual board flags")
     return parser.parse_args()
 
 
@@ -40,30 +42,36 @@ def main():
     if not args.root.resolve().is_relative_to(artifact_root()):
         raise SystemExit(f"--root must be under {artifact_root()} (set RAX_ARTIFACT_ROOT if needed)")
     root = args.root.resolve()
-    if root.exists():
-        shutil.rmtree(root)
-    root.mkdir(parents=True)
+    root.mkdir(parents=True, exist_ok=False)
 
-    opts = json.loads(args.backend_options.read_text())
-    config = Configuration(root=root, task="charuco_static_check", robot="xarm",
-                           backend_options=opts, observation_profile="rgbd")
-    backend = XArmBackend(config)
-    dictionary = cv.aruco.getPredefinedDictionary(getattr(cv.aruco, args.dictionary))
-    board = cv.aruco.CharucoBoard((args.squares_x, args.squares_y), args.square_m, args.marker_m, dictionary)
-    if args.legacy_pattern:
-        board.setLegacyPattern(True)
-    detector = cv.aruco.CharucoDetector(board)
+    opts = {**DEFAULTS, **json.loads(args.backend_options.read_text())}
+    for spec in opts['cameras']:
+        if args.width:
+            spec['width'] = args.width
+        if args.height:
+            spec['height'] = args.height
+    names = [spec['name'] for spec in opts['cameras']]
+    frames_root = root/'frames'
+    service = CameraService(opts, frames_root, root/'camera-server.log', 'NONE')
+    settings = board_settings(args)
+    board, detector = make_board(settings)
 
     try:
-        value, _ = backend.call("xarm_observe", {"cameras": ["left", "right", "wrist"]})
-        frame_dir = root / "agent-workspace" / value["directory"]
-        meta = json.loads((frame_dir / "meta.json").read_text())
-        out = {"frame_dir": str(frame_dir), "frame_id": value["frame_id"], "cameras": {}}
-        for camera in ("left", "right", "wrist"):
+        import time
+        service.start()
+        time.sleep(3)  # Let auto-exposure settle before measuring corner quality.
+        frame_dir = frames_root/'sample'
+        captured = service.request({'op': 'grab', 'cameras': names, 'depth': False,
+                                    'out_dir': str(frame_dir)})['cameras']
+        meta = {'calibration_pending': True, 'cameras': {
+            name: {**entry, 'rgb': Path(entry['rgb']).name} for name, entry in captured.items()}}
+        (frame_dir/'meta.json').write_text(json.dumps(meta, indent=2)+'\n')
+        out = {'frame_dir': str(frame_dir), 'board': settings, 'cameras': {}}
+        for camera in names:
             entry = meta["cameras"][camera]
             image = cv.imread(str(frame_dir / entry["rgb"]))
             gray = cv.cvtColor(image, cv.COLOR_BGR2GRAY)
-            charuco_corners, charuco_ids, marker_corners, marker_ids = detector.detectBoard(gray)
+            charuco_corners, charuco_ids, marker_corners, marker_ids = detect_board(gray, board, detector, settings)
             markers = 0 if marker_ids is None else int(len(marker_ids))
             corners = 0 if charuco_ids is None else int(len(charuco_ids))
             cam_out = {"markers": markers, "charuco_corners": corners}
@@ -75,14 +83,15 @@ def main():
                 if len(cc) == len(ids):
                     cv.aruco.drawDetectedCornersCharuco(image, cc, ids, (0, 0, 255))
             cv.imwrite(str(root / f"{camera}_charuco_overlay.jpg"), image)
-            if charuco_ids is not None and len(charuco_ids) >= 4:
+            if charuco_ids is not None and len(charuco_ids) >= 6 and not board.checkCharucoCornersCollinear(charuco_ids):
                 obj, img = board.matchImagePoints(charuco_corners, charuco_ids)
                 K = np.asarray(entry["K"], dtype=float)
+                dist = distortion(entry)
                 ok, rvec, tvec = cv.solvePnP(np.asarray(obj, float).reshape(-1, 3),
-                                             np.asarray(img, float).reshape(-1, 2), K, np.zeros(5))
+                                             np.asarray(img, float).reshape(-1, 2), K, dist)
                 cam_out["solvepnp"] = bool(ok)
                 if ok:
-                    proj, _ = cv.projectPoints(np.asarray(obj, float).reshape(-1, 3), rvec, tvec, K, np.zeros(5))
+                    proj, _ = cv.projectPoints(np.asarray(obj, float).reshape(-1, 3), rvec, tvec, K, dist)
                     err = np.linalg.norm(proj.reshape(-1, 2) - np.asarray(img, float).reshape(-1, 2), axis=1)
                     cam_out["reprojection_mean_px"] = float(err.mean())
                     cam_out["reprojection_max_px"] = float(err.max())
@@ -91,7 +100,7 @@ def main():
         (root / "summary.json").write_text(json.dumps(out, indent=2) + "\n")
         print(json.dumps(out, indent=2))
     finally:
-        backend.close()
+        service.close()
 
 
 if __name__ == "__main__":

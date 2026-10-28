@@ -1,0 +1,46 @@
+matrix:
+- - -0.9621401651012745
+  - 0.26982405334140425
+  - 0.03848743869509047
+  - 0.2622848734391461
+- - 0.1693699648747213
+  - 0.7025328918225768
+  - -0.6912028290637594
+  - -0.10645515885655096
+- - -0.2135418406243352
+  - -0.6585153879339677
+  - -0.7216352029640382
+  - 0.8352482413836333
+- - 0.0
+  - 0.0
+  - 0.0
+  - 1.0
+source:
+  method: training-only Brown5 color intrinsic fit and hand-eye; three reserved views
+  result: /home/jerry/rax/.local-runtime/sessions/charuco-wuji-20261027-run06-fit/result.json
+  board:
+    dictionary: DICT_4X4_100
+    squares_x: 10
+    squares_y: 13
+    square_m: 0.02
+    marker_m: 0.015
+    legacy_pattern: true
+    layout_squares_y: 14
+    layout_note: Physical board has 13 rows. Live marker positions match the legacy
+      14-row layout with the final row absent; preserve its ID coordinates and exclude
+      missing-row corners.
+    dimension_source: Operator supplied a new accurately printed 10 x 13 board on
+      2026-10-27, confirming the intended 20 mm squares and 15 mm markers.
+    nominal_design_square_m: 0.02
+    nominal_design_marker_m: 0.015
+    marker_dimension_source: New print at intended dimensions; operator confirmation,
+      replacing the prior undersized print.
+    layout_source: .local-runtime/camera-new-board-20261027/layout-check.json
+  tcp_offset_mm_rad:
+  - 0.0
+  - 0.0
+  - 172.0
+  - 0.0
+  - 0.0
+  - 0.0
+  quality_check_passed: true

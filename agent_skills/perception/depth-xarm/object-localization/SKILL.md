@@ -5,8 +5,9 @@ description: Metric 3-D positions of visible object points in the xArm base fram
 
 # Object localization (RGB-D)
 
-Three calibrated Intel RealSense D435i cameras: `left` and `right` are fixed side views,
-`wrist` rides on the hand. Every `{{ robot.observe }}` call saves a frame under
+Configured Intel RealSense cameras: `{{ robot.cameras | join('`, `') }}`.
+Fixed views: `{{ robot.fixed_cameras | join('`, `') }}`; TCP-mounted views:
+`{{ robot.wrist_cameras | join('`, `') }}`. Every `{{ robot.observe }}` call saves a frame under
 `{{ vocab.frames }}<frame_id>/`: `<camera>.jpg`, `<camera>_depth.png` (uint16
 millimetres, 0 = invalid) and `meta.json` with each camera's intrinsics `K` and pose
 `T_base_cam` (4x4, camera to base) at capture time.
@@ -22,9 +23,10 @@ millimetres, 0 = invalid) and `meta.json` with each camera's intrinsics `K` and 
 4. Cross-check: the same object from another camera should agree within about 1-2 cm.
    A point on the table should match the measured table height in the current setup.
    Disagreement usually means a bad pixel on an edge, shadow, reflection or occluder.
-5. Object centre: average interior top-surface points in x, y; height = their z. For a
-   grasp, place the TCP at the centre and choose a z that puts the fingers around the
-   object's middle, not below the table.
+5. Object centre: average interior top-surface points in x, y; height = their z.
+   Convert the desired contact location to a TCP target using verified tool geometry.
+   The configured TCP is not necessarily the palm or fingertips; finger posture
+   changes their offsets. Check palm and finger clearance before descending.
 
 Depth is unreliable on object edges, shiny or transparent surfaces and closer than the
 configured camera `depth_min_m`. Use the wrist camera for close inspection after moving

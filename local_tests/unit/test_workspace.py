@@ -36,6 +36,18 @@ def test_subagent_text_only_with_subagents(tmp_path):
     assert 'up to 2 subagents' in (tmp_path/'two/AGENTS.md').read_text()
 
 
+@pytest.mark.parametrize('profile', ['rgbd', 'rgb-only'])
+def test_configured_wuji_cameras_reach_agent_instructions(tmp_path, profile):
+    options = json.loads((ROOT/'examples/xarm-wuji.json').read_text())
+    setup = Setup('xarm', observation_profile=profile, backend_options=options)
+    assert setup.robot_facts['overview_camera'] == 'side'
+    build(recipe_for(), setup, tmp_path/'ws')
+    for name in ('robot-interface', 'object-localization'):
+        text = (tmp_path/'ws'/'.agents'/'skills'/name/'SKILL.md').read_text()
+        assert '`side`' in text and '`wrist`' in text
+        assert '`left`' not in text and '`right`' not in text
+
+
 def test_blocks_registry_and_unknown_names_fail():
     assert set(registry()) == {'session.contract-pointer', 'images.forwarding'}
     with pytest.raises(ValueError, match='Unknown workspace template name'):

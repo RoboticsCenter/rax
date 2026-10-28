@@ -1,35 +1,27 @@
 {
-  "xarm_ip": "192.168.2.205",
+  "xarm_ip": "192.168.100.16",
   "cameras": [
     {
-      "name": "left",
-      "serial": "348522070593",
-      "mount": "fixed",
-      "extrinsics": "/home/jerry/rax/calibration/xarm/left_T_cam_base.yaml",
-      "width": 640,
-      "height": 480,
-      "depth_min_m": 0.25,
-      "depth_max_m": 3.0
-    },
-    {
-      "name": "right",
-      "serial": "841612070490",
-      "mount": "fixed",
-      "extrinsics": "/home/jerry/rax/calibration/xarm/right_T_cam_base.yaml",
-      "width": 640,
-      "height": 480,
-      "depth_min_m": 0.25,
-      "depth_max_m": 3.0
-    },
-    {
       "name": "wrist",
-      "serial": "108322071838",
+      "serial": "262422074331",
       "mount": "tcp",
-      "extrinsics": "/home/jerry/rax/calibration/xarm/wrist_T_cam_tcp.yaml",
+      "intrinsics": "/home/jerry/rax/calibration/xarm-wuji/wrist_intrinsics.json",
+      "extrinsics": "/home/jerry/rax/calibration/xarm-wuji/wrist_T_cam_tcp.yaml",
       "width": 640,
       "height": 480,
       "depth_min_m": 0.1,
       "depth_max_m": 1.5
+    },
+    {
+      "name": "side",
+      "serial": "348522070593",
+      "mount": "fixed",
+      "intrinsics": "/home/jerry/rax/calibration/xarm-wuji/side_intrinsics.json",
+      "extrinsics": "/home/jerry/rax/calibration/xarm-wuji/side_T_cam_base.yaml",
+      "width": 640,
+      "height": 480,
+      "depth_min_m": 0.25,
+      "depth_max_m": 3.0
     }
   ],
   "camera_cpus": "0-15",

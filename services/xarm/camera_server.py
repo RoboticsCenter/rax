@@ -46,21 +46,67 @@ class CameraWorker:
         self.rs, self.spec, self.name = rs, spec, spec['name']
         self.stream, self.quality, self.depth_hz = stream, stream_quality, depth_hz
         self.depth_enabled = depth_mode != 'NONE'
+        self.calibration_native = bool(spec.get('calibration_native', False))
+        self.native_frames = {}
         self.pipeline = rs.pipeline()
         config = rs.config()
         config.enable_device(str(spec['serial']))
         config.enable_stream(rs.stream.color, int(spec.get('width', 1280)), int(spec.get('height', 720)),
                              rs.format.bgr8, fps)
-        if self.depth_enabled:
-            config.enable_stream(rs.stream.depth, int(spec.get('width', 1280)), int(spec.get('height', 720)),
+        if self.depth_enabled or self.calibration_native:
+            config.enable_stream(rs.stream.depth, 640 if self.calibration_native else int(spec.get('width', 1280)),
+                                 480 if self.calibration_native else int(spec.get('height', 720)),
                                  rs.format.z16, fps)
+        if self.calibration_native:
+            config.enable_stream(rs.stream.infrared, 1, 640, 480, rs.format.y8, fps)
         profile = self.pipeline.start(config)
         self.align = rs.align(rs.stream.color) if self.depth_enabled else None
         color_profile = profile.get_stream(rs.stream.color).as_video_stream_profile()
+        if self.calibration_native:
+            native_profile = profile.get_stream(rs.stream.depth).as_video_stream_profile()
+            ni = native_profile.get_intrinsics()
+            ext = native_profile.get_extrinsics_to(color_profile)
+            self.native_metadata = {
+                'K': [[ni.fx, 0, ni.ppx], [0, ni.fy, ni.ppy], [0, 0, 1]],
+                'distortion_coeffs': list(ni.coeffs), 'width': ni.width, 'height': ni.height,
+                'depth_to_color_rotation_column_major': list(ext.rotation),
+                'depth_to_color_translation_m': list(ext.translation)}
         intr = color_profile.get_intrinsics()
         self.K = [[intr.fx, 0.0, intr.ppx], [0.0, intr.fy, intr.ppy], [0.0, 0.0, 1.0]]
+        self.distortion_model = str(intr.model).rsplit('.', 1)[-1]
+        self.distortion_coeffs = list(intr.coeffs)
+        from .calibration import validate_intrinsics, ColorRectification, DepthRegistration, depth_to_color_transform
+        self.depth_registration = None
+        self.depth_registration_source = 'realsense_factory' if self.depth_enabled else None
+        try:
+            live = {'K': self.K, 'width': intr.width, 'height': intr.height,
+                    'fps': color_profile.fps(), 'distortion_model': self.distortion_model,
+                    'distortion_coeffs': self.distortion_coeffs}
+            reference = validate_intrinsics(spec, live)
+            # New calibration collections need raw pixels even after a fitted
+            # model has been installed. Still validate the factory reference.
+            self.rectification = ColorRectification(
+                None if spec.get('calibration_raw_color') else reference, live)
+            self.K = self.rectification.K
+            if self.rectification.maps is not None:
+                self.distortion_model, self.distortion_coeffs = 'none', [0.]*5
+                if self.depth_enabled:
+                    native = profile.get_stream(rs.stream.depth).as_video_stream_profile()
+                    di = native.get_intrinsics()
+                    ext = native.get_extrinsics_to(color_profile)
+                    depth_K = [[di.fx, 0, di.ppx], [0, di.fy, di.ppy], [0, 0, 1]]
+                    rotation, translation, self.depth_registration_source = depth_to_color_transform(
+                        reference, depth_K, (di.height, di.width), di.coeffs,
+                        np.asarray(ext.rotation).reshape(3, 3, order='F'), ext.translation)
+                    self.depth_registration = DepthRegistration(
+                        depth_K, (di.height, di.width), di.coeffs, self.K,
+                        rotation, translation, (intr.height, intr.width))
+                    self.align = None
+        except BaseException:
+            self.pipeline.stop()
+            raise
         self.depth_scale = None
-        if self.depth_enabled:
+        if self.depth_enabled or self.calibration_native:
             self.depth_scale = profile.get_device().first_depth_sensor().get_depth_scale()
         self.lock = threading.Condition()
         self.latest = None
@@ -79,6 +125,13 @@ class CameraWorker:
             try:
                 frames = self.pipeline.wait_for_frames(timeout_ms=2000)
                 stamp = time.time_ns()
+                native = None
+                if self.calibration_native:
+                    ir, raw_depth = frames.get_infrared_frame(1), frames.get_depth_frame()
+                    if not ir or not raw_depth:
+                        continue
+                    native = (np.asanyarray(ir.get_data()).copy(),
+                              np.asanyarray(raw_depth.get_data()).copy())
                 if self.align is not None:
                     frames = self.align.process(frames)
                 color = frames.get_color_frame()
@@ -94,11 +147,18 @@ class CameraWorker:
                     depth_frame = frames.get_depth_frame()
                     if depth_frame:
                         depth = np.asanyarray(depth_frame.get_data()).astype(np.float32) * float(self.depth_scale)
+                        if self.depth_registration is not None:
+                            depth = self.depth_registration.apply(depth)
                         depth_min = float(self.spec.get('depth_min_m', 0.0))
                         depth_max = float(self.spec.get('depth_max_m', 10.0))
                         depth[(depth < depth_min) | (depth > depth_max)] = 0.0
                         self.last_depth_s = now
+                bgr = self.rectification.apply(bgr)
                 with self.lock:
+                    if native is not None:
+                        self.native_frames[stamp] = native
+                        while len(self.native_frames) > 30:
+                            del self.native_frames[next(iter(self.native_frames))]
                     self.latest = (stamp, bgr)
                     if depth is not None:
                         self.latest_depth = (stamp, depth, bgr)
@@ -239,11 +299,26 @@ class Cameras:
             rgb_file = out_dir/f'{name}.jpg'
             cv.imwrite(str(rgb_file), bgr, [cv.IMWRITE_JPEG_QUALITY, 95])
             entry = {'rgb': str(rgb_file), 'depth': None, 'K': worker.K, 'width': bgr.shape[1],
-                     'height': bgr.shape[0], 'timestamp_ns': stamp}
+                     'height': bgr.shape[0], 'timestamp_ns': stamp,
+                     'distortion_model': worker.distortion_model,
+                     'distortion_coeffs': worker.distortion_coeffs,
+                     'intrinsics_source': worker.rectification.source,
+                     'serial': str(worker.spec['serial']), 'fps': self.fps,
+                     'depth_scale_m': worker.depth_scale, 'depth_alignment': 'color' if worker.depth_enabled else None,
+                     'depth_registration_source': worker.depth_registration_source}
             if metres is not None:
                 depth_file = out_dir/f'{name}_depth.png'
                 write_atomic(depth_file, depth_png(metres))
                 entry['depth'] = str(depth_file)
+            if worker.calibration_native:
+                with worker.lock:
+                    infrared, native_depth = worker.native_frames[stamp]
+                ir_file, native_file = out_dir/f'{name}_infrared.png', out_dir/f'{name}_native_depth.png'
+                cv.imwrite(str(ir_file), infrared)
+                cv.imwrite(str(native_file), native_depth)
+                entry['native_calibration'] = {
+                    **worker.native_metadata, 'infrared': str(ir_file), 'depth': str(native_file),
+                    'depth_scale_m': worker.depth_scale, 'timestamp_ns': stamp}
             result[name] = entry
         return result
 

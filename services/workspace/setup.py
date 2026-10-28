@@ -61,6 +61,16 @@ class Setup:
     @property
     def robot_facts(self):
         facts = dict(ROBOT_FACTS[self.robot])
+        cameras = self.backend_options.get('cameras')
+        if cameras:
+            facts['cameras'] = tuple(camera['name'] for camera in cameras)
+            facts['fixed_cameras'] = tuple(camera['name'] for camera in cameras if camera.get('mount') == 'fixed')
+            facts['wrist_cameras'] = tuple(camera['name'] for camera in cameras if camera.get('mount') == 'tcp')
+            facts['overview_camera'] = (facts['fixed_cameras'] or facts['cameras'])[0]
+            facts['overview'] = f"{facts['overview_camera']} camera"
+        else:
+            facts['fixed_cameras'] = tuple(name for name in facts['cameras'] if name != 'wrist')
+            facts['wrist_cameras'] = tuple(name for name in facts['cameras'] if name == 'wrist')
         facts.update(has_hand=self.end_effector == 'wuji_hand2', end_effector=self.end_effector,
                      effector_name='gripper', effector_tool=facts['gripper'])
         if self.robot == 'xarm':
