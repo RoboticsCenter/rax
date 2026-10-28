@@ -4,6 +4,14 @@ Every skill an agent can receive lives here, once. The workspace template
 (`auto_research_agent/`) holds only the instructions and the agent-side MCP client;
 `services/workspace/build.py` builds each new session's `.agents/skills/`.
 
+An existing workspace contains copies, not live links to these sources. Updating
+this directory does not update a running session. For a stopped Wuji session, use
+`scripts/refresh_wuji_tools.py --session SESSION` to refresh the tool contract and
+all provided skills/references, with backups and hashes. Task-specific memory,
+code, recordings and custom skills are preserved. Resume through the official
+launcher, then reread the relevant refreshed skills. See
+[`docs/xarm-wuji.md`](../docs/xarm-wuji.md) for commands and current tool semantics.
+
 ## Layout: by axis
 
 Each workspace takes the layers of its setup, in this order (`SKILL_LAYERS` in

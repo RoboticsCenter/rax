@@ -223,6 +223,8 @@ and parent liveness while the agent is thinking or waiting for an operator.
 | `wuji_status` | none | Measured/target positions, rad/s velocities, effort in A, diagnostics, independent stream ages, profile, limits, posture names, mode and current action. |
 | `wuji_move_joints` | `positions`: 20 finite radians; optional `duration_s` | Smooth bounded move and measured settling. Holds the final target afterward. |
 | `wuji_pose` | `name`; optional `duration_s` | Same motion path using an operator-configured posture. Unknown names refuse before dispatch. |
+| `wuji_set_effort` | `effort_a`: 20 signed amperes; optional `duration_s` | Slew-bounded feed-forward current ramp, holding the position reference and MIT gains. Current bias persists after return. Not calibrated fingertip-force control. |
+| `wuji_set_impedance` | One or more 20-element arrays: `kp`, `kd`, `current_limit_a` | Adjust active gains/current caps within the operator profile, with device readback. Requires zero feed-forward bias and a measured stationary prepared hand. |
 | `wuji_hold` | none | Retain a stationary target; brake a moving S-curve to a bounded rest target. Falls back to emergency stop when disarmed/unreliable or bounded braking is unavailable. |
 | `xarm_hold` | none | Independently request arm hold and hand emergency stop; report both outcomes. |
 
@@ -238,6 +240,56 @@ must both remain fresh. Missing or duplicated NIDs, nonfinite values, stale
 sequences, reported faults and an unexpected enabled state prevent continued
 execution. The hand keeps its target during arm motion; calls are sequential,
 not a synchronized arm/hand trajectory.
+
+### Effort and impedance semantics
+
+The installed Wuji SDK 2026.10.12 exposes `JointCommand(position, velocity, effort)`
+and per-joint `effort_limit` / `mit_params` resources. The vendor's
+[teleoperation example](https://github.com/wuji-technology/wuji-sdk/blob/main/examples/python/retargeting/1.teleop_real.py)
+uses these resources with current limits in amperes. The installed SDK type stubs
+also label the torque constant as a placeholder; neither SDK effort nor motor current
+is a calibrated fingertip force. No newton-valued force command or tactile feedback
+controller is claimed by this port.
+
+`wuji_set_effort` streams signed feed-forward current through the same single owner
+as joint motion. Its quintic ramp respects `max_effort_slew_a_s` (default **0.5 A/s**),
+the configured maximum duration, and each active current cap. The position reference
+stays fixed during the ramp; after success, the bias persists through subsequent
+joint/arm moves, holds and agent pauses. Twenty zeros ramp the bias away. Measured
+joint position, tracking deviation, velocity, feedback freshness, thermal/fault,
+arming and parent-process guards remain enforced. Completion acknowledges the final
+command write, not measured force convergence, contact or grasp success.
+
+`wuji_set_impedance` changes only the supplied arrays and keeps the target posture.
+The operator profile's `kp`, `kd`, and `current_limit_a` are ceilings; positive kp
+and current caps are required, so this does not expose an unconstrained current-only
+mode. Clear feed-forward effort first and verify the hand is stationary. Every
+resource write is read back, with stop/cancellation and scheduling checks between
+writes. Partial failures stop the assembly and report uncertain control. Slow SDK
+RPCs can trip the existing scheduling deadline; qualify this path on the mounted
+hardware before relying on live gain changes during a grasp.
+
+`wuji_status` separates active `control_parameters` from baseline
+`profile_control_parameters`, and commanded `command_effort_a` from measured
+`effort_a`. Real operator preparation restores the baseline and zero bias; merely
+renewing arming on a healthy hold preserves current settings. Current removal,
+lower stiffness or lower caps may release an object. `wuji_hold` retains the bias;
+assembly stop/disarm disables the hand. Both new MCP tools are mutating actions
+and produce the existing motion clips and audit records.
+
+For an existing session, exit its Claude Code UI and let RAX shut down, then refresh
+the copied tool contract and all provided skills before resuming:
+
+```bash
+"$RAX_PYTHON" scripts/refresh_wuji_tools.py --session "$CUBE_SESSION"
+bash scripts/start_agent.sh --config "$CUBE_SESSION/operator-input.json" --resume
+```
+
+The refresh refuses a running session, backs up replaced skill/contract files, records
+their new hashes, and preserves task text, conversation, memory, code, references,
+custom skills and recordings. It starts no services. On resume, have the agent reread `MCP_SESSION.md` and the hand-control
+skill; historical notes that gains were fixed describe the earlier interface. The
+operator still performs preparation/arming through the existing controls.
 
 The saved hand home is requested through MCP after operator arming and preparation:
 
@@ -342,6 +394,25 @@ socket/MCP tests. They cover malformed/missing feedback, arming and heartbeat lo
 delayed native calls, command cancellation, stop failure, target retention,
 workspace generation and G2 compatibility. No SDK demo or motion test runs
 automatically. Some tests need permission to create local sockets.
+
+For an operator-supervised hardware qualification of `wuji_set_effort` and
+`wuji_set_impedance`, first exit the RAX session and put the empty hand in clear
+space with the arm stopped and a person at the stop. Preview the exact test:
+
+```bash
+"$RAX_PYTHON" scripts/qualify_wuji_effort.py --source-session "$CUBE_SESSION"
+```
+
+After confirming physical clearance, add `--execute`. This starts an isolated
+production MCP frontend, never an agent. It retains the measured posture, applies
+±0.05 A to middle S3, removes the bias, briefly reduces that joint's gains/current
+ceiling, restores v13, then disarms and verifies disabled feedback. An independent
+monitor stops on stale/faulted feedback or excursion beyond 0.03 rad. No arm motion
+is requested. Any failure ends the attempt without rearming; a failed impedance
+write can leave partial settings, which must be inspected before further use.
+The printed evidence directory contains the report, hand trace, MCP audit and
+motion clips when enabled in the source configuration. This validates current
+command delivery and bounded behavior, not calibrated fingertip force or grasping.
 
 `xarm_observe` records a hand snapshot in each frame's `meta.json`; replies include
 it too. Robot stream records carry `hand` instead of `gripper_width`. Hand motions

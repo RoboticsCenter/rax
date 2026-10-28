@@ -27,7 +27,8 @@ def make_wuji(make_backend, **kwargs):
 def test_wuji_tools_replace_gripper_and_status_has_real_hand_shape(make_backend):
     backend, arm, hand, root = make_wuji(make_backend)
     names = {t['name'] for t in backend.tools()}
-    assert {'wuji_status', 'wuji_move_joints', 'wuji_pose', 'wuji_hold', 'xarm_move_pose'} <= names
+    assert {'wuji_status', 'wuji_move_joints', 'wuji_pose', 'wuji_hold', 'xarm_move_pose',
+            'wuji_set_effort', 'wuji_set_impedance'} <= names
     assert 'xarm_gripper' not in names
     status, _ = backend.call('xarm_status', {})
     assert status['hand']['positions'] == [0]*20 and 'gripper' not in status
@@ -40,7 +41,8 @@ def test_wuji_tools_replace_gripper_and_status_has_real_hand_shape(make_backend)
     value, _ = backend.call('wuji_pose', {'name': 'test_pose'})
     assert value['reached'] and hand.moves == [[.1]*20]
     assert backend.last_motion['tool'] == 'wuji_pose'
-    assert backend.mutating == {'xarm_move_pose', 'xarm_move_joints', 'wuji_move_joints', 'wuji_pose'}
+    assert backend.mutating == {'xarm_move_pose', 'xarm_move_joints', 'wuji_move_joints', 'wuji_pose',
+                               'wuji_set_effort', 'wuji_set_impedance'}
 
 
 def test_frontend_validation_and_uncertain_failure_are_distinct(make_backend):
@@ -205,6 +207,14 @@ def test_real_mcp_socket_and_python_client_with_fake_hardware(make_backend, tmp_
                 assert 'wuji_pose' in {t['name'] for t in listing['tools']}
                 assert len(ctx.value('wuji_status')['positions']) == 20
                 assert ctx.value('wuji_pose', name='test_pose')['reached']
+                assert ctx.value('wuji_set_impedance', kp=[1.]*20, current_limit_a=[.25]*20)['outcome'] == 'impedance_set'
+                assert ctx.value('wuji_set_effort', effort_a=[.1]*20)['outcome'] == 'effort_set'
+                with pytest.raises(RuntimeError):
+                    ctx.value('wuji_set_effort', effort_a=[.3]*20)  # Below profile, above active cap.
+                assert not front.control_uncertain  # Pure admission failure did not dispatch anything.
+                with pytest.raises(RuntimeError):
+                    ctx.value('wuji_set_impedance', kp=[.8]*20)  # Clear the current bias first.
+                assert ctx.value('wuji_set_effort', effort_a=[0.]*20)['outcome'] == 'effort_set'
                 assert ctx.value('wuji_hold')['outcome'] == 'held'
                 assert ctx.value('xarm_hold')['assembly_stop']['hand']['confirmed']
                 with pytest.raises(RuntimeError):
@@ -237,3 +247,27 @@ def test_snapshot_retains_hand_state_when_arm_dashboard_read_fails(tmp_path, mon
     assert 'gripper' not in dashboard.robot()
     write_private_json(root/'operator'/'wuji-state.json', {'recorded_unix': time.time()-10, 'fresh': True})
     assert not recorded_status(root)['fresh']
+
+
+@pytest.mark.parametrize('tool,args', [
+    ('wuji_set_effort', {'effort_a': [.1]*20}),
+    ('wuji_set_impedance', {'kp': [.8]*20}),
+])
+def test_force_controls_require_arming_and_failures_stop_both_devices(make_backend, tool, args):
+    backend, arm, hand, root = make_wuji(make_backend)
+    with pytest.raises(PermissionError):
+        backend.call(tool, args)
+    assert not hand.control_calls
+    arming.write(root, True)
+
+    def fail(**kwargs):
+        raise RuntimeError('injected control write/readback failure')
+
+    setattr(hand, tool.removeprefix('wuji_'), fail)
+    front = Frontend(Session(backend.config), backend)
+    try:
+        response = front.call(tool, args)
+        assert response.get('isError') and front.control_uncertain
+        assert hand.stops and arm.holds
+    finally:
+        front.close()

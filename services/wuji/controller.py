@@ -17,7 +17,7 @@ from pathlib import Path
 
 from services.xarm import arming
 
-from .config import JOINT_NAMES, number, target, validate_config
+from .config import JOINT_NAMES, effort, impedance, number, target, validate_config, validate_tool
 from .motion import FeedbackPath, SettlingWindow, smooth_minimum_duration
 from .scurve import SCurvePath, next_deadline, require_ruckig
 from .sdk import WujiDriver
@@ -52,6 +52,18 @@ class Trajectory:
         return [a + blend*d for a, d in zip(self.start, self.delta)]
 
 
+class EffortRamp:
+    def __init__(self, start, goal, cfg, duration=None):
+        self.start, self.goal = list(start), list(goal)
+        self.delta = [b-a for a, b in zip(start, goal)]
+        minimum = max(.1, 1.875*max(map(abs, self.delta))/cfg['max_effort_slew_a_s'])
+        self.duration = minimum if duration is None else number(duration, 'duration_s', .1, cfg['max_duration_s'])
+        if self.duration < minimum-1e-9 or self.duration > cfg['max_duration_s']:
+            raise ValueError(f'effort ramp requires {minimum:.3f}..{cfg["max_duration_s"]:g} seconds')
+
+    sample = Trajectory.sample
+
+
 class Controller:
     """Deterministically tickable execution engine; SDK calls occur only in tick()."""
     def __init__(self, config, driver, armed, *, clock=time.monotonic, parent_alive=lambda: True):
@@ -65,6 +77,8 @@ class Controller:
         self.target = None
         self.command_velocity = [0.]*20
         self.command_acceleration = [0.]*20
+        self.command_effort = [0.]*20
+        self.control_parameters = {k: list(config[k]) for k in ('kp', 'kd', 'current_limit_a')}
         self.first_command_at = self.last_command_at = None
         self.command_count = self.skipped_slots = 0
         self.max_command_interval = 0.
@@ -79,11 +93,12 @@ class Controller:
     def _finish(self, job, outcome, **extra):
         if job is not None and job['id'] is not None:
             with self.lock:
-                self.results[job['id']] = {'done': True, 'ok': outcome in ('reached', 'prepared', 'held', 'stopped', 'connected'),
+                self.results[job['id']] = {'done': True, 'ok': outcome in ('reached', 'prepared', 'held', 'stopped', 'connected',
+                                                                         'effort_set', 'impedance_set'),
                                            'outcome': outcome, 'command_id': job['id'], **extra}
 
     def submit(self, ident, op, args=None):
-        if op not in ('connect', 'prepare', 'move', 'hold', 'emergency', 'disable'):
+        if op not in ('connect', 'prepare', 'move', 'hold', 'emergency', 'disable', 'set_effort', 'set_impedance'):
             raise ValueError('unknown hand operation')
         if not isinstance(ident, str) or not 1 <= len(ident) <= 80 or not isinstance(args or {}, dict):
             raise ValueError('invalid command id or arguments')
@@ -139,6 +154,7 @@ class Controller:
         sample = self.driver.snapshot()
         path = (self.active.get('scurve') or self.active.get('feedback')) if self.active else None
         value = {**sample, 'mode': self.mode, 'fault': self.fault, 'target_positions': deepcopy(self.target),
+                 'command_effort_a': list(self.command_effort),
                  'command_velocity_rad_s': list(self.command_velocity), 'motion_mode': self.cfg['motion_mode'],
                  'command_acceleration_rad_s2': (list(self.command_acceleration)
                                                  if self.cfg['motion_mode'] == 'scurve' else None),
@@ -153,7 +169,11 @@ class Controller:
                  'limits': {k: deepcopy(self.cfg[k]) for k in ('lower_rad', 'upper_rad', 'max_velocity_rad_s',
                             'max_acceleration_rad_s2', 'max_jerk_rad_s3', 'max_step_rad', 'max_tracking_error_rad',
                             'tolerance_rad', 'settle_s', 'settle_timeout_s', 'settle_position_range_rad')},
-                 'control_parameters': {k: deepcopy(self.cfg[k]) for k in ('kp', 'kd', 'current_limit_a')},
+                 'control_parameters': deepcopy(self.control_parameters),
+                 'profile_control_parameters': {k: deepcopy(self.cfg[k]) for k in ('kp', 'kd', 'current_limit_a')},
+                 'effort_control': {'units': 'A', 'calibrated_contact_force': False,
+                                    'max_slew_a_s': self.cfg['max_effort_slew_a_s'],
+                                    'persists_until_changed_or_stopped': True},
                  'diagnostics_policy': {k: self.cfg[k] for k in ('allow_encoder_warning', 'max_temperature_c')},
                  'stop': deepcopy(self.stopping)}
         with self.lock:
@@ -190,9 +210,9 @@ class Controller:
                     and self.clock()-self.last_command_at > self.cfg['max_scheduler_gap_s']):
                 raise RuntimeError('hand command gap exceeded the scheduling deadline')
             if self.cfg['motion_mode'] in ('feedback', 'scurve'):
-                self.driver.send(self.target, self.command_velocity)
+                self.driver.send(self.target, self.command_velocity, self.command_effort)
             else:
-                self.driver.send(self.target)
+                self.driver.send(self.target, None, self.command_effort)
             if seed:
                 return  # The one disabled seed precedes enable RPCs, not the periodic stream.
             sent = self.clock()
@@ -205,6 +225,7 @@ class Controller:
         self._write(publish, epoch)
 
     def _fail(self, reason):
+        self.command_effort = [0.]*20
         self.fault = str(reason)
         self._finish(self.active, 'fault', reason=self.fault, control_certain=False)
         self.active = None
@@ -247,6 +268,7 @@ class Controller:
                 return
         self.command_velocity, self.command_acceleration = [0.]*20, [0.]*20
         behavior = 'disable' if job['op'] == 'disable' else 'emergency'
+        self.command_effort = [0.]*20
         self.mode = 'stopping'
         self.target = None
         since = self.clock()
@@ -302,11 +324,13 @@ class Controller:
             self.target = target(state['positions'], self.cfg)
             self.command_velocity = [0.]*20
             self.command_acceleration = [0.]*20
+            self.command_effort = [0.]*20
             self.first_command_at = self.last_command_at = None
             self.command_count = self.skipped_slots = 0
             self.max_command_interval = 0.
             self.active, self.fault = job, None
             self._write(self.driver.apply_profile, job['epoch'])
+            self.control_parameters = {k: list(self.cfg[k]) for k in ('kp', 'kd', 'current_limit_a')}
             if self.cfg['motion_mode'] == 'scurve':
                 # Parameter RPCs may take time while the hand is disabled. Seed
                 # from a fresh measurement immediately before enabling.
@@ -323,6 +347,31 @@ class Controller:
             raise RuntimeError('hand requires explicit operator preparation before motion')
         if max(abs(a-b) for a, b in zip(self.target, state['positions'])) > self.cfg['max_tracking_error_rad']:
             raise RuntimeError('unresolved tracking error before hand motion')
+        if job['op'] == 'set_effort':
+            args = validate_tool('wuji_set_effort', job['args'], self.cfg)
+            goal = effort(args['effort_a'], self.control_parameters['current_limit_a'])
+            ramp = EffortRamp(self.command_effort, goal, self.cfg, args['duration_s'])
+            self.active = {**job, 'effort_ramp': ramp, 'started': self.clock()}
+            self.mode = 'executing'
+            return
+        if job['op'] == 'set_impedance':
+            values = impedance(job['args'], self.cfg)
+            if any(abs(v) > 1e-10 for v in self.command_effort):
+                raise ValueError('ramp feed-forward effort to zero before changing impedance/current limits')
+            if max(map(abs, state['velocity_rad_s'])) > self.cfg['stopped_velocity_rad_s']:
+                raise ValueError('impedance changes require a measured stationary hand')
+            desired = {**self.control_parameters, **values}
+            # Mark active before the first write: partial failures must stop,
+            # never look like a pure pre-dispatch argument rejection.
+            self.active = job
+            if 'current_limit_a' in values:
+                self._write(lambda: self.driver.set_current_limits(desired['current_limit_a']), job['epoch'])
+            if 'kp' in values or 'kd' in values:
+                self._write(lambda: self.driver.set_impedance(desired['kp'], desired['kd']), job['epoch'])
+            self.control_parameters = deepcopy(desired)
+            job['completion'] = ('impedance_set', {'control_parameters': deepcopy(desired),
+                                                  'target_positions': list(self.target), 'readback_verified': True})
+            return
         if self.cfg['motion_mode'] == 'scurve':
             trajectory = SCurvePath(self.target, job['args']['positions'], self.cfg, job['args'].get('duration_s'),
                                     velocity=self.command_velocity, acceleration=self.command_acceleration)
@@ -426,13 +475,23 @@ class Controller:
                     raise RuntimeError('enable not confirmed by all twenty joints')
             elif job and self.mode == 'executing':
                 elapsed = self.clock()-job['started']
-                if 'scurve' in job:
+                if 'effort_ramp' in job:
+                    ramp = job['effort_ramp']
+                    self.command_effort = ramp.sample(elapsed)
+                    if elapsed >= ramp.duration:
+                        self.command_effort = list(ramp.goal)
+                        job['completion'] = ('effort_set', {'command_effort_a': list(ramp.goal),
+                                                           'target_positions': list(self.target),
+                                                           'ramp_seconds': ramp.duration, 'units': 'A',
+                                                           'contact_force_verified': False})
+                elif 'scurve' in job:
                     self._advance_scurve(job, state, elapsed)
                 elif 'feedback' in job:
                     self._advance_feedback(job, state, elapsed)
                 else:
                     self.target = job['trajectory'].sample(elapsed)
-                if 'feedback' not in job and 'scurve' not in job and elapsed >= job['trajectory'].duration:
+                if ('effort_ramp' not in job and 'feedback' not in job and 'scurve' not in job
+                        and elapsed >= job['trajectory'].duration):
                     error = max(abs(a-b) for a, b in zip(self.target, state['positions']))
                     job['settled_since'] = (job['settled_since'] or self.clock()) if error <= self.cfg['tolerance_rad'] else None
                     if job['settled_since'] is not None and self.clock()-job['settled_since'] >= self.cfg['settle_s']:
@@ -449,6 +508,10 @@ class Controller:
                 state = self._admit(self.epoch)
                 if max(abs(a-b) for a, b in zip(self.target, state['positions'])) > self.cfg['max_tracking_error_rad']:
                     raise RuntimeError('hand tracking error exceeded the configured bound')
+                if any(self.command_effort):
+                    target(state['positions'], self.cfg)  # Measured joint limits also bound current-driven motion.
+                    if max(map(abs, state['velocity_rad_s'])) > self.cfg['max_velocity_rad_s']:
+                        raise RuntimeError('effort-driven measured joint velocity exceeded the configured bound')
                 self._send(tick_epoch)
                 with self.lock:
                     # Do not report success until the final write returned, and

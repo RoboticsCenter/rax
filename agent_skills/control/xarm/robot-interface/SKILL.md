@@ -25,14 +25,16 @@ physically.
   motion is armed, workspace box.
 - `{{ robot.observe }}`: camera images now (`{{ robot.cameras | join('`, `') }}`).
 - `xarm_move_pose {position, quaternion?, relative?, tolerance_mm?, timeout_s?}`:
-  Cartesian TCP move through the xArm controller and wait until settled. At most
-  0.35 m per call, default cap 50 mm/s. `relative: true` adds `position` to the current
-  TCP position. Requires operator arming.
+  Cartesian TCP move through the xArm controller and wait until settled. Read the
+  live tool description for this session's translation and speed caps; do not assume
+  repository defaults apply. `relative: true` adds a base-frame displacement to the
+  current TCP position. It does not translate along rotated tool axes. Requires operator arming.
 - `xarm_move_joints {positions | preset: "home"}`: joint-space move with six joint
   angles in radians, or the backend home preset. The path is sampled with controller FK
   and checked against the workspace box before moving. Requires operator arming.
 {% if robot.has_hand %}
-- `wuji_status`, `wuji_move_joints`, `wuji_pose`, `wuji_hold`: see
+- `wuji_status`, `wuji_move_joints`, `wuji_pose`, `wuji_hold`,
+  `wuji_set_effort`, `wuji_set_impedance`: see
   [hand-control](../hand-control/SKILL.md) before moving fingers or grasping.
 - `xarm_hold`: stop the arm and request hand emergency stop. Inspect each reported
   result; delivery and physical stopping are distinct. Always allowed, but queued
@@ -51,9 +53,13 @@ physically.
   says motion is not armed, stop and report; never try to work around it.
 - The operator may disarm at any time. A running move then sends a hold command and the
   tool returns the measured state.
+{% if robot.has_hand %}
+  The hand also requests motor disable; a held object may be released.
+{% endif %}
 - Targets outside the workspace box, too far per call, outside joint limits, or refused
   by the xArm controller are not safe to push through. Choose a shorter move, a higher
-  clearance, a different orientation, or go `home` first.
+  clearance or a different orientation within observed clearance. Use `home` only
+  after establishing clearance for the whole assembly along that path.
 - Treat the arm as stiff position-control hardware. Approach from above,
   descend in short steps near contact, and check the measured pose plus fresh images
   after each contact-sensitive step.
@@ -63,14 +69,22 @@ physically.
 
 The configured TCP is a fixed tool frame, not the moving fingertips. Finger motion
 changes the hand's reach and clearance. TCP workspace checks do not check every
-finger, link, object or cable. Use the operator-verified mount/TCP and images.
+finger, link, object or cable. Use the available mount/TCP evidence and fresh images;
+distinguish measured geometry from nominal models and experimental estimates.
 The wrist-camera calibration must match the configured TCP.
 
 The hand must be prepared and holding with fresh feedback before arm motion. Keep
-its accepted target while carrying. Arm and hand motions are sequential; these
+its accepted target, current bias and impedance while carrying. Arm and hand motions are sequential; these
 tools do not provide a synchronized 26-joint trajectory. Hand faults or disarming
 request stops on both devices. Supported release and recovery are described in
 [hand-control](../hand-control/SKILL.md).
+
+An operator reply and arming are separate state changes. The dashboard's combined
+**Ready & send reply** prepares/reuses a healthy hand hold and renews arming before
+answering; **Send reply only** does not. In either case, check live status and fresh
+images after the reply. Enabled holding preserves its target/bias/gains; preparation
+from disabled seeds newly measured angles, restores the baseline gains/caps, and
+zeros feed-forward effort. Do not replay a pre-disable finger target automatically.
 {% else %}
 ## Grasping pattern
 

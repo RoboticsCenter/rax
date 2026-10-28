@@ -174,6 +174,15 @@ class WujiClient:
     def hold(self):
         return operation(self.root, 'hold', timeout=self.cfg['stop_timeout_s']+2)
 
+    def set_effort(self, effort_a, duration_s=None):
+        args = {'effort_a': effort_a}
+        if duration_s is not None:
+            args['duration_s'] = duration_s
+        return operation(self.root, 'set_effort', args, timeout=self.cfg['max_duration_s']+2)
+
+    def set_impedance(self, **parameters):
+        return operation(self.root, 'set_impedance', parameters)
+
     def stop(self):
         return operation(self.root, 'emergency', timeout=self.cfg['stop_timeout_s']+2)
 

@@ -27,6 +27,9 @@ class FakeHand:
         self.q, self.goal = [0.]*20, [0.]*20
         self.velocity = [0.]*20
         self.command_velocity = [0.]*20
+        self.command_effort = [0.]*20
+        self.effort_writes = []
+        self.control_parameters = {k: list(cfg[k]) for k in ('kp', 'kd', 'current_limit_a')}
         self.states, self.names = [1]*20, ['Ready']*20
         self.writes = []
         self.follow = True
@@ -62,15 +65,26 @@ class FakeHand:
     def apply_profile(self):
         self.writes.append(('profile',))
         self.profile = self.cfg['profile_revision']
+        self.control_parameters = {k: list(self.cfg[k]) for k in ('kp', 'kd', 'current_limit_a')}
+
+    def set_current_limits(self, values):
+        self.writes.append(('current_limits', list(values)))
+        self.control_parameters['current_limit_a'] = list(values)
+
+    def set_impedance(self, kp, kd):
+        self.writes.append(('impedance', list(kp), list(kd)))
+        self.control_parameters.update(kp=list(kp), kd=list(kd))
 
     def enable(self):
         self.writes.append(('enable',))
         self.states, self.names = [2]*20, ['Enabled']*20
 
-    def send(self, q, velocity=None):
+    def send(self, q, velocity=None, effort_a=None):
         self.writes.append(('send', list(q)))
         self.goal = list(q)
         self.command_velocity = [0.]*20 if velocity is None else list(velocity)
+        self.command_effort = [0.]*20 if effort_a is None else list(effort_a)
+        self.effort_writes.append((self.clock(), list(self.command_effort)))
         if self.on_send:
             self.on_send()
 
@@ -79,6 +93,7 @@ class FakeHand:
         if self.stop_error:
             raise self.stop_error
         self.states, self.names = [1]*20, ['Ready']*20
+        self.command_effort = [0.]*20
 
     def close(self):
         self.connected = False
@@ -90,10 +105,15 @@ class FakeHandClient:
         self.q = self.target = [0.]*20
         self.moves, self.stops, self.closed = [], 0, False
         self.fail_move = self.fail_stop = False
+        self.command_effort = [0.]*20
+        self.control_parameters = {k: list(self.cfg[k]) for k in ('kp', 'kd', 'current_limit_a')}
+        self.control_calls = []
 
     def status(self):
         return {'fresh': True, 'enabled': True, 'mode': 'holding', 'positions': list(self.q),
-                'target_positions': list(self.target), 'profile_revision': self.cfg['profile_revision']}
+                'target_positions': list(self.target), 'profile_revision': self.cfg['profile_revision'],
+                'command_effort_a': list(self.command_effort), 'velocity_rad_s': [0.]*20,
+                'control_parameters': deepcopy(self.control_parameters)}
 
     def require_ready(self):
         return self.status()
@@ -107,6 +127,16 @@ class FakeHandClient:
 
     def hold(self):
         return {'outcome': 'held', 'target_positions': self.target, 'confirmed': False}
+
+    def set_effort(self, effort_a, duration_s=None):
+        self.control_calls.append(('set_effort', list(effort_a)))
+        self.command_effort = list(effort_a)
+        return {'outcome': 'effort_set', 'command_effort_a': list(effort_a), 'contact_force_verified': False}
+
+    def set_impedance(self, **parameters):
+        self.control_calls.append(('set_impedance', deepcopy(parameters)))
+        self.control_parameters.update(deepcopy(parameters))
+        return {'outcome': 'impedance_set', 'control_parameters': deepcopy(self.control_parameters)}
 
     def stop(self):
         self.stops += 1

@@ -5,7 +5,7 @@ description: Run and debug Python robot control, then turn what worked by hand i
 
 # Autonomous control
 
-Follow the workflow in AGENTS.md. The robot and Gemini are external services,
+Follow the workflow in AGENTS.md. Robot control{% if gemini %} and Gemini{% endif %} run as external services,
 reachable only through MCP. The deliverable is a controller that completes the task
 from a fresh scene **without you in the loop**.
 
@@ -19,6 +19,15 @@ composing the full `main(ctx)`.
 
 Separate reusable motion logic from scene-specific inputs: reacquire object locations
 from current observations instead of embedding one layout's positions.
+{% if robot.has_hand %}
+
+A grasp recipe includes the joint target, commanded current bias, active kp/kd and
+current caps, geometry assumptions and evidence of retention. Read `wuji_status`
+before resuming a step: disable/reprepare may have changed all of these. Restore
+tested settings through the supported tools in their required order; current bias
+must be zero and the measured hand stationary before impedance changes. Observe
+the result rather than assuming a restored command recreates the prior contact.
+{% endif %}
 
 ## Turn successful control into automated scripts
 
@@ -84,7 +93,8 @@ def main(ctx):
     # ctx.value("{{ robot.move }}", position=[x, y, z], quaternion=q)
 {% if robot.has_hand %}
     # ctx.value("wuji_move_joints", positions=verified_target_rad)
-    # Keep the accepted hand target while carrying; verify the object in images.
+    # Read/verify command_effort_a and control_parameters as part of the grasp state.
+    # Keep the accepted target/current/impedance while carrying; verify in images.
 {% else %}
     # ctx.value("{{ robot.gripper }}", action="grasp", width=0.0, force=30)
 {% endif %}
@@ -143,6 +153,10 @@ the real scene.
    it as a success.
 3. Record each run in `memory/RUNS.md`: code version, scene description, outcome,
    duration, failure step and cause.
+{% if robot.has_hand %}
+   Include active hand gains/caps, current bias, posture and decisive observation or
+   motion-clip references. A clean current-ramp return is not grasp success.
+{% endif %}
 
 Aim for several consecutive clean successes on varied layouts before calling it done.
 Use `request_operator` kind `help` when you are blocked by something outside your

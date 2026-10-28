@@ -1,6 +1,6 @@
 ---
 name: hand-control
-description: Shape, hold and release objects with the real twenty-joint Wuji Hand 2 through its MCP tools. Use before finger motion, grasping, carrying or release; covers joint order, target retention, feedback and recovery.
+description: Shape, grasp and release with the twenty-joint Wuji Hand 2 through MCP. Covers bounded geometry probes, joint trajectories, current/impedance controls, feedback, retention and recovery.
 ---
 
 # Wuji Hand 2 control
@@ -8,7 +8,7 @@ description: Shape, hold and release objects with the real twenty-joint Wuji Han
 Read `wuji_status` before moving. Confirm the configured side, `profile_revision`,
 fresh state, no faults, and `mode: holding`. The operator prepares/enables the hand
 and arms the session. Request help if it is unprepared; agent tools do not enable,
-clear faults, change gains/current limits, or recalibrate joint origins.
+clear faults, raise the operator's parameter ceilings, or recalibrate joint origins.
 
 ## Commands and state
 
@@ -29,10 +29,12 @@ matching position/velocity commands. Movements start from the preceding commande
 state and finish at zero reference velocity/acceleration. Requested durations may
 round up to a control tick; measured settling can take extra time. Status exposes
 motion progress, reference derivatives and actual `command_timing`. These are
-reference limits, not measured tracking guarantees or permission to change gains.
+reference limits, not measured tracking guarantees.
 
-`wuji_pose(name=...)` uses an operator-commissioned posture listed in `postures`.
-The list can be empty. Never invent names or assume an untested open/grasp pose.
+`wuji_pose(name=...)` uses an operator-configured posture listed in `postures`.
+The list can be empty. A saved home or fist is not automatically a qualified grasp
+or collision-free preshape for this scene. Never invent names; use bounded
+`wuji_move_joints` experiments to develop task-specific postures and record the evidence.
 Both motion tools wait for measured settling and keep the final target afterward.
 They do not certify self-collision clearance or a successful grasp.
 
@@ -40,9 +42,62 @@ They do not certify self-collision clearance or a successful grasp.
 force or joint torque. Optional fingertip-online flags report availability, not
 contact. Use images and actual object motion to assess a grasp.
 
+## Learn geometry through bounded probes
+
+Full CAD registration or measured contact offsets may be unavailable. Use nominal
+kinematics and previous experience as hypotheses, tied to hand revision, joint
+signs/zeros, posture, wrist orientation and mount. Finger offsets change with joint
+angles; the index tip is not necessarily the whole hand's lowest point. Track
+uncertainty rather than assigning a single fixed TCP-to-contact offset to every pose.
+
+Choose a small, reversible action whose full sweep is clear in the available views
+and whose result distinguishes useful hypotheses: a one-joint perturbation, a small
+clear-space wrist rotation, or an improved view. Change one factor at a time and
+compare before/after images and measured joints. Update the estimated opposition,
+contact region and lowest-point envelope before approaching the object. Qualification
+is evidence for the next bounded step, not a requirement to finish a complete hand model.
+
+Continue while evidence supports a bounded next action. Ask for specific help when
+occlusion or uncertainty prevents bounding that action. A person at the stop is a
+backstop, not a clearance measurement. Do not interpret missing tactile/depth data,
+motor current, a stalled finger or a settled joint target as proof of contact or grasp.
+
+## Current bias and compliant contact
+
+`wuji_set_effort(effort_a=[...], duration_s=...)` ramps twenty signed feed-forward
+currents in amperes, in the same joint order. It retains the position reference and
+MIT gains. Omit `duration_s` to choose a ramp that respects `max_slew_a_s`; a shorter
+requested ramp is rejected. The tool reports completion of the command ramp, not
+physical settling, contact or grasp success. The motor combines position/velocity
+feedback with this bias under the active hardware current cap. Current is not a
+calibrated fingertip force, and its sign must be established for each intended joint.
+
+The bias persists through arm moves, finger moves, `wuji_hold`, and pauses while
+armed and healthy. Inspect `command_effort_a` alongside measured `effort_a`, images,
+tracking errors and diagnostics. To remove the bias, ramp to twenty zeros with
+`wuji_set_effort`. Reducing bias or stiffness can release an object; support it first.
+Disarm, faults and emergency stop cancel the bias and request motor disable.
+
+`wuji_set_impedance(kp=[...], kd=[...], current_limit_a=[...])` accepts one or more
+twenty-element arrays; omitted parameters retain their active values. First clear
+the feed-forward bias and verify the measured hand is stationary. Values cannot
+exceed `profile_control_parameters`; kp and current limits must remain positive.
+The tool verifies device readback and retains the commanded position target.
+Lower gains can soften contact, and lower current caps can limit available effort;
+neither proves a safe or calibrated contact force. Watch tracking error when using
+lower stiffness; the normal error guard still applies. A slow or failed parameter
+write can fault and disable the hand rather than waive its scheduling watchdog.
+
+`control_parameters` reports the active gains/caps; `profile_control_parameters`
+reports the operator's baseline and ceilings. Overrides persist until changed or
+the operator actually prepares a disabled hand again, restoring the baseline and
+zero feed-forward bias. Renewing arming on an already healthy hold preserves them.
+Record active gains, caps and bias with every successful grasp/preshape; a posture
+without these parameters no longer fully specifies the control state.
+
 ## Grasp, carry, release
 
-1. Observe and localize the object. Choose a commissioned preshape and approach
+1. Observe and localize the object. Choose or develop an evidence-supported preshape and approach
    with clearance for every finger, the thumb and the palm. Arm tools move the
    configured TCP; it is not a moving fingertip frame.
 2. Close gradually with bounded targets. Observe the hand and object after each
@@ -61,6 +116,7 @@ contact. Use images and actual object motion to assess a grasp.
 ## Hold and failures
 
 `wuji_hold` retains a stationary commanded posture when control is healthy.
+It also retains the active current bias and impedance; it is not a force-off command.
 If an S-curve is still moving when dispatched, it brakes smoothly to a nearby
 bounded rest target and reports that target; physical settling is not confirmed.
 It requests emergency stop if bounded braking is unavailable, the session is disarmed or state

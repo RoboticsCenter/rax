@@ -47,6 +47,14 @@ description: <maneuver and when this experience applies>
 
 Do not copy tool documentation or global limits into a learned skill, and do not
 encode inferred task success or an unobserved object pose.
+{% if robot.has_hand %}
+
+For hand procedures, add the active control state (joint target, current bias,
+kp/kd and current caps), profile/revision, geometry assumptions and uncertainty,
+and before/after visual evidence to each applicable example. Distinguish command
+completion from observed contact, retention and full task success. Keep inferred
+geometry explicitly labelled with the probe that supports it.
+{% endif %}
 
 ## `evidence.json`
 

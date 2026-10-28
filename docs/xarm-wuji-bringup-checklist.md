@@ -305,6 +305,12 @@ raw captures and the commissioning audit remain under `.local-runtime/`.
   sixth fist move, disarm stopped and disabled all twenty joints within the
   observed 61.04 ms confirmation interval. Arm stayed in state 4. Final hand
   disable was confirmed; the interrupted posture was not returned to home.
+- [x] Qualify the two new current-control MCP tools in clear space: middle S3
+  ±0.05 A ramps, zero bias, reduced impedance/current ceiling and verified v13
+  restoration. Maximum excursion 0.00542 rad; no native faults/warnings; arm
+  stationary. Final all-joint disable observed within 27.16 ms of disarming.
+  See [the scoped current/impedance report](wuji-effort-qualification-2026-10-28.md).
+  This does not qualify fingertip-force regulation or grasp performance.
 - [ ] Qualify communication loss, process loss and physical stop behavior with
   an appropriate controlled test setup.
 - [ ] Qualify grasp, retention, transport, release and repeated episodes with

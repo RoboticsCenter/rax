@@ -42,6 +42,10 @@ Use these skills as needed rather than loading every reference up front:
   with an empty end effector when the {{ robot.overview }} is insufficient.
 - [Experience memory](../experience-memory/SKILL.md) to record and reuse tested
   motion strategies under matching observable conditions.
+{% if robot.has_hand %}
+- [Hand control](../hand-control/SKILL.md) for posture-dependent geometry, bounded
+  learning probes, joint-current/impedance control, and grip retention.
+{% endif %}
 
 {{ block("images.forwarding") }}
 
@@ -55,8 +59,17 @@ Observe the result of each meaningful action and adapt. If a motion tool fails o
 reports `control_uncertain`, do not repeat the motion blindly: observe, reason about
 what happened, and continue only from a known state. If the robot refuses a target
 (workspace or joint limit), treat it as a wall, not a fault. If localization fails or
-is uncertain, take a new view; never replace missing geometry with guessed
-coordinates.
+is uncertain, distinguish what was observed from what was inferred and take a new
+view or another bounded information-gathering action. Do not use an unverified
+coordinate guess as permission to descend or contact an object.
+{% if robot.has_hand %}
+
+Incomplete hand geometry does not by itself end the task. Use the hand-control
+probe workflow to learn from small, reversible experiments in observed clear space.
+State the hypothesis, observation and next decision; ask the operator for a specific
+missing observation only when the next action cannot be bounded. Keep advancing
+toward the physical task rather than substituting a report for a feasible next probe.
+{% endif %}
 
 ## Confirm success
 

@@ -15,3 +15,11 @@ This session has no depth. Each `{{ robot.observe }}` frame saves RGB images and
   table, or the table plus a known object height.
 - Check every estimate by projecting it back with `project: [[x, y, z]]` on a new
   `{{ robot.observe }}` and comparing the red cross with the object.
+{% if robot.has_hand %}
+
+Contact offsets depend on finger posture and wrist orientation. A table-plane
+intersection is valid for a point on the table, not an elevated finger or object
+surface. Compare nominal geometry with fresh multi-view evidence and use small
+clear-space probes from [hand-control](../hand-control/SKILL.md) to refine uncertain
+offsets. Track an uncertainty margin and the whole-hand sweep before approaching.
+{% endif %}

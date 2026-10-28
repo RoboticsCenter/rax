@@ -14,8 +14,8 @@ from services.xarm import arming
 def child(config, root, path, events, block, entered, release):
     events.cancel_join_thread()  # The parent does not drain the high-rate send trace on shutdown.
     class RecordingHand(FakeHand):
-        def send(self, q, velocity=None):
-            super().send(q, velocity)
+        def send(self, q, velocity=None, effort_a=None):
+            super().send(q, velocity, effort_a)
             events.put(('send', q))
             if block.is_set():
                 entered.set()
@@ -102,6 +102,21 @@ def test_process_watchdog_does_not_need_an_agent_tool_call(service):
     heartbeat_stop.set()
     until(lambda: request(path, 'status')['mode'] == 'faulted')
     assert 'heartbeat' in request(path, 'status')['fault']
+
+
+def test_process_exposes_effort_and_impedance_and_clears_effort_on_stop(service):
+    root, path, _, _, _, _, _ = service
+    arming.write(root, True)
+    operation(root, 'prepare')
+    result = operation(root, 'set_impedance', {'kp': [.8]*20, 'current_limit_a': [.2]*20})
+    assert result['outcome'] == 'impedance_set'
+    result = operation(root, 'set_effort', {'effort_a': [.1]*20})
+    assert result['outcome'] == 'effort_set'
+    state = request(path, 'status')
+    assert state['command_effort_a'] == [.1]*20 and state['control_parameters']['current_limit_a'] == [.2]*20
+    operation(root, 'emergency')
+    state = request(path, 'status')
+    assert not state['enabled'] and state['command_effort_a'] == [0.]*20
 
 
 def test_status_and_priority_stop_remain_available_during_native_call(service):

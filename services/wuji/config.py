@@ -5,8 +5,11 @@ from copy import deepcopy
 
 JOINT_NAMES = tuple(f'{finger}_S{joint}' for finger in ('thumb', 'index', 'middle', 'ring', 'pinky')
                     for joint in range(1, 5))
-TOOL_NAMES = ('wuji_status', 'wuji_move_joints', 'wuji_pose', 'wuji_hold')
+TOOL_NAMES = ('wuji_status', 'wuji_move_joints', 'wuji_pose', 'wuji_hold',
+              'wuji_set_effort', 'wuji_set_impedance')
 MOTION_TOOLS = frozenset({'wuji_move_joints', 'wuji_pose'})
+CONTROL_TOOLS = frozenset({'wuji_set_effort', 'wuji_set_impedance'})
+MUTATING_TOOLS = MOTION_TOOLS | CONTROL_TOOLS
 DEFAULTS = {
     'type': 'wuji_hand2', 'address': None, 'handedness': 'right',
     'command_hz': 120., 'max_feedback_age_s': .25, 'max_scheduler_gap_s': .1,
@@ -18,6 +21,7 @@ DEFAULTS = {
     'feedback_transition_s': 1., 'feedback_slow_error_rad': .06,
     'feedback_pause_error_rad': .10, 'settle_position_range_rad': .004,
     'allow_encoder_warning': False, 'max_temperature_c': 65.,
+    'max_effort_slew_a_s': .5,
     'postures': {}, 'lock_paths': [],
 }
 REQUIRED = {'serial', 'profile_revision', 'lower_rad', 'upper_rad', 'current_limit_a', 'kp', 'kd'}
@@ -78,6 +82,7 @@ def validate_config(value):
         'feedback_slow_error_rad': (.001, .3), 'feedback_pause_error_rad': (.002, .34),
         'settle_position_range_rad': (.0001, .05),
         'max_temperature_c': (20, 90),
+        'max_effort_slew_a_s': (.01, 2.),
     }
     for key, (lo, hi) in bounds.items():
         cfg[key] = number(cfg[key], key, lo, hi)
@@ -116,13 +121,40 @@ def target(positions, cfg):
     return q
 
 
+def effort(values, limits):
+    values = vector(values, 'effort_a')
+    for name, value, limit in zip(JOINT_NAMES, values, limits):
+        if abs(value) > limit:
+            raise ValueError(f'{name} effort exceeds current limit {limit:g} A')
+    return values
+
+
+def impedance(args, cfg):
+    if not isinstance(args, dict) or not args or set(args) - {'kp', 'kd', 'current_limit_a'}:
+        raise ValueError('provide kp, kd and/or current_limit_a')
+    result = {}
+    for key, values in args.items():
+        result[key] = vector(values, key)
+        for name, value, ceiling in zip(JOINT_NAMES, result[key], cfg[key]):
+            if value < 0 or value > ceiling or (key != 'kd' and value == 0):
+                raise ValueError(f'{name} {key} must be {"nonnegative" if key == "kd" else "positive"} '
+                                 f'and no greater than configured ceiling {ceiling:g}')
+    return result
+
+
 def validate_tool(name, args, cfg):
     if not isinstance(args, dict) or name not in TOOL_NAMES:
         raise ValueError('unknown Wuji tool or invalid arguments')
-    allowed = {'positions', 'duration_s'} if name == 'wuji_move_joints' else (
-        {'name', 'duration_s'} if name == 'wuji_pose' else set())
+    allowed = {'wuji_move_joints': {'positions', 'duration_s'}, 'wuji_pose': {'name', 'duration_s'},
+               'wuji_set_effort': {'effort_a', 'duration_s'},
+               'wuji_set_impedance': {'kp', 'kd', 'current_limit_a'}}.get(name, set())
     if set(args) - allowed:
         raise ValueError(f'unknown arguments for {name}: {sorted(set(args)-allowed)}')
+    if name == 'wuji_set_impedance':
+        return impedance(args, cfg)
+    if name == 'wuji_set_effort':
+        duration = number(args['duration_s'], 'duration_s', .1, cfg['max_duration_s']) if 'duration_s' in args else None
+        return {'effort_a': effort(args.get('effort_a'), cfg['current_limit_a']), 'duration_s': duration}
     if name in MOTION_TOOLS:
         if name == 'wuji_pose':
             pose = args.get('name')
@@ -162,10 +194,30 @@ def tools(cfg):
              f'Available names: {", ".join(sorted(cfg["postures"])) or "none commissioned"}.',
              {'name': {'type': 'string'}, 'duration_s': duration}, ['name']),
         tool('wuji_hold', 'Retain the current bounded commanded posture when dispatched. '
+             'Retains the current feed-forward effort and impedance as well. '
              'During S-curve motion, brake smoothly to a nearby bounded resting target; '
              'if bounded braking is unavailable, request emergency stop. '
              'MCP calls are serialized: this call waits for an active MCP call; operator stop/disarm '
              'is required to interrupt it. '
              'Disarmed, stale or faulty control requests emergency stop instead. Always allowed. '
              'Reports requested/returned/confirmed separately; grip retention is not guaranteed.'),
+        tool('wuji_set_effort', 'Ramp twenty signed feed-forward joint currents in AMPERES while retaining '
+             'the current position reference and MIT gains. NOT calibrated torque or fingertip force. '
+             'Requires arming and a prepared hand. Bounded by active current limits and configured current slew; '
+             'position/tracking guards remain active. Effort persists during subsequent hand/arm moves and hold '
+             'until changed or stopped. Send twenty zeros to remove the bias smoothly. '
+             'Returns after the command ramp, not after physical settling or verified contact. '
+             'Order: thumb, index, middle, ring, pinky, S1..S4 each.',
+             {'effort_a': {'type': 'array', 'items': {'type': 'number'}, 'minItems': 20, 'maxItems': 20},
+              'duration_s': {'type': 'number', 'minimum': .1, 'maximum': cfg['max_duration_s'],
+                             'description': 'Optional ramp time, subject to current slew bound; omitted chooses minimum.'}},
+             ['effort_a']),
+        tool('wuji_set_impedance', 'Adjust per-joint MIT kp, kd and/or current ceilings (A); omitted arrays '
+             'retain their active values. Exactly twenty entries per supplied array. Requires arming, a prepared '
+             'stationary hand and zero feed-forward effort. Values cannot exceed the operator profile; kp and '
+             'current limits must stay positive (pure current-only mode is not exposed). '
+             'Targets stay unchanged; changing stiffness can change contact pressure. Readback is verified. '
+             'Overrides persist until changed or operator preparation restores the profile; status reports both.',
+             {key: {'type': 'array', 'items': {'type': 'number', 'minimum': 0}, 'minItems': 20, 'maxItems': 20}
+              for key in ('kp', 'kd', 'current_limit_a')}),
     ]

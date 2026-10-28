@@ -8,7 +8,7 @@ from copy import deepcopy
 from importlib.metadata import version
 from pathlib import Path
 
-from .config import JOINT_NAMES, vector
+from .config import JOINT_NAMES, effort, impedance, vector
 
 SDK_VERSION = '2026.10.12'
 
@@ -218,14 +218,42 @@ class WujiDriver:
                 raise RuntimeError(f'{key} readback mismatch; hand remains unprepared')
         self.profile = actual
 
-    def send(self, positions, velocities=None):
+    @staticmethod
+    def _check_readback(name, values, expected):
+        if len(values) != 20 or any(v is None or not math.isfinite(v) or abs(v-e) > 1e-5
+                                    for v, e in zip(values, expected)):
+            raise RuntimeError(f'{name} readback mismatch')
+        return list(values)
+
+    def set_current_limits(self, values):
+        values = impedance({'current_limit_a': values}, self.cfg)['current_limit_a']
+        if self.profile is None:
+            raise RuntimeError('hand profile has not been prepared')
+        self.hand.effort_limit().set(values)
+        actual = self._check_readback('current_limit_a', list(self.hand.effort_limit().get()), values)
+        self.profile = {**self.profile, 'current_limit_a': actual}
+
+    def set_impedance(self, kp, kd):
+        values = impedance({'kp': kp, 'kd': kd}, self.cfg)
+        if self.profile is None:
+            raise RuntimeError('hand profile has not been prepared')
+        self.hand.mit_params().set(list(zip(values['kp'], values['kd'])))
+        actual = list(self.hand.mit_params().get())
+        result = {key: self._check_readback(key, [getattr(p, key, None) for p in actual], values[key])
+                  for key in ('kp', 'kd')}
+        self.profile = {**self.profile, **result}
+
+    def send(self, positions, velocities=None, effort_a=None):
         q = vector(positions)
         v = [0.]*20 if velocities is None else vector(velocities, 'velocities')
         if any(abs(x) > self.cfg['max_velocity_rad_s']+1e-9 for x in v):
             raise ValueError('command velocity exceeds configured reference limit')
+        currents = effort([0.]*20 if effort_a is None else effort_a,
+                          (self.profile or self.cfg)['current_limit_a'])
         if self.publisher is None:
             self.publisher = self.hand.joint_command().publish()
-        self.publisher.send([self.sdk.JointCommand(position, velocity, 0.) for position, velocity in zip(q, v)])
+        self.publisher.send([self.sdk.JointCommand(position, velocity, current)
+                             for position, velocity, current in zip(q, v, currents)])
 
     def enable(self):
         self.hand.enable()

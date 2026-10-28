@@ -173,6 +173,42 @@ def test_position_velocity_command_has_zero_feedforward_and_validates_before_wri
     assert len(sent) == 2
 
 
+def test_feedforward_is_sent_in_amps_and_checked_against_active_current_cap():
+    driver, _, _, _ = driver_setup()
+    sent = []
+    driver.sdk.JointCommand = lambda q, v, effort: (q, v, effort)
+    driver.publisher = NS(send=sent.append)
+    driver.profile = {'current_limit_a': [.15]*20, 'kp': [1.5]*20, 'kd': [.1]*20}
+    driver.send([.1]*20, [.2]*20, [.1, -.1]*10)
+    assert [entry[2] for entry in sent[0]] == [.1, -.1]*10
+    for bad in [[.2]*20, [-.2]*20, [float('nan')]*20, [True]*20, [0]*19]:
+        with pytest.raises(ValueError):
+            driver.send([.1]*20, None, bad)
+    assert len(sent) == 1
+
+
+def test_active_parameters_readback_and_operator_ceilings():
+    driver, hand, _, _ = driver_setup()
+    driver.connect()
+    hand.gains.set = lambda values: setattr(hand.gains, 'value', [NS(kp=k, kd=d) for k, d in values])
+    driver.apply_profile()
+    driver.set_current_limits([.2]*20)
+    driver.set_impedance([.8]*20, [.05]*20)
+    assert driver.profile == {'current_limit_a': [.2]*20, 'kp': [.8]*20, 'kd': [.05]*20}
+    with pytest.raises(ValueError):
+        driver.set_current_limits([.6]*20)
+    with pytest.raises(ValueError):
+        driver.set_impedance([2]*20, [.1]*20)
+    assert hand.efforts.get() == [.2]*20 and hand.gains.get()[0].kp == .8
+    hand.efforts.get = lambda: [.2]*19
+    with pytest.raises(RuntimeError, match='readback'):
+        driver.set_current_limits([.1]*20)
+    assert driver.profile['current_limit_a'] == [.2]*20  # Never publish unverified values as active.
+    hand.gains.get = lambda: [None]*20
+    with pytest.raises(RuntimeError, match='readback'):
+        driver.set_impedance([.7]*20, [.04]*20)
+
+
 def test_serial_side_and_private_connection_without_motor_commands():
     driver, hand, _, connection = driver_setup()
     driver.connect()

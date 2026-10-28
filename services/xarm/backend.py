@@ -211,9 +211,9 @@ class XArmBackend:
         self.has_hand = self.end_effector_kind == 'wuji_hand2'
         self.hand_config = None
         if self.has_hand:
-            from services.wuji.config import validate_config, MOTION_TOOLS
+            from services.wuji.config import validate_config, MUTATING_TOOLS
             self.hand_config = validate_config(self.options['end_effector'])
-            self.mutating = frozenset({'xarm_move_pose', 'xarm_move_joints', *MOTION_TOOLS})
+            self.mutating = frozenset({'xarm_move_pose', 'xarm_move_joints', *MUTATING_TOOLS})
         elif self.options['end_effector']:
             self.options['gripper_type'] = 'g2' if self.end_effector_kind == 'g2' else 'xarm'
         self.box_min = np.asarray(self.options['workspace_min'], dtype=np.float64)
@@ -421,13 +421,22 @@ class XArmBackend:
 
     def validate(self, name, arguments):
         if self.has_hand and name.startswith('wuji_'):
-            from services.wuji.config import validate_tool, MOTION_TOOLS
-            from services.wuji.controller import Trajectory
+            from services.wuji.config import validate_tool, MOTION_TOOLS, MUTATING_TOOLS, effort
+            from services.wuji.controller import Trajectory, EffortRamp
             goal = validate_tool(name, arguments, self.hand_config)
-            if name in MOTION_TOOLS:
+            if name in MUTATING_TOOLS:
                 self._require_armed()
                 state = self.end_effector.require_ready()
-                Trajectory(state['target_positions'], goal['positions'], self.hand_config, goal['duration_s'])
+                if name in MOTION_TOOLS:
+                    Trajectory(state['target_positions'], goal['positions'], self.hand_config, goal['duration_s'])
+                elif name == 'wuji_set_effort':
+                    effort(goal['effort_a'], state['control_parameters']['current_limit_a'])
+                    EffortRamp(state['command_effort_a'], goal['effort_a'], self.hand_config, goal['duration_s'])
+                elif name == 'wuji_set_impedance':
+                    if any(abs(v) > 1e-10 for v in state['command_effort_a']):
+                        raise ValueError('ramp feed-forward effort to zero before changing impedance/current limits')
+                    if max(map(abs, state['velocity_rad_s'])) > self.hand_config['stopped_velocity_rad_s']:
+                        raise ValueError('impedance changes require a measured stationary hand')
             return
         if name == 'xarm_gripper' and self.has_hand:
             raise ValueError('xarm_gripper is unavailable with a Wuji hand')
@@ -489,7 +498,8 @@ class XArmBackend:
         self._require_armed()
         started = time.time()
         try:
-            result = self.end_effector.move(**goal)
+            method = {'wuji_set_effort': 'set_effort', 'wuji_set_impedance': 'set_impedance'}.get(name, 'move')
+            result = getattr(self.end_effector, method)(**goal)
         except Exception as exc:
             outcome = self._stop_assembly()
             self._schedule_motion_clip(name, started, time.time(), 'failed', exc)
