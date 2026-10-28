@@ -38,8 +38,13 @@ Use these skills as needed rather than loading every reference up front:
 - [Object localization](../object-localization/SKILL.md) to locate visible object
   points from the current images.
 {% endif %}
+{% if 'wrist' in robot.cameras %}
 - [Wrist-camera inspection](../wrist-camera-inspection/SKILL.md) for a closer view
   with an empty gripper when the {{ robot.overview }} is insufficient.
+{% else %}
+- No wrist camera is available. If the {{ robot.overview }} is insufficient,
+  request operator help; do not move the arm to seek a nonexistent camera view.
+{% endif %}
 - [Experience memory](../experience-memory/SKILL.md) to record and reuse tested
   motion strategies under matching observable conditions.
 

@@ -50,7 +50,8 @@ SUBAGENT_TOOLS = ('Agent', 'Task')  # 'Task' is the tool's former name.
 RELAY_TOKEN = 'host-relay'  # Placeholder the relay replaces; not a credential.
 # Session files only the launcher and the robot service read.
 PRIVATE_FILES = ('configuration.json', 'model-relay.json', 'state.json', 'mcp.jsonl', 'frontend.log',
-                 'model-usage.jsonl', 'model-calls.json', 'agent-lifecycle.json', 'workspace-manifest.json')
+                 'model-usage.jsonl', 'model-calls.json', 'agent-lifecycle.json', 'workspace-manifest.json',
+                 'operator', 'operator-input.json', 'revo-worker.log')
 # This repository and credentials: the agent's tools must never read them.
 HOME = Path.home()
 PROTECTED_PATHS = (PROJECT, HOME/'.config/rax', HOME/'.claude', HOME/'.claude.json', HOME/'.codex', HOME/'.ssh',
@@ -104,6 +105,14 @@ def site_paths(config):
     the camera calibration directory (FRANKA_CALIBRATION_DIR)."""
     listed = [*os.environ.get(SITE_PATHS_ENVIRONMENT, '').split(':'),
               *config.backend_options.get('protected_paths', ()), os.environ.get('FRANKA_CALIBRATION_DIR', '')]
+    if config.robot == 'piper':
+        from services.piper.config import options
+        piper = options(config.backend_options)
+        listed.extend(['/tmp/piper_right_arm.sock', '/tmp/piper_left_arm.sock',
+                       str(Path(piper['damiao_library']).parent), str(HOME/'Documents/CenterOS-2'),
+                       str(HOME/'pyAgxArm'),
+                       str(HOME/'brainco-hand-sdk'), str(HOME/'piper_sdk'), str(HOME/'rax-envs'),
+                       '/dev/bus/usb', '/dev/ttyACM0', '/dev/ttyACM1'])
     paths = []
     for entry in filter(None, listed):
         path = Path(entry).expanduser()

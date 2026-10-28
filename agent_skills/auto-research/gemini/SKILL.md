@@ -19,7 +19,8 @@ when those rules are insufficient, primarily for visual and spatial perception:
 identifying objects, locating them in images, and interpreting spatial relationships.
 Test other uses, such as structured decisions, before relying on them.
 
-### Pointing for triangulation
+{% if robot.cameras | length > 1 %}
+### Pointing across views
 
 Ask for the same named, distinctive point on the target in each camera view.
 {% if camera_geometry %}
@@ -29,6 +30,16 @@ point (small spread between views and in the local depth).
 Accept the answers only when every view marks the same physical feature, and
 confirm with measured motion as in [object-localization](../object-localization/SKILL.md).
 Keep a non-Gemini fallback.
+
+{% endif %}
+{% else %}
+### Single-view pointing
+
+Identify distinctive visible features in the overview image. Gemini's image points
+and spatial guesses are not calibrated robot coordinates, depth or triangulation.
+Do not move to validate a guessed metric target. Follow
+[object-localization](../object-localization/SKILL.md) and request operator help
+when calibrated geometry or a better view is needed. Keep a non-Gemini fallback.
 
 {% endif %}
 ## MCP usage

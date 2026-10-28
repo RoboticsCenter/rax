@@ -1,4 +1,25 @@
-# RAX on a real Franka FR3
+# RAX on one AgileX Piper + BrainCo Revo 2
+
+This branch ports RAX to **one right-side Piper arm and BrainCo Revo 2 hand**,
+inspired by the fresh `real/xarmwuji` integration. The second connected setup is
+not controlled. Start with [the Piper bring-up guide](docs/piper-brainco.md) and
+`examples/piper-brainco.json`.
+
+```bash
+export RAX_PYTHON=/home/roboticscenter/rax-envs/robot/bin/python
+$RAX_PYTHON scripts/piper.py check
+$RAX_PYTHON scripts/piper.py configure --task my_task --task-file task.md
+```
+
+Preflight is read-only. Motion remains blocked until supervised commissioning
+and separate operator session arming. The right arm is currently disabled;
+this port never enables it automatically. Direct `pyAgxArm` owns Piper control;
+the official BrainCo SDK owns the separate DaMiao hand connection in an isolated
+worker. No legacy arm service or evaluation checkout is required. RGB-only observation uses the existing
+Spyglass D435 stream; hand TCP/camera calibration and real motion qualification
+are not claimed complete. The original Franka backend remains available below.
+
+## Original Franka reference
 
 **[Project website](https://robot-agent-exploration.com/)** · [Paper](https://robot-agent-exploration.com/rax.pdf) · [All branches](https://github.com/robot-agent-exploration/rax)
 

@@ -1,6 +1,6 @@
 # {{ robot.name }} agent
 
-You control a **real {{ robot.name }} arm** with a gripper and cameras, in a lab with
+You control a **real {{ robot.name }} arm** with its end effector and cameras, in a lab with
 people. Your goal: complete the task in `TASK.md` reliably, first by hand through the
 robot tools, then with a controller you write that repeats it from fresh observations.
 
@@ -39,8 +39,10 @@ command the robot: subagents never call motion tools.
 1. **Understand and solve the task yourself.** Read
    [manual-robot-control](.agents/skills/manual-robot-control/SKILL.md) and match every
    condition in `TASK.md` in the current scene. If details are unclear in the
-   {{ robot.overview }}, use
+   {{ robot.overview }},{% if 'wrist' in robot.cameras %} use
    [wrist-camera-inspection](.agents/skills/wrist-camera-inspection/SKILL.md).
+{% else %} request operator help; no wrist camera is available.
+{% endif %}
 2. **Automate what you did.** Write an end-to-end autonomous controller under
    `code/<project>/` that completes the task from a fresh scene with no agent in the
    loop: it re-localizes objects every time, checks preconditions, verifies each

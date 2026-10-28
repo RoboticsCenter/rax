@@ -4,14 +4,24 @@ from dataclasses import dataclass
 # Words shared sources use for the robot instead of branching on it. Tool names are the
 # backend's MCP tools (services/backends.py); keep them in sync with the backend.
 ROBOT_FACTS = {
+    'piper': {'name': 'AgileX Piper + BrainCo Revo 2 (right pair only)',
+              'status': 'piper_status', 'observe': 'piper_observe',
+              'move': 'piper_move_pose', 'joints': 'piper_move_joints',
+              'gripper': 'revo_move', 'pixel': None, 'stream': 'piper_stream',
+              'tools': ('piper_status', 'piper_observe', 'piper_move_pose', 'piper_move_joints',
+                        'revo_move', 'piper_hold', 'piper_stream'),
+              'overview_camera': 'overview', 'overview': 'fixed overview RGB camera',
+              'cameras': ('overview',)},
     'franka': {'name': 'Franka FR3', 'status': 'franka_status', 'observe': 'franka_observe',
                'move': 'franka_move_pose', 'gripper': 'franka_gripper',
+               'joints': 'franka_move_joints', 'stream': 'franka_stream',
                'pixel': 'franka_pixel_to_position',
                'tools': ('franka_status', 'franka_observe', 'franka_move_pose', 'franka_move_joints',
                          'franka_gripper', 'franka_pixel_to_position', 'franka_stream', 'franka_hold'),
                'overview_camera': 'left', 'overview': 'left exterior camera',
                'cameras': ('left', 'right', 'wrist')},
     'mock': {'name': 'mock robot', 'status': 'status', 'observe': 'mock_observe', 'move': 'mock_move',
+             'joints': 'mock_move', 'stream': 'mock_observe',
              'gripper': 'mock_move', 'pixel': 'mock_observe', 'tools': ('mock_observe', 'mock_move'),
              'overview_camera': 'none', 'overview': 'no camera', 'cameras': ()},
 }
@@ -34,6 +44,8 @@ class Setup:
             raise ValueError('Unknown agent CLI')
         if self.observation_profile not in ('rgbd', 'rgb-only'):
             raise ValueError('Unknown observation profile')
+        if self.robot == 'piper' and self.observation_profile != 'rgb-only':
+            raise ValueError('Piper supports only the rgb-only observation profile')
 
     @classmethod
     def from_config(cls, config, *, gemini=True):

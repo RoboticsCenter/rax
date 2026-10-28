@@ -1,0 +1,9 @@
+numpy
+scipy
+opencv-python
+pyyaml
+jinja2
+pillow
+pytest
+pyAgxArm @ git+https://github.com/agilexrobotics/pyAgxArm.git@e7aef17d54cac80cbaeb1b4110ab3d8f1337a95b
+bc-stark-sdk==2.0.7

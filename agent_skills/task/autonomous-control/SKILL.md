@@ -28,7 +28,7 @@ current observations to adapt to new layouts, rather than blindly replaying one 
 actions.
 
 - Hard-code reusable motion functions and decision rules on the MCP tools
-  (`franka_move_pose`, `franka_move_joints`, `{{ robot.gripper }}`) when suitable;
+  (`{{ robot.move }}`, `{{ robot.joints }}`, `{{ robot.gripper }}`) when suitable;
   [robot-interface](../robot-interface/SKILL.md) has the frames and limits.
 {% if gemini %}
 - Use Gemini when simple perception rules are insufficient. Write your own prompts and
@@ -58,8 +58,8 @@ generalization.
 - Give each step a function `fn(ctx, ...)` that checks its preconditions from fresh
   observations, acts, verifies the result, and returns a small dict with `ok`, what it
   measured and, on failure, why. It returns instead of improvising when the scene is
-  outside what it was tested on, leaving the robot in a safe state (gripper not
-  dropping a held object mid-air, arm lifted clear).
+  outside what it was tested on, preserving any held object and stopping safely.
+  Do not assume lifting the arm is a safe recovery motion.
 - Make the pipeline resumable at any step, and give every motion that can fail a
   fallback.
 - Keep tunable values as named constants at the top of a module, with the range you
@@ -77,13 +77,9 @@ functions against a supplied context `ctx`; the entrypoint is the same for singl
 steps and full runs:
 
 ```python
-# code/stack/controller.py
 def main(ctx):
-    reply = ctx.value("{{ robot.observe }}")
-    # Your observation–decision–action loop, e.g.:
-    # ctx.value("franka_move_pose", position=[x, y, z], quaternion=q)
-    # ctx.value("{{ robot.gripper }}", action="grasp", width=0.0, force=30)
-    return {"ok": True}
+    observation = ctx.value("{{ robot.observe }}")
+    return {"ok": False, "reason": "Controller not implemented", "observation": observation}
 
 
 if __name__ == "__main__":
@@ -122,8 +118,9 @@ retrying the same motion. Observations save full-resolution frames under
 There is no formal evaluation: you judge the controller by running it end to end on
 the real scene.
 
-1. Bring the robot to a neutral state (gripper open, `franka_move_joints` preset
-   `home`), then call `request_operator` with kind `reset` and say what you need, e.g.
+1. Bring the robot to an operator-approved neutral state using its robot-interface
+   skill; do not assume a home preset or parallel gripper. Call `request_operator`
+   with kind `reset` and say what you need, e.g.
    "please put the cubes back at new positions on the table". Wait for the answer.
 2. Commit the controller version (`git` inside `code/<project>/`) and run it once,
    unattended: no direct robot calls while it runs. If it fails, read its report, log

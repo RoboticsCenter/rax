@@ -1,0 +1,37 @@
+{
+  "arm_usb_serial": "002C001B4759530920353131",
+  "arm_firmware_profile": "default",
+  "arm_speed_percent": 10,
+  "hand_serial": "BCXTR2362J2500015",
+  "hand_firmware": "1.0.22.U",
+  "hand_channel": 1,
+  "hand_id": 127,
+  "damiao_library": "/home/roboticscenter/Documents/CenterOS-2/dist/openarm-agent/vendor/libdm_device.so",
+  "agent_python": "/home/roboticscenter/rax-agent-env/bin/python",
+  "motion_commissioned": false,
+  "tool_calibrated": false,
+  "tool_translation_m": [0, 0, 0],
+  "tool_quaternion_xyzw": [0, 0, 0, 1],
+  "hand_extent_m": 0.25,
+  "workspace_min": [0.10, -0.45, 0.10],
+  "workspace_max": [0.70, 0.45, 0.70],
+  "link_min_z": 0.08,
+  "max_joint_step_rad": 0.15,
+  "joint_speed_radps": 0.10,
+  "joint_acc_radps2": 0.20,
+  "cameras": [{
+    "name": "overview",
+    "serial": "263322070113",
+    "url": "http://127.0.0.1:8090/stream?cam=263322070113&type=color"
+  }],
+  "protected_paths": [
+    "/home/roboticscenter/xe-eval",
+    "/home/roboticscenter/xe-eval-piper-brainco",
+    "/home/roboticscenter/bimanual-agile-x-piper-brainco",
+    "/home/roboticscenter/Documents/CenterOS-2",
+    "/home/roboticscenter/brainco-hand-sdk",
+    "/home/roboticscenter/piper_sdk",
+    "/home/roboticscenter/pyAgxArm",
+    "/home/roboticscenter/rax-envs"
+  ]
+}

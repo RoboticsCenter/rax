@@ -25,10 +25,10 @@ def main():
     parser.add_argument('--task', required=True, help='Short task id, e.g. stack_cups')
     parser.add_argument('--task-file', type=Path, help='Markdown task description (TASK.md body)')
     parser.add_argument('--task-text', help='Task description text, instead of --task-file')
-    parser.add_argument('--robot', default='franka')
+    parser.add_argument('--robot', default=os.environ.get('RAX_ROBOT', 'franka'))
     parser.add_argument('--backend-options', type=Path, default=os.environ.get('RAX_BACKEND_OPTIONS') or None,
                         help='JSON file of backend settings (default: $RAX_BACKEND_OPTIONS)')
-    parser.add_argument('--observation-profile', choices=PROFILES, default='rgbd')
+    parser.add_argument('--observation-profile', choices=PROFILES)
     parser.add_argument('--agent-provider', choices=PROVIDERS, default='claude-login')
     parser.add_argument('--agent-effort', choices=AGENT_EFFORTS, default='xhigh')
     parser.add_argument('--agent-model')
@@ -40,6 +40,15 @@ def main():
         parser.error('use --task-file or --task-text, not both')
     description = args.task_file.read_text() if args.task_file else (args.task_text or '')
     options = json.loads(args.backend_options.read_text()) if args.backend_options else {}
+    profile = args.observation_profile or ('rgb-only' if args.robot == 'piper' else 'rgbd')
+    if args.robot == 'piper':
+        from services.piper.config import options as piper_options
+        try:
+            options = piper_options(options)
+        except ValueError as exc:
+            parser.error(str(exc))
+        if profile != 'rgb-only':
+            parser.error('Piper requires rgb-only until camera geometry is commissioned')
     if args.robot == 'franka' and not options.get('cameras'):
         parser.error('a franka session needs its cameras: pass --backend-options FILE or set '
                      'RAX_BACKEND_OPTIONS (see examples/franka.json)')
@@ -48,7 +57,7 @@ def main():
     config = Configuration(
         root=root, task=args.task, task_description=description, robot=args.robot,
         backend_options=options,
-        observation_profile=args.observation_profile, agent_provider=args.agent_provider,
+        observation_profile=profile, agent_provider=args.agent_provider,
         agent_effort=args.agent_effort, agent_model=args.agent_model,
         session_seconds=int(args.session_hours * 3600), max_model_calls=args.max_model_calls,
         subagents=args.subagents)
