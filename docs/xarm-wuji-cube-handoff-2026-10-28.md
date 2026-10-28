@@ -116,6 +116,9 @@ arm using that session's saved options, arms for 10 minutes (override with
 `--minutes N`), then prepares the hand through its running owner to hold the
 measured posture. If preparation fails or is cancelled, it revokes session
 arming and requests a hand stop. It never selects a different recent session.
+If the hand is already enabled and holding with fresh, fault-free feedback,
+the shortcut preserves that hold instead of preparing or disabling it again.
+It checks the owner's status again after renewing arming.
 Answer the agent's
 pending request with `scripts/xarm reply 'your answer'` when its specific
 prerequisite is satisfied. For an independent software stop:

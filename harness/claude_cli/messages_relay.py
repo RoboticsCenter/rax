@@ -431,7 +431,7 @@ def usage_reset(response):
 
 
 class MessagesRelay:
-    def __init__(self, path, credential, *, base_url, models, max_calls=4000, client_write_timeout=120,
+    def __init__(self, path, credential, *, base_url, models, max_calls=1000, client_write_timeout=120,
                  usage_log=None, calls_file=None):
         allowed = set()
         for model in models:

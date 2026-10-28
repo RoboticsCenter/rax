@@ -24,7 +24,7 @@ class Configuration:
     agent_effort: str = 'xhigh'
     agent_model: str | None = None  # Provider default when unset.
     session_seconds: int = 4 * 3600
-    max_model_calls: int = 4000
+    max_model_calls: int = 1000
     subagents: int = 0              # 0: the Agent tool is removed.
 
     def __post_init__(self):

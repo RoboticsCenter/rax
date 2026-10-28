@@ -32,8 +32,10 @@ def main():
     parser.add_argument('--agent-provider', choices=PROVIDERS, default='claude-login')
     parser.add_argument('--agent-effort', choices=AGENT_EFFORTS, default='xhigh')
     parser.add_argument('--agent-model')
-    parser.add_argument('--session-hours', type=float, default=4.0)
-    parser.add_argument('--max-model-calls', type=int, default=4000)
+    parser.add_argument('--session-hours', type=float, default=Configuration.session_seconds / 3600,
+                        help='Total session time budget in hours (default: %(default)s)')
+    parser.add_argument('--max-model-calls', type=int, default=Configuration.max_model_calls,
+                        help='Total session model-call budget (default: %(default)s)')
     parser.add_argument('--subagents', type=int, default=0)
     args = parser.parse_args()
     if args.task_file and args.task_text:

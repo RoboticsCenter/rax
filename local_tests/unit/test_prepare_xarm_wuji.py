@@ -23,8 +23,10 @@ def shortcut(tmp_path, monkeypatch):
     monkeypatch.setenv('CUBE_SESSION', str(root))
     monkeypatch.setenv('RAX_BACKEND_OPTIONS', '/wrong-session-options.json')
     calls = []
-    state = {'mode': 'disabled'}
+    state = {'mode': 'disabled', 'fresh': True, 'enabled': False, 'owns_control': False,
+             'target_positions': None, 'fault': None, 'faults': []}
     failures = set()
+    after_arm = []
 
     def run(command, **kwargs):
         command = list(command)
@@ -38,17 +40,28 @@ def shortcut(tmp_path, monkeypatch):
             assert command[2] == str(root)
             assert '--yes' in command
             arming.write(root, True, minutes=float(command[command.index('--minutes') + 1]))
+            for callback in after_arm:
+                callback()
+        elif action == 'prepare':
+            # Model the owner's admission rule that caused the first-click bug.
+            if state['enabled'] or not state['fresh'] or state['faults']:
+                raise subprocess.CalledProcessError(1, command)
+            state.update(mode='holding', enabled=True, owns_control=True,
+                         target_positions=[0.1]*20, fault=None)
+        elif action == 'stop':
+            state.update(mode='disabled', enabled=False, owns_control=False, target_positions=None)
         if command[1] == 'scripts/wuji':
             assert command[-2:] == ['--session', str(root)]
         return SimpleNamespace(stdout=json.dumps(state))
 
     monkeypatch.setattr(module.subprocess, 'run', run)
-    return SimpleNamespace(module=module, root=root, calls=calls, state=state, failures=failures)
+    return SimpleNamespace(module=module, root=root, calls=calls, state=state, failures=failures,
+                           after_arm=after_arm)
 
 
 def test_success_uses_one_session_and_its_options(shortcut):
     shortcut.module.main(['--minutes', '7'])
-    assert [action for action, _ in shortcut.calls] == ['status', 'ready', 'arm', 'prepare']
+    assert [action for action, _ in shortcut.calls] == ['status', 'ready', 'arm', 'status', 'prepare', 'status']
     state = arming.read(shortcut.root)
     assert state['armed']
     assert state['until'] - state['since'] == pytest.approx(420)
@@ -106,3 +119,40 @@ def test_explicit_config_path_selects_session(shortcut, monkeypatch):
     monkeypatch.setenv('CUBE_SESSION', '/wrong-session')
     shortcut.module.main(['--session', str(shortcut.root / 'operator-input.json')])
     assert arming.read(shortcut.root)['armed']
+
+
+def test_repeated_reply_renews_arming_without_repreparing_or_disabling_hand(shortcut):
+    shortcut.module.main(['--minutes', '60', '--yes'])
+    original_target = list(shortcut.state['target_positions'])
+    shortcut.calls.clear()
+    shortcut.failures.add('prepare')  # A second prepare would reproduce the bug.
+    shortcut.module.main(['--minutes', '60', '--yes'])
+    assert [action for action, _ in shortcut.calls] == ['status', 'ready', 'arm', 'status']
+    assert shortcut.state['enabled'] and shortcut.state['target_positions'] == original_target
+    armed = arming.read(shortcut.root)
+    assert armed['armed'] and armed['until'] - armed['since'] == pytest.approx(3600)
+
+
+def test_hand_disabled_during_confirmation_is_prepared_from_new_state(shortcut):
+    shortcut.module.main(['--yes'])
+    shortcut.calls.clear()
+    shortcut.after_arm.append(lambda: shortcut.state.update(mode='disabled', enabled=False,
+                                                           owns_control=False, target_positions=None))
+    shortcut.module.main(['--yes'])
+    assert [action for action, _ in shortcut.calls] == ['status', 'ready', 'arm', 'status', 'prepare', 'status']
+    assert shortcut.state['enabled']
+
+
+@pytest.mark.parametrize('changed', [
+    {'fresh': False}, {'fault': 'tracking fault'}, {'faults': ['motor fault']},
+    {'owns_control': False}, {'target_positions': None}, {'mode': 'executing'},
+])
+def test_unhealthy_hold_after_arming_is_not_reused(shortcut, changed):
+    shortcut.module.main(['--yes'])
+    shortcut.calls.clear()
+    shortcut.after_arm.append(lambda: shortcut.state.update(changed))
+    with pytest.raises(RuntimeError, match='without a healthy hold'):
+        shortcut.module.main(['--yes'])
+    assert not arming.read(shortcut.root)['armed']
+    assert shortcut.calls[-1][0] == 'stop'
+    assert not any(action == 'prepare' for action, _ in shortcut.calls)

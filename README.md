@@ -225,7 +225,10 @@ bash scripts/start_agent.sh --config <session>/operator-input.json --resume
 - `configure_session.py` writes the configuration and starts nothing. The task file
   becomes the agent's `TASK.md`. Other options: `--observation-profile rgbd|rgb-only`,
   `--agent-effort high|xhigh|max`, `--session-hours` (wall-clock budget, default 4),
-  `--max-model-calls`, `--subagents` (0 to 8, default 0).
+  `--max-model-calls` (default 1000), `--subagents` (0 to 8, default 0).
+  Time and call budgets are cumulative across resumes. Existing sessions retain
+  their explicit `session_seconds` and `max_model_calls` in `operator-input.json`;
+  changing defaults does not extend an already running session.
 - `start_agent.sh` builds the workspace, starts the relay and the robot service, and runs
   Claude Code in its terminal UI. `--non-interactive` runs the start prompt without a UI;
   `--exec-prompt TEXT` runs a different prompt; `--prepare-only` builds the session and

@@ -14,6 +14,14 @@ sys.path.insert(0, str(PROJECT))
 from services.xarm import arming  # noqa: E402
 
 
+def hand_ready(state):
+    """Only reuse a fresh, fault-free hold controlled by this session's owner."""
+    return (state.get('mode') == 'holding' and state.get('fresh') is True
+            and state.get('enabled') is True and state.get('owns_control') is True
+            and state.get('target_positions') is not None
+            and not state.get('fault') and not state.get('faults'))
+
+
 def main(argv=None):
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--session', default=os.environ.get('CUBE_SESSION'),
@@ -44,13 +52,16 @@ def main(argv=None):
                               text=True, capture_output=capture)
 
     # This only queries the running owner. Never start a second hand SDK client.
-    state = json.loads(run('bash', 'scripts/wuji', 'status', '--session', str(root), capture=True).stdout)
-    if state.get('mode') in ('executing', 'preparing', 'stopping'):
+    def hand_status():
+        return json.loads(run('bash', 'scripts/wuji', 'status', '--session', str(root), capture=True).stdout)
+
+    state = hand_status()
+    if state.get('mode') in ('executing', 'preparing', 'enabling', 'stopping'):
         parser.error(f"hand is {state['mode']}; wait for it to stop before preparing")
 
     print(f'Session: {root}\nxArm: {options["xarm_ip"]}\n'
           f'Preparation covers arm readiness, {args.minutes:g} minutes of arming, '
-          'and enabling the hand to hold its measured posture.\n'
+          'and preserving a healthy hand hold or preparing a disabled hand at its measured posture.\n'
           'Check the arm workspace and whole-hand sweep; keep a person at the emergency stop.',
           flush=True)
 
@@ -65,7 +76,18 @@ def main(argv=None):
             # READY already confirmed the complete sequence above.
             run(sys.executable, 'scripts/arm_robot.py', str(root), 'arm',
                 '--minutes', str(args.minutes), '--yes')
-            run('bash', 'scripts/wuji', 'prepare', '--session', str(root))
+            # Re-read after confirmation and arming: the owner may have disabled
+            # the hand while the operator was answering the prompt. Conversely,
+            # an already healthy hold must not be prepared a second time.
+            state = hand_status()
+            if hand_ready(state):
+                print('Wuji already prepared; preserving its current hold.', flush=True)
+            else:
+                if state.get('enabled') or state.get('mode') in ('executing', 'preparing', 'enabling', 'stopping'):
+                    raise RuntimeError('hand is enabled or busy without a healthy hold; cannot prepare')
+                run('bash', 'scripts/wuji', 'prepare', '--session', str(root))
+                if not hand_ready(hand_status()):
+                    raise RuntimeError('hand preparation did not establish a fresh, fault-free hold')
             if not arming.read(root)['armed']:
                 raise RuntimeError('session disarmed during preparation')
         except BaseException:
