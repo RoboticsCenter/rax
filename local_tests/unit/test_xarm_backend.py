@@ -237,3 +237,48 @@ def test_no_geometry_cannot_publish_placeholder_base_coordinates(make_backend):
     backend.models = {}
     with pytest.raises(ValueError, match='geometry is unavailable'):
         backend.call('xarm_observe', {})
+
+
+@pytest.mark.parametrize('tool, arguments', [
+    ('xarm_status', {'unexpected': 1}),
+    ('xarm_hold', {'unexpected': 1}),
+    ('xarm_observe', {'cameras': ['unknown']}),
+    ('xarm_observe', {'project': [[.3, .2]]}),
+    ('xarm_stream', {'seconds_ago': [-1]}),
+    ('xarm_stream', {'seconds_ago': [601]}),
+    ('xarm_stream', {'seconds_ago': [0], 'sheet': {'seconds': 1}}),
+    ('xarm_stream', {'sheet': {'seconds': 1, 'count': True}}),
+    ('xarm_move_pose', {'position': [.4, False, .3]}),
+    ('xarm_move_pose', {'position': [.4, 0, .3], 'timeout_s': -1}),
+    ('xarm_move_pose', {'position': [.4, 0, .3], 'quaternion': [0, 0, 1]}),
+    ('xarm_move_joints', {'positions': [0] * 5}),
+    ('xarm_move_joints', {'preset': 'missing'}),
+    ('xarm_pixel_to_position', {'frame_id': 'abc', 'camera': 'left', 'pixels': [[2]]}),
+    ('xarm_pixel_to_position', {'frame_id': 'abc', 'camera': 'left', 'pixels': [[2, 3]], 'radius': -1}),
+    ('xarm_pixel_to_position', {'frame_id': 'abc', 'camera': 'left', 'pixels': [[float('nan'), 3]]}),
+])
+def test_declared_tool_contract_rejects_before_dispatch(make_backend, tool, arguments):
+    backend, arm, root = make_backend()
+    arming.write(root, True)
+    with pytest.raises(ValueError):
+        backend.validate(tool, arguments)
+    assert arm.commands == arm.holds == 0
+
+
+def test_sdk_mode_property_is_reported_without_get_mode():
+    class ReportOnlySDK:
+        mode = 0
+
+        def get_position(self, **kwargs):
+            return 0, [300., 0., 300., 0., 0., 0.]
+
+        def get_servo_angle(self, **kwargs):
+            return 0, [0.] * 6
+
+        def get_state(self):
+            return 0, 4
+
+    driver = XArmDriver.__new__(XArmDriver)
+    driver.arm = ReportOnlySDK()
+    state = driver.state()
+    assert state['mode'] == 0 and state['state'] == 4

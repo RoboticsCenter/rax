@@ -1,16 +1,15 @@
 """Whole-session MP4 archive of the live stream (ffmpeg required; no cameras)."""
 import json
-import shutil
 import time
 
 import cv2 as cv
 import numpy as np
 import pytest
 
-from services.franka.archive import Archiver, encode_interval, encode_minute, minute_of
+from services.franka.archive import Archiver, encode_interval, encode_minute, find_ffmpeg, minute_of
 from services.franka.camera_server import Cameras
 
-pytestmark = pytest.mark.skipif(shutil.which('ffmpeg') is None, reason='ffmpeg not installed')
+pytestmark = pytest.mark.skipif(find_ffmpeg() is None, reason='ffmpeg not installed')
 
 
 def fill_minute(folder, start_ms, n=20, step_ms=33):

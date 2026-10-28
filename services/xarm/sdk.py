@@ -76,11 +76,15 @@ class XArmDriver:
                  'state': None, 'mode': None, 'error_code': None, 'warn_code': None}
         for name, key in (('get_state', 'state'), ('get_mode', 'mode')):
             method = getattr(self.arm, name, None)
-            if method is not None:
-                try:
+            try:
+                if method is not None:
                     state[key] = _code_result(method(), name)
-                except Exception as exc:  # noqa: BLE001 - status should report partial data
-                    state[f'{key}_error'] = str(exc)
+                elif key == 'mode':
+                    # SDK 1.18 exposes mode through the controller report
+                    # property, without a get_mode RPC.
+                    state[key] = self.arm.mode
+            except Exception as exc:  # noqa: BLE001 - status should report partial data
+                state[f'{key}_error'] = str(exc)
         method = getattr(self.arm, 'get_err_warn_code', None)
         if method is not None:
             try:

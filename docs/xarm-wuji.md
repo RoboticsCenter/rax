@@ -10,6 +10,9 @@ target holding, a recorded posture and confirmed disable were exercised. Full
 manipulation and fault qualification remain pending. The local October 22 vendor
 self-check is separate historical evidence. The research and design rationale are in
 [xarm-wuji-backend-plan.md](xarm-wuji-backend-plan.md).
+The [October 27 backend verification](xarm-wuji-live-mcp-2026-10-27.md) exercises
+all eleven tools with the calibrated cameras. xArm checks passed after corrections;
+the hand's nonzero positioning trial failed its existing settling tolerance.
 
 ## Environment and configuration
 
@@ -32,6 +35,24 @@ On this host, `/home/jerry/rax/.venv/bin/python` is prepared with that SDK,
 Use it as `RAX_PYTHON` for the commands below. Installing these packages did not
 connect to either device.
 
+Video recording requires FFmpeg with `libx264`. The recorder searches PATH, then
+the directory containing the active Python interpreter. This host uses FFmpeg
+7.0.2 from `imageio-ffmpeg==0.6.0`, linked at `.venv/bin/ffmpeg`. If system FFmpeg
+is unavailable, the equivalent environment-local installation is:
+
+```bash
+"$RAX_PYTHON" -m pip install imageio-ffmpeg==0.6.0
+"$RAX_PYTHON" - <<'PY'
+import sys
+from pathlib import Path
+from imageio_ffmpeg import get_ffmpeg_exe
+Path(sys.executable).with_name('ffmpeg').symlink_to(get_ffmpeg_exe())
+PY
+```
+
+Create that link only when it does not already exist. Motion archives include
+camera videos and robot/hand telemetry for successful and failed motion commands.
+
 Copy [examples/xarm-wuji.json](../examples/xarm-wuji.json) into your operator
 configuration location and review it before running:
 
@@ -51,9 +72,14 @@ configuration location and review it before running:
   need real-world qualification. Current is not fingertip force. Gains/current
   limits are read back for every joint before enabling; partial failure refuses
   preparation and requests stop. It does not silently restore unknown old settings.
-- `postures` is initially empty: there is no guessed "open" or "grasp" posture.
-  Add named twenty-angle arrays after commissioning them, and change
-  `profile_revision` when changing limits, gains, origin conventions or postures.
+  The [October 27 gain trials](wuji-gain-tuning-2026-10-27.md) found that lower
+  thumb damping helped some moves but did not resolve thumb S2 stalling or qualify
+  repeatable home. No tuned gains were promoted.
+- `postures.home` contains the twenty measured angles selected by the operator
+  on October 27, under profile `right-hand2-home-20261027-v2`. It is a saved joint
+  posture; returns from task poses still need qualification. There is no configured
+  "open" or "grasp" posture. Change `profile_revision` when changing limits,
+  gains, origin conventions or postures.
 - The optional `lock_paths` entry coordinates with the local teleop checkout.
   Remove or update it on another host. Parent directories must exist. Also stop
   vendor demos/Studio and the separate arm-hand adapter before RAX control:
@@ -150,6 +176,23 @@ must both remain fresh. Missing or duplicated NIDs, nonfinite values, stale
 sequences, reported faults and an unexpected enabled state prevent continued
 execution. The hand keeps its target during arm motion; calls are sequential,
 not a synchronized arm/hand trajectory.
+
+The saved hand home is requested through MCP after operator arming and preparation:
+
+```python
+ctx.value('wuji_pose', name='home', duration_s=2.0)
+```
+
+New sessions created from `examples/xarm-wuji.json` include this posture; existing
+session configurations are snapshots and do not reload edits to the example.
+`scripts/xarm home` continues to reset only the arm. Hand `prepare` holds the
+measured posture, so it does not automatically move to `home`.
+
+The home capture read the disabled hand without enabling motors. Its angles differ
+from the earlier tested `test_start` posture by up to 1.00035 rad. Saving the new
+target does not qualify the return path: the existing 0.35 rad per-call step limit
+still applies, and larger returns require reviewed intermediate targets. The
+previous settling failure remains unresolved.
 
 During your tool tests, check invalid shapes/limits, disabled and disarmed admission,
 small single-joint moves in clear space, posture execution, holding between calls,

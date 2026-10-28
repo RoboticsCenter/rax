@@ -89,6 +89,33 @@ QUAT = {'type': 'array', 'items': NUMBER, 'minItems': 4, 'maxItems': 4,
         'description': 'TCP orientation quaternion [x, y, z, w] in the xArm base frame.'}
 
 
+def _validate_arguments(value, schema, path='arguments'):
+    """Enforce the JSON types and bounds declared by the xArm tool schemas."""
+    kind = schema['type']
+    valid = {'object': isinstance(value, dict), 'array': isinstance(value, (list, tuple)),
+             'number': type(value) in (int, float), 'integer': type(value) is int,
+             'boolean': type(value) is bool, 'string': isinstance(value, str)}
+    if not valid[kind]:
+        raise ValueError(f'{path} must be {kind}')
+    if 'enum' in schema and value not in schema['enum']:
+        raise ValueError(f"{path} must be one of {schema['enum']}")
+    if kind == 'object':
+        properties = schema['properties']
+        missing, unknown = set(schema.get('required', ())) - value.keys(), value.keys() - properties.keys()
+        if missing or unknown:
+            raise ValueError(f'{path}: missing {sorted(missing)}, unknown {sorted(unknown)}')
+        for name, item in value.items():
+            _validate_arguments(item, properties[name], f'{path}.{name}')
+    elif kind == 'array':
+        if not schema.get('minItems', 0) <= len(value) <= schema.get('maxItems', float('inf')):
+            raise ValueError(f'{path} has an invalid number of items')
+        for index, item in enumerate(value):
+            _validate_arguments(item, schema['items'], f'{path}[{index}]')
+    elif kind in ('number', 'integer'):
+        if not np.isfinite(value) or not schema.get('minimum', -np.inf) <= value <= schema.get('maximum', np.inf):
+            raise ValueError(f'{path} must be finite and within its declared bounds')
+
+
 def matrix(position, quaternion):
     T = np.eye(4)
     T[:3, :3] = Rotation.from_quat(np.asarray(quaternion, dtype=np.float64)).as_matrix()
@@ -405,6 +432,10 @@ class XArmBackend:
             return
         if name == 'xarm_gripper' and self.has_hand:
             raise ValueError('xarm_gripper is unavailable with a Wuji hand')
+        definition = next((tool for tool in self.tools() if tool['name'] == name), None)
+        if definition is None:
+            raise ValueError(f'unknown tool {name}')
+        _validate_arguments(arguments, definition['inputSchema'])
         if name == 'xarm_move_pose':
             self._pose_goal(arguments, self.arm.state())
         elif name == 'xarm_move_joints':
@@ -417,6 +448,14 @@ class XArmBackend:
                 raise ValueError('force applies to grasp only')
         elif name == 'xarm_pixel_to_position':
             self._frame_dir(arguments['frame_id'])
+        elif name == 'xarm_stream':
+            if 'sheet' in arguments and 'seconds_ago' in arguments:
+                raise ValueError('give either sheet or seconds_ago')
+            ages = arguments.get('seconds_ago', [0])
+            if any(age > self.options['stream_window_s'] for age in ages):
+                raise ValueError(f"only the last {self.options['stream_window_s']} s are kept")
+            if len(ages) * len(arguments.get('cameras') or self.models) > 12:
+                raise ValueError('at most 12 images per call (seconds_ago x cameras)')
         if name in self.mutating:
             self._require_armed()
             if self.has_hand:

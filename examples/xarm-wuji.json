@@ -47,7 +47,7 @@
     "serial": "WH2KA01260823017",
     "handedness": "right",
     "address": "192.168.1.111:7447",
-    "profile_revision": "right-hand2-commissioning-v1",
+    "profile_revision": "right-hand2-home-20261027-v2",
     "lower_rad": [
       -1.186824,
       -1.48353,
@@ -101,7 +101,30 @@
     "max_step_rad": 0.35,
     "max_tracking_error_rad": 0.35,
     "max_feedback_age_s": 0.25,
-    "postures": {},
+    "postures": {
+      "home": [
+        0.099798,
+        0.064535,
+        0.301045,
+        0.370696,
+        -0.146403,
+        0.029051,
+        0.39289,
+        0.761477,
+        0.026323,
+        0.060501,
+        0.269742,
+        0.44159,
+        0.039982,
+        0.043522,
+        0.223297,
+        0.729796,
+        0.09103,
+        0.041176,
+        -0.093998,
+        1.076658
+      ]
+    },
     "lock_paths": [
       "/home/jerry/xe-eval-deploy/bimanual/eval_robotics_xarm_bimanual/wuji-teleop/teleop.lock"
     ]

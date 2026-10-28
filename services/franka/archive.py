@@ -16,6 +16,7 @@ import os
 from pathlib import Path
 import shutil
 import subprocess
+import sys
 import threading
 import time
 
@@ -29,8 +30,20 @@ def minute_of(t_s):
     return time.strftime('%Y%m%dT%H%M', time.gmtime(t_s))
 
 
+def find_ffmpeg(executable='ffmpeg'):
+    """Support a system FFmpeg or one installed beside the active interpreter."""
+    found = shutil.which(executable)
+    if found or executable != 'ffmpeg':
+        return found
+    local = Path(sys.executable).with_name('ffmpeg')
+    return str(local) if local.is_file() and os.access(local, os.X_OK) else None
+
+
 def pick_codec(ffmpeg='ffmpeg'):
     """NVENC when this GPU/driver accepts a session, else libx264."""
+    ffmpeg = find_ffmpeg(ffmpeg)
+    if ffmpeg is None:
+        raise RuntimeError('FFmpeg is required for video recording; install it on PATH or beside the Python interpreter')
     probe = [ffmpeg, '-hide_banner', '-loglevel', 'error', '-f', 'lavfi', '-i', 'testsrc=size=256x144:rate=30',
              '-t', '0.2', *CODECS['h264_nvenc'], '-f', 'null', '-']
     try:
@@ -53,6 +66,9 @@ def encode_frames(frames, out_mp4, *, fps, codec, camera, label, ffmpeg='ffmpeg'
     """Encode [(epoch_ms, jpg)] frames to out_mp4 (+ .json sidecar)."""
     if not frames:
         return None
+    ffmpeg = find_ffmpeg(ffmpeg)
+    if ffmpeg is None:
+        raise RuntimeError('FFmpeg is required for video recording; install it on PATH or beside the Python interpreter')
     out_mp4.parent.mkdir(parents=True, exist_ok=True)
     temporary = out_mp4.with_name(f'.{out_mp4.name}')
     command = [ffmpeg, '-hide_banner', '-loglevel', 'error', '-y', '-f', 'image2pipe', '-framerate', str(fps),

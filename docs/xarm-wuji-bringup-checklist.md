@@ -3,6 +3,9 @@
 Started 2026-10-27 on `real/xarmwuji`. Checkmarks describe observed results;
 unchecked items still need commissioning. The earlier
 [live MCP report](wuji-live-test-2026-10-25.md) covers initial hand-only tests.
+The [October 27 full backend report](xarm-wuji-live-mcp-2026-10-27.md) covers all
+eleven tools on the current setup: xArm checks passed after corrections; the
+hand's index-joint positioning trial failed settling and needs follow-up.
 
 **Camera calibration is installed and verified.** The new accurate print was
 used for run06 RGB calibration and run07 infrared/RGB stereo alignment. See the
@@ -28,10 +31,27 @@ the hand is disabled with fresh, fault-free feedback.
   measured Wuji geometry**. Calibration uses the recorded TCP reference.
 - [ ] Review workspace limits and finger sweep for actual tasks.
 - [ ] Qualify gains/current, all joint directions and full-hand postures. The
-  example retains 0.5 A, kp 1.5, kd 0.1 and an empty posture map.
-- [ ] Define and test a named episode-reset posture. `prepare` holds measured
-  angles; it does not home. `scripts/xarm home` resets the arm only. A hand
-  reset can use `wuji_pose` after a measured posture and its path are qualified.
+  example retains 0.5 A, kp 1.5 and kd 0.1.
+- [x] Save the operator-selected current hand posture as `postures.home` in
+  `examples/xarm-wuji.json`, profile `right-hand2-home-20261027-v2`. Ten fresh,
+  fault-free disabled-state samples were captured without enabling or moving.
+- [ ] Test repeatable returns to the saved hand home from task poses. It differs
+  from the earlier tested return posture by up to 1.00035 rad; the 0.35 rad step
+  limit remains active. Use `wuji_pose(name="home")` for an admitted return.
+  `prepare` holds measured angles; `scripts/xarm home` resets the arm only.
+  The first requested home-return trial stopped on intermediate step 2 of 6:
+  thumb S2 had 0.07170 rad settling error against a 0.040 rad tolerance. Home was
+  not reached; hand disable was confirmed. See the October 27 report.
+- [x] Operator inspected thumb clearance with the hand disabled and reported no
+  visible obstruction. Read-only firmware inspection found thumb S2 soft limits
+  disabled; this does not rule out internal friction or binding.
+- [ ] Resolve thumb S2 stalling and qualify repeatable home before promoting gains.
+  The [gain trials](wuji-gain-tuning-2026-10-27.md) tested kp 2–5, including
+  lower damping at kd 0.05/0.075, with the 0.5 A cap unchanged. At kp 4, kd 0.05,
+  two isolated thumb-home approaches passed with about 0.0284 rad error, but the
+  negative probe triggered `0x0007: Stall`. Brief measured thumb speed reached
+  2.09 rad/s. Whole-hand home remains unqualified. Original gains were restored
+  and verified with the hand disabled and arm stopped; no tuned profile was promoted.
 
 ## Camera calibration
 
@@ -97,13 +117,27 @@ raw captures and the commissioning audit remain under `.local-runtime/`.
   feedback-confirmed disable. See the linked report for failed precision trials
   and the exact scope; it does not qualify all fingers or manipulation.
 - [x] Repeat connection/status and camera observations with the current setup.
+- [x] Exercise all seven xArm MCP tools: observation, projection, pixel conversion,
+  live/history/contact-sheet streaming, relative/absolute/joint motion, home,
+  return, hold, input rejection, timeout recovery and motion recording. Corrected
+  runs passed 35 read-only/admission and 33 motion/recording checks.
+- [x] Repeat all four Wuji MCP interfaces, including 22 input/admission rejections,
+  holding, a recorded named return and confirmed disable. The nonzero index S3
+  trial failed with 0.04655 rad residual error against a 0.040 rad tolerance.
+- [ ] Diagnose the hand's repeatable settling error and resume individual-joint
+  qualification. The wider twenty-joint sweep was stopped after the first failure;
+  gains, current limits and tolerance were not increased.
 - [x] Verify the bounded calibration arm motions with the hand holding and
   return to the recorded start pose, followed by disarm and confirmed hand disable.
 - [ ] Qualify a repeatable episode reset, including a named hand posture and
   the intended task motion envelope.
-- [ ] Exercise independent operator disarm/stop during motion and inspect both
-  arm and hand outcomes. MCP requests serialize; MCP hold cannot preempt an
-  active MCP motion request. Use the private operator stop interface.
+- [x] Exercise independent operator disarm during arm motion and an active hand
+  command; inspect both arm and hand outcomes. First stopped/disabled samples
+  arrived after 73.85 ms (arm) and 114.59 ms (hand) in these trials. The hand command
+  retained its posture, so this did not measure moving-finger braking. MCP requests
+  serialize; MCP hold cannot preempt an active MCP motion request. Use the private
+  operator stop interface. Immediate hold during emergency stopping can be rejected;
+  wait for stop completion and inspect feedback.
 - [ ] Qualify communication loss, process loss and physical stop behavior with
   an appropriate controlled test setup.
 - [ ] Qualify grasp, retention, transport, release and repeated episodes with
