@@ -132,6 +132,41 @@ def test_motion_refused_until_armed(make_backend):
     backend.validate('xarm_move_pose', {'position': [0, 0, 0.01], 'relative': True})
 
 
+@pytest.mark.parametrize('requested,expected', [(None, .05), (.015, .015), (.05, .05)])
+def test_cartesian_speed_is_per_move_and_reaches_sdk(make_backend, requested, expected):
+    class RecordingArm(FakeArm):
+        def move_pose(self, position, quaternion, **kwargs):
+            self.speed = kwargs['speed_mps']
+            super().move_pose(position, quaternion, **kwargs)
+
+    backend, arm, root = make_backend(arm=RecordingArm(), cartesian_speed_mps=.05,
+                                       max_translation_m=.35, settle_s=0)
+    arming.write(root, True)
+    arguments = {'position': [.2, 0, 0], 'relative': True}
+    if requested is not None:
+        arguments['speed_mps'] = requested
+    backend.validate('xarm_move_pose', arguments)
+    result, _ = backend.call('xarm_move_pose', arguments)
+    assert result['reached'] and result['speed_mps'] == expected
+    assert arm.speed == expected and arm.commands == 1
+    assert backend.options['cartesian_speed_mps'] == .05
+    # A slower contact move does not lower the speed of subsequent clear moves.
+    result, _ = backend.call('xarm_move_pose', {'position': [0, .01, 0], 'relative': True})
+    assert result['speed_mps'] == .05 and arm.speed == .05
+
+
+@pytest.mark.parametrize('speed', [0, -.01, .0005, .051, float('nan'), float('inf'), True])
+def test_cartesian_speed_rejected_before_dispatch(make_backend, speed):
+    backend, arm, root = make_backend(cartesian_speed_mps=.05)
+    arming.write(root, True)
+    arguments = {'position': [.01, 0, 0], 'relative': True, 'speed_mps': speed}
+    with pytest.raises(ValueError, match='speed_mps'):
+        backend.validate('xarm_move_pose', arguments)
+    with pytest.raises(ValueError, match='speed_mps'):
+        backend.call('xarm_move_pose', arguments)
+    assert arm.commands == 0
+
+
 def test_pose_move_and_rejections(make_backend):
     backend, arm, root = make_backend()
     arming.write(root, True)

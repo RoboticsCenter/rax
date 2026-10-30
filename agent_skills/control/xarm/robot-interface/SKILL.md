@@ -24,10 +24,12 @@ physically.
 - `{{ robot.status }}`: pose, joints, end-effector feedback, controller state/error codes, whether
   motion is armed, workspace box.
 - `{{ robot.observe }}`: camera images now (`{{ robot.cameras | join('`, `') }}`).
-- `xarm_move_pose {position, quaternion?, relative?, tolerance_mm?, timeout_s?}`:
+- `xarm_move_pose {position, quaternion?, relative?, speed_mps?, tolerance_mm?, timeout_s?}`:
   Cartesian TCP move through the xArm controller and wait until settled. Read the
   live tool description for this session's translation and speed caps; do not assume
-  repository defaults apply. `relative: true` adds a base-frame displacement to the
+  repository defaults apply. `speed_mps` selects a speed from 0.001 m/s up to the
+  configured ceiling for this call; omit it to use that ceiling. Select a lower speed
+  near contact or when carrying requires it. `relative: true` adds a base-frame displacement to the
   current TCP position. It does not translate along rotated tool axes. Requires operator arming.
 - `xarm_move_joints {positions | preset: "home"}`: joint-space move with six joint
   angles in radians, or the backend home preset. The path is sampled with controller FK

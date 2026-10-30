@@ -309,10 +309,13 @@ class XArmBackend:
             {'name': 'xarm_move_pose', 'description':
                 'Move the TCP to a base-frame pose with the xArm controller Cartesian line mode and wait until '
                 f'it settles. Workspace box {lo} .. {hi} m; at most {self.options["max_translation_m"]} m per '
-                f'call; speed is capped at {self.options["cartesian_speed_mps"] * 1000:g} mm/s. Omit quaternion '
+                f'call; speed is capped at {self.options["cartesian_speed_mps"] * 1000:g} mm/s. '
+                'Optional speed_mps selects a lower speed for this move; omitted uses the configured cap. Omit quaternion '
                 'to keep the current orientation. relative=true adds position to the current TCP position. '
                 'Requires operator arming. Returns the measured pose and error.',
              'inputSchema': _schema({'position': VEC3, 'quaternion': QUAT, 'relative': {'type': 'boolean'},
+                                     'speed_mps': {'type': 'number', 'minimum': 0.001,
+                                                   'maximum': self.options['cartesian_speed_mps']},
                                      'tolerance_mm': {'type': 'number', 'minimum': 0.5, 'maximum': 20},
                                      'timeout_s': {'type': 'number', 'minimum': 1, 'maximum': 60}},
                                     ['position'])},
@@ -632,14 +635,19 @@ class XArmBackend:
         return {'directory': f'motion-archive/{clip_id}', 'start_ms': start_ms, 'end_ms': end_ms,
                 'status': status, 'cameras': sorted(self.models)}
 
-    def _move_pose(self, position, quaternion=None, relative=False, tolerance_mm=1.5, timeout_s=None):
+    def _move_pose(self, position, quaternion=None, relative=False, tolerance_mm=1.5, timeout_s=None,
+                   speed_mps=None):
+        speed = self.options['cartesian_speed_mps'] if speed_mps is None else speed_mps
+        # Direct operator calls and the MCP frontend must obey the same ceiling.
+        _validate_arguments(speed, {'type': 'number', 'minimum': 0.001,
+                                   'maximum': self.options['cartesian_speed_mps']}, 'speed_mps')
         goal_p, goal_q = self._pose_goal({'position': position, 'quaternion': quaternion, 'relative': relative},
                                          self.arm.state())
         self._require_armed()
         timeout = min(float(timeout_s or self.options['move_timeout_s']), 60.0)
         motion_start = time.time()
         try:
-            self.arm.move_pose(goal_p, goal_q, speed_mps=self.options['cartesian_speed_mps'],
+            self.arm.move_pose(goal_p, goal_q, speed_mps=speed,
                                acc_mps2=self.options['cartesian_acc_mps2'], timeout_s=timeout)
             result = self._monitor_pose(goal_p, goal_q, tolerance_m=tolerance_mm/1000.0,
                                         tolerance_rad=np.radians(max(0.5, tolerance_mm/3.0)),
@@ -660,7 +668,7 @@ class XArmBackend:
         if clip:
             result['motion_clip'] = clip
         self.last_motion = {'tool': 'xarm_move_pose', 'at': time.time(), **result}
-        return {**result, 'target_position': np.round(goal_p, 5).tolist(),
+        return {**result, 'speed_mps': speed, 'target_position': np.round(goal_p, 5).tolist(),
                 'target_quaternion': np.round(goal_q, 5).tolist()}, []
 
     def _held(self, exc, goal_p):
