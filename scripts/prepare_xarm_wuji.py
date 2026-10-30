@@ -12,6 +12,7 @@ PROJECT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(PROJECT))
 
 from services.xarm import arming  # noqa: E402
+from services.wuji.preparation import PreparationBlocked, preparation_action  # noqa: E402
 
 
 def hand_ready(state):
@@ -49,7 +50,7 @@ def main(argv=None):
 
     def run(*command, capture=False):
         return subprocess.run(command, cwd=PROJECT, env=env, check=True,
-                              text=True, capture_output=capture)
+                              text=True, stdout=subprocess.PIPE if capture else None, stderr=subprocess.PIPE)
 
     # This only queries the running owner. Never start a second hand SDK client.
     def hand_status():
@@ -72,6 +73,13 @@ def main(argv=None):
         saved.flush()
         env['RAX_BACKEND_OPTIONS'] = saved.name
         try:
+            if not hand_ready(state) and preparation_action(state, options['end_effector']) == 'reconnect':
+                arming.write(root, False, reason='operator-requested thermal recovery before preparation')
+                print('Thermal fault has cooled: reconnecting the disabled hand once before preparation.', flush=True)
+                run('bash', 'scripts/wuji', 'recover-thermal', '--session', str(root), capture=True)
+                state = hand_status()
+                if state.get('fault') or state.get('faults') or not state.get('fresh') or state.get('enabled'):
+                    raise PreparationBlocked('Hand recovery did not establish a healthy disabled state.')
             run('bash', 'scripts/xarm', 'ready', *(['--yes'] if args.yes else []))
             # READY already confirmed the complete sequence above.
             run(sys.executable, 'scripts/arm_robot.py', str(root), 'arm',
@@ -105,5 +113,18 @@ def main(argv=None):
           'Answer the pending operator request separately when its prerequisites are satisfied.')
 
 
+def cli():
+    try:
+        main()
+    except subprocess.CalledProcessError as exc:
+        detail = (exc.stderr or exc.stdout or f'Preparation step failed: {" ".join(map(str, exc.cmd))}').strip()
+        print(f'Preparation blocked: {detail}', file=sys.stderr)
+        return 1
+    except (RuntimeError, OSError, ValueError) as exc:
+        print(f'Preparation blocked: {exc}', file=sys.stderr)
+        return 1
+    return 0
+
+
 if __name__ == '__main__':
-    main()
+    sys.exit(cli())

@@ -31,10 +31,15 @@ physically.
   configured ceiling for this call; omit it to use that ceiling. Select a lower speed
   near contact or when carrying requires it. `relative: true` adds a base-frame displacement to the
   current TCP position. It does not translate along rotated tool axes. Requires operator arming.
-  `timeout_s` accepts 1–600 seconds; the repository default is 300 seconds, and the
+  `timeout_s` accepts 1–120 seconds; the repository default is 60 seconds, and the
   live tool description reports this session's configured default. The call returns
-  as soon as the target settles; the timeout is only a maximum. For an unusually slow
-  move, request `timeout_s: 600`. This changes the time allowance, not motion speed.
+  as soon as the target settles; the timeout is only a maximum. Longer allowances
+  are for moves expected to take longer, not retries of an incomplete move.
+  Outside target tolerance, 2 seconds of idle, stationary controller feedback or
+  5 seconds without measurable arm movement aborts early, stops/disarms the assembly,
+  and posts an operator alert directly. Position, orientation and joints all count
+  toward detecting movement, so a progressing in-place rotation is not a stall.
+  Being close in XYZ alone is not completion: the orientation must also match.
   A timed-out move stops both devices. When feedback confirms both stopped,
   `control_uncertain` is false; timeout alone does not latch uncertainty. If either
   stop cannot be confirmed, uncertainty remains true. Inspect the measured pose and
@@ -43,7 +48,9 @@ physically.
 - `xarm_move_joints {positions | preset: "home"}`: joint-space move with six joint
   angles in radians, or the backend home preset. The path is sampled with controller FK
   and checked against the workspace box before moving. The configured move timeout
-  (default 300 seconds) covers the entire call, including all segments. Requires operator arming.
+  (default 60 seconds, capped at 120 seconds) covers the entire call, including all
+  segments. The same idle/stationary checks cancel remaining segments and alert
+  the operator. Requires operator arming.
 {% if robot.has_hand %}
 - `wuji_status`, `wuji_move_joints`, `wuji_pose`, `wuji_home`, `wuji_hold`,
   `wuji_set_effort`, `wuji_set_impedance`: see

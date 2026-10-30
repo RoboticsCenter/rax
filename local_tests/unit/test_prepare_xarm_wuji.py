@@ -48,6 +48,9 @@ def shortcut(tmp_path, monkeypatch):
                 raise subprocess.CalledProcessError(1, command)
             state.update(mode='holding', enabled=True, owns_control=True,
                          target_positions=[0.1]*20, fault=None)
+        elif action == 'recover-thermal':
+            assert not arming.read(root)['armed']
+            state.update(mode='disabled', fault=None, faults=[])
         elif action == 'stop':
             state.update(mode='disabled', enabled=False, owns_control=False, target_positions=None)
         if command[1] == 'scripts/wuji':
@@ -156,3 +159,43 @@ def test_unhealthy_hold_after_arming_is_not_reused(shortcut, changed):
     assert not arming.read(shortcut.root)['armed']
     assert shortcut.calls[-1][0] == 'stop'
     assert not any(action == 'prepare' for action, _ in shortcut.calls)
+
+
+def test_prepare_button_recovers_cooled_thermal_fault_before_readying_arm(shortcut):
+    from test_wuji_preparation import thermal_state
+    shortcut.state.update(thermal_state(64.9))
+    shortcut.module.main(['--yes'])
+    actions = [action for action, _ in shortcut.calls]
+    assert actions == ['status', 'recover-thermal', 'status', 'ready', 'arm', 'status', 'prepare', 'status']
+    assert shortcut.state['enabled'] and arming.read(shortcut.root)['armed']
+
+
+def test_hot_hand_never_reaches_arm_ready_and_reply_can_remain_pending(shortcut):
+    from test_wuji_preparation import thermal_state
+    shortcut.state.update(thermal_state(65.))
+    with pytest.raises(RuntimeError, match='Hand cooling'):
+        shortcut.module.main(['--yes'])
+    assert [a for a, _ in shortcut.calls] == ['status', 'stop']
+    assert not arming.read(shortcut.root)['armed']
+
+
+def test_failed_reconnect_is_not_retried_and_never_readies_arm(shortcut):
+    from test_wuji_preparation import thermal_state
+    shortcut.state.update(thermal_state())
+    shortcut.failures.add('recover-thermal')
+    with pytest.raises(subprocess.CalledProcessError):
+        shortcut.module.main(['--yes'])
+    assert [a for a, _ in shortcut.calls] == ['status', 'recover-thermal', 'stop']
+    assert not arming.read(shortcut.root)['armed']
+
+
+@pytest.mark.parametrize('failure', [RuntimeError('Hand cooling: thumb_S2 is 65.0 C.'),
+    subprocess.CalledProcessError(1, ['bash', 'scripts/wuji', 'prepare'], stderr='Wuji operation failed: sensor unavailable')])
+def test_cli_shows_actionable_error_without_nested_traceback(shortcut, monkeypatch, capsys, failure):
+    def fail():
+        raise failure
+    monkeypatch.setattr(shortcut.module, 'main', fail)
+    assert shortcut.module.cli() == 1
+    error = capsys.readouterr().err
+    assert 'Preparation blocked:' in error and 'Traceback' not in error
+    assert 'cooling' in error or 'sensor unavailable' in error

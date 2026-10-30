@@ -169,7 +169,7 @@ def test_cartesian_speed_rejected_before_dispatch(make_backend, speed):
 
 
 @pytest.mark.parametrize('requested,duration,succeeds', [
-    (None, 240., True), (600., 540., True), (5., 10., False), (None, 310., False),
+    (None, 40., True), (120., 90., True), (5., 10., False), (None, 70., False),
 ])
 def test_slow_rotation_uses_selected_deadline(make_backend, monkeypatch, requested, duration, succeeds):
     clock = [100.]
@@ -182,12 +182,16 @@ def test_slow_rotation_uses_selected_deadline(make_backend, monkeypatch, request
         def move_pose(self, position, quaternion, **kwargs):
             self.commands += 1
             self.started = clock[0]
+            self.start_quat = self.quat.copy()
             self.target = np.asarray(quaternion)
             self.sdk_timeout = kwargs['timeout_s']
 
         def state(self):
-            if self.commands and clock[0]-self.started >= duration:
-                self.quat = self.target.copy()
+            if self.commands:
+                fraction = min(1., (clock[0]-self.started)/duration)
+                delta = Rotation.from_quat(self.target) * Rotation.from_quat(self.start_quat).inv()
+                self.quat = (Rotation.from_rotvec(delta.as_rotvec()*fraction)
+                             * Rotation.from_quat(self.start_quat)).as_quat()
             return super().state()
 
     backend, arm, root = make_backend(arm=SlowRotationArm(), stream_enabled=False, settle_s=0)
@@ -198,21 +202,21 @@ def test_slow_rotation_uses_selected_deadline(make_backend, monkeypatch, request
     if requested is not None:
         arguments['timeout_s'] = requested
     backend.validate('xarm_move_pose', arguments)
-    expected_timeout = 300. if requested is None else requested
+    expected_timeout = 60. if requested is None else requested
     if succeeds:
         result, _ = backend.call('xarm_move_pose', arguments)
         assert result['reached'] and result['timeout_s'] == expected_timeout
-        assert result['seconds'] >= duration and arm.holds == 0
+        assert result['seconds'] >= duration*.99 and arm.holds == 0
     else:
         with pytest.raises(TimeoutError, match=f'pose not reached in {expected_timeout:.1f}s'):
             backend.call('xarm_move_pose', arguments)
         assert arm.holds >= 1
         assert expected_timeout < clock[0]-arm.started < expected_timeout+.1
     assert arm.sdk_timeout == expected_timeout and arm.commands == 1
-    assert backend.options['move_timeout_s'] == 300.
+    assert backend.options['move_timeout_s'] == 60.
 
 
-@pytest.mark.parametrize('timeout', [0, -1, 601, float('nan'), float('inf'), True, '90'])
+@pytest.mark.parametrize('timeout', [0, -1, 121, float('nan'), float('inf'), True, '90'])
 def test_cartesian_timeout_rejected_before_dispatch(make_backend, timeout):
     backend, arm, root = make_backend(stream_enabled=False)
     arming.write(root, True)
@@ -362,7 +366,7 @@ def test_segmenting_does_not_restart_the_move_timeout(make_backend, monkeypatch)
     assert arm.commands == 1 and arm.holds
 
 
-def test_joint_segments_share_the_permissive_default_deadline(make_backend, monkeypatch):
+def test_joint_segments_share_the_default_deadline(make_backend, monkeypatch):
     clock = [100.]
     remaining = []
 
@@ -370,14 +374,14 @@ def test_joint_segments_share_the_permissive_default_deadline(make_backend, monk
         def move_joints(self, joints, **kwargs):
             remaining.append(kwargs['timeout_s'])
             super().move_joints(joints, **kwargs)
-            clock[0] += 100.
+            clock[0] += 20.
 
     backend, arm, root = make_backend(arm=SlowArm())
     monkeypatch.setattr('services.xarm.backend.time.monotonic', lambda: clock[0])
     arming.write(root, True)
     result, _ = backend.call('xarm_move_joints', {'positions': (START_Q + [2.25, 0, 0, 0, 0, 0]).tolist()})
-    assert result['seconds'] == 200. and result['segments'] == 2
-    assert remaining == [300., 200.] and not arm.holds
+    assert result['seconds'] == 40. and result['segments'] == 2
+    assert remaining == [60., 40.] and not arm.holds
 
 
 def test_gripper_requires_arming_and_moves(make_backend):

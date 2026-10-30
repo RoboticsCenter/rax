@@ -30,12 +30,13 @@ from . import arming
 from .calibration import CameraModel, backproject, camera_specs, project as project_to_pixel
 from .sdk import MotionStopped, TargetRejected, XArmDriver
 from .faults import ControllerFault, check_controller
+from .progress import MotionProgress
 from . import end_effectors
 
 PROJECT = Path(__file__).resolve().parents[2]
 WORKSPACE_NAME = 'agent-workspace'
 HOME_Q = (0.0, -0.70, -1.20, 0.0, 1.90, 0.0)
-MAX_POSE_TIMEOUT_S = 600.0
+MAX_POSE_TIMEOUT_S = 120.0
 LOWER = np.array([-2*np.pi, -2.059, -3.927, -2*np.pi, -1.692, -2*np.pi])
 UPPER = np.array([2*np.pi, 2.094, 0.192, 2*np.pi, np.pi, 2*np.pi])
 DEFAULTS = {
@@ -51,7 +52,7 @@ DEFAULTS = {
     'joint_limit_margin_rad': 0.05,
     'cartesian_speed_mps': 0.05,
     'cartesian_acc_mps2': 0.20,
-    'move_timeout_s': 300.0,
+    'move_timeout_s': 60.0,
     'settle_s': 0.3,
     'poll_period_s': 0.05,
     'joint_tolerance_rad': 0.02,
@@ -328,7 +329,8 @@ class XArmBackend:
                 'to keep the current orientation. relative=true adds position to the current TCP position. '
                 f'timeout_s allows 1..{MAX_POSE_TIMEOUT_S:g} seconds; omitted uses '
                 f'{min(self.options["move_timeout_s"], MAX_POSE_TIMEOUT_S):g} seconds. '
-                'Request more time for large rotations or slow moves. '
+                'Idle outside tolerance for 2 seconds or no measurable motion for 5 seconds stops early '
+                'and alerts the operator, even with a longer timeout. '
                 'Requires operator arming. Returns the measured pose and error.',
              'inputSchema': _schema({'position': VEC3, 'quaternion': QUAT, 'relative': {'type': 'boolean'},
                                      'speed_mps': {'type': 'number', 'minimum': 0.001,
@@ -342,7 +344,8 @@ class XArmBackend:
                 'The path is sampled through the controller FK and checked against workspace/table clearance '
                 'before moving. Longer moves execute bounded SDK segments within this call; '
                 'the caller need not subdivide joint targets. Uses the configured move timeout '
-                f'({self.options["move_timeout_s"]:g} seconds) for the whole call. Requires operator arming.',
+                f'({min(self.options["move_timeout_s"], MAX_POSE_TIMEOUT_S):g} seconds) for the whole call. '
+                'Idle off-target or stationary motion stops early and alerts the operator. Requires operator arming.',
              'inputSchema': _schema({'positions': {'type': 'array', 'items': NUMBER, 'minItems': 6,
                                                    'maxItems': 6},
                                      'preset': {'type': 'string', 'enum': ['home']}})},
@@ -732,6 +735,7 @@ class XArmBackend:
     def _monitor_pose(self, goal_p, goal_q, *, tolerance_m, tolerance_rad, timeout_s):
         start = time.monotonic()
         inside_since = None
+        progress = MotionProgress()
         while True:
             state = self._motion_state()
             self._guard(state)
@@ -740,6 +744,7 @@ class XArmBackend:
             now = time.monotonic()
             if err_p <= tolerance_m and err_r <= tolerance_rad:
                 inside_since = inside_since or now
+                progress = MotionProgress()
                 if now - inside_since >= self.options['settle_s']:
                     return {'reached': True, 'seconds': round(now - start, 2),
                             'position_error_mm': round(err_p * 1000, 2),
@@ -748,6 +753,14 @@ class XArmBackend:
                             'measured_quaternion': np.round(state['tcp_quaternion'], 5).tolist()}
             else:
                 inside_since = None
+                stalled = progress.check(state, now)
+                if stalled:
+                    raise ControllerFault(
+                        f'xArm pose incomplete: {stalled}; position error {err_p*1000:.3f} mm, '
+                        f'rotation error {np.degrees(err_r):.2f} deg',
+                        state={**state, 'target_position': goal_p.tolist(), 'target_quaternion': goal_q.tolist(),
+                               'position_error_mm': err_p*1000, 'rotation_error_deg': float(np.degrees(err_r))},
+                        category='motion_progress')
             if now - start > timeout_s:
                 self._stop_arm()
                 raise self._held(TimeoutError(f"pose not reached in {timeout_s:.1f}s: position error "
@@ -847,7 +860,7 @@ class XArmBackend:
         self._require_armed()
         start = np.asarray(self._motion_state()['joints'])
         waypoints = self._joint_plan(start, goal)
-        timeout = float(self.options['move_timeout_s'])
+        timeout = min(float(self.options['move_timeout_s']), MAX_POSE_TIMEOUT_S)
         started, motion_start = time.monotonic(), time.time()
         try:
             previous = start
@@ -864,12 +877,19 @@ class XArmBackend:
                     raise TimeoutError(f'joint move exceeded its {timeout:.1f}s timeout before the next segment')
                 self._dispatch_arm(self.arm.move_joints, waypoint, speed_radps=self.options['joint_speed_radps'],
                                      acc_radps2=self.options['joint_acc_radps2'], timeout_s=remaining)
+                progress = MotionProgress()
                 while True:
                     state = self._motion_state()
                     self._guard(state)
                     error = np.abs(np.asarray(state['joints']) - waypoint)
                     if float(error.max()) <= self.options['joint_tolerance_rad']:
                         break
+                    stalled = progress.check(state, time.monotonic())
+                    if stalled:
+                        raise ControllerFault(
+                            f'xArm joint move incomplete: {stalled}; largest error {float(error.max()):.3f} rad',
+                            state={**state, 'target_joints': waypoint.tolist(),
+                                   'max_joint_error_rad': float(error.max())}, category='motion_progress')
                     if time.monotonic() - started > timeout:
                         self._stop_arm()
                         raise TimeoutError(f"joint target not reached in {timeout:.1f}s: largest error "

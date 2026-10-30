@@ -252,6 +252,22 @@ sequences, reported faults and an unexpected enabled state prevent continued
 execution. The hand keeps its target during arm motion; calls are sequential,
 not a synchronized arm/hand trajectory.
 
+### Arm completion and stalled moves
+
+The default arm deadline is **60 seconds**, with Cartesian `timeout_s` overrides
+from **1 to 120 seconds**. Joint moves share one deadline across all SDK segments,
+also capped at 120 seconds. Completion still requires both Cartesian position and
+orientation tolerance; reaching XYZ with the wrong wrist orientation is not success.
+
+Outside tolerance, an idle, stationary controller fails after **2 seconds**. A
+controller reporting motion but making no measurable movement fails after **5
+seconds**. The monitor considers TCP translation, rotation and joint movement,
+so a progressing in-place rotation is allowed. Each joint segment gets a fresh
+progress monitor, while retaining the whole-call deadline. Failure cancels later
+segments, requests verified assembly stops, disarms, and posts an operator request
+directly through the backend. It does not wait for a second agent tool call to
+request help and does not replay the target or relax pose tolerances.
+
 ### Effort and impedance semantics
 
 The installed Wuji SDK 2026.10.12 exposes `JointCommand(position, velocity, effort)`
@@ -387,6 +403,18 @@ scripts/wuji stop --session /absolute/path/to/session
 scripts/wuji disable --session /absolute/path/to/session
 scripts/xarm disarm
 ```
+
+The dashboard's explicit **Prepare + send** action also handles a retained
+thermal-only fault. While disarmed, it requires fresh, stationary, disabled
+feedback, zero native error codes and all joint temperatures below the existing
+temperature limit for two seconds. It then reconnects the existing hand owner
+once, checks fresh fault-free feedback, and continues normal preparation before
+sending the reply. There is **no additional temperature margin** and the limit
+is not raised. A still-hot, stale, mixed-fault or failed-reconnect state leaves
+the reply pending and displays an actionable error instead of nested tracebacks.
+Recovery evidence is saved in `operator/thermal-recovery-*.json`. This occurs
+only on an explicit operator preparation request; there is no background reset
+or replay of an interrupted grasp.
 
 The operator hand commands reach the private hand service directly, bypassing a
 long-running MCP dispatcher call. `scripts/xarm disarm` changes the arming files,
