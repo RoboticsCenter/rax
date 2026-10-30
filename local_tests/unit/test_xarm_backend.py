@@ -1,6 +1,7 @@
 """xArm backend logic against a fake SDK: nothing here touches hardware."""
 import json
 from pathlib import Path
+from types import SimpleNamespace
 
 import cv2 as cv
 import numpy as np
@@ -163,6 +164,62 @@ def test_cartesian_speed_rejected_before_dispatch(make_backend, speed):
     with pytest.raises(ValueError, match='speed_mps'):
         backend.validate('xarm_move_pose', arguments)
     with pytest.raises(ValueError, match='speed_mps'):
+        backend.call('xarm_move_pose', arguments)
+    assert arm.commands == 0
+
+
+@pytest.mark.parametrize('requested,duration,succeeds', [
+    (None, 45., True), (120., 90., True), (5., 10., False), (None, 90., False),
+])
+def test_slow_rotation_uses_selected_deadline(make_backend, monkeypatch, requested, duration, succeeds):
+    clock = [100.]
+    def advance(seconds):
+        clock[0] += seconds
+    monkeypatch.setattr('services.xarm.backend.time', SimpleNamespace(
+        monotonic=lambda: clock[0], sleep=advance, time=lambda: clock[0]))
+
+    class SlowRotationArm(FakeArm):
+        def move_pose(self, position, quaternion, **kwargs):
+            self.commands += 1
+            self.started = clock[0]
+            self.target = np.asarray(quaternion)
+            self.sdk_timeout = kwargs['timeout_s']
+
+        def state(self):
+            if self.commands and clock[0]-self.started >= duration:
+                self.quat = self.target.copy()
+            return super().state()
+
+    backend, arm, root = make_backend(arm=SlowRotationArm(), stream_enabled=False, settle_s=0)
+    arming.write(root, True)
+    arguments = {'position': arm.pos.tolist(),
+                 'quaternion': Rotation.from_euler('xyz', [np.pi, 0, np.pi/2]).as_quat().tolist(),
+                 'speed_mps': .015}
+    if requested is not None:
+        arguments['timeout_s'] = requested
+    backend.validate('xarm_move_pose', arguments)
+    expected_timeout = 60. if requested is None else requested
+    if succeeds:
+        result, _ = backend.call('xarm_move_pose', arguments)
+        assert result['reached'] and result['timeout_s'] == expected_timeout
+        assert result['seconds'] >= duration and arm.holds == 0
+    else:
+        with pytest.raises(TimeoutError, match=f'pose not reached in {expected_timeout:.1f}s'):
+            backend.call('xarm_move_pose', arguments)
+        assert arm.holds >= 1
+        assert expected_timeout < clock[0]-arm.started < expected_timeout+.1
+    assert arm.sdk_timeout == expected_timeout and arm.commands == 1
+    assert backend.options['move_timeout_s'] == 60.
+
+
+@pytest.mark.parametrize('timeout', [0, -1, 121, float('nan'), float('inf'), True, '90'])
+def test_cartesian_timeout_rejected_before_dispatch(make_backend, timeout):
+    backend, arm, root = make_backend(stream_enabled=False)
+    arming.write(root, True)
+    arguments = {'position': arm.pos.tolist(), 'timeout_s': timeout}
+    with pytest.raises(ValueError, match='timeout_s'):
+        backend.validate('xarm_move_pose', arguments)
+    with pytest.raises(ValueError, match='timeout_s'):
         backend.call('xarm_move_pose', arguments)
     assert arm.commands == 0
 

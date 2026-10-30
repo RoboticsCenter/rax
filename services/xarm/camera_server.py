@@ -76,7 +76,7 @@ class CameraWorker:
         self.distortion_model = str(intr.model).rsplit('.', 1)[-1]
         self.distortion_coeffs = list(intr.coeffs)
         from .calibration import (validate_intrinsics, ColorRectification, DepthRegistration,
-                                  depth_to_color_transform, calibrated_depth_scale)
+                                  depth_to_color_transform, calibrated_depth_scale, aligned_depth_scale)
         self.depth_registration = None
         self.depth_scale_factor = 1.0
         self.depth_registration_source = 'realsense_factory' if self.depth_enabled else None
@@ -85,6 +85,9 @@ class CameraWorker:
                     'fps': color_profile.fps(), 'distortion_model': self.distortion_model,
                     'distortion_coeffs': self.distortion_coeffs}
             reference = validate_intrinsics(spec, live)
+            if self.depth_enabled:
+                self.depth_scale_factor = aligned_depth_scale(
+                    reference, profile.get_device().first_depth_sensor().get_depth_scale(), live)
             # New calibration collections need raw pixels even after a fitted
             # model has been installed. Still validate the factory reference.
             self.rectification = ColorRectification(
@@ -154,6 +157,8 @@ class CameraWorker:
                         depth = np.asanyarray(depth_frame.get_data()).astype(np.float32) * float(self.depth_scale)
                         if self.depth_registration is not None:
                             depth = self.depth_registration.apply(depth)
+                        else:
+                            depth *= self.depth_scale_factor
                         depth_min = float(self.spec.get('depth_min_m', 0.0))
                         depth_max = float(self.spec.get('depth_max_m', 10.0))
                         depth[(depth < depth_min) | (depth > depth_max)] = 0.0

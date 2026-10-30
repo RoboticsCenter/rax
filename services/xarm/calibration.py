@@ -154,6 +154,28 @@ def calibrated_depth_scale(reference, factory_units_m):
     return factor
 
 
+def aligned_depth_scale(reference, factory_units_m, live):
+    """Optional metric correction for an SDK-aligned factory color profile.
+
+    This corrects the aligned Z values, unlike the native-depth correction
+    applied before a fitted stereo transform. Never combine the two models.
+    """
+    fitted = (reference or {}).get('calibrated_aligned_depth')
+    if fitted is None:
+        return 1.0
+    if reference.get('calibrated_color_profiles') or reference.get('calibrated_depth_to_color'):
+        raise ValueError('aligned depth correction cannot be combined with fitted color/stereo registration')
+    key = f"{live['width']}x{live['height']}@{live['fps']}"
+    if key not in fitted.get('profiles', {}):
+        raise ValueError(f'no aligned depth correction for {key}')
+    model = fitted['profiles'][key]
+    if model.get('depth_alignment') != 'realsense_factory_color':
+        raise ValueError('aligned depth correction requires factory color alignment')
+    if 'depth_scale_factor' not in model or 'factory_depth_units_m' not in model:
+        raise ValueError('aligned depth correction requires scale and factory units')
+    return calibrated_depth_scale({'calibrated_depth_to_color': model}, factory_units_m)
+
+
 def depth_to_color_transform(reference, native_K, native_shape, native_coeffs, rotation, translation):
     """Select a qualified stereo transform, guarded by its factory reference."""
     fitted = (reference or {}).get('calibrated_depth_to_color')

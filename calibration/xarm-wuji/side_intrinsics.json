@@ -120,6 +120,22 @@
     ]
   },
   "runtime_depth_alignment": "color",
-  "validation": "Training, reserved views and fresh MCP RGB-D checks passed",
-  "metric_validation_source": "/home/jack-xiang/rax-runtime/camera-recalibration-20261030T003223Z/verification-metric/checks-full-board/verification.json"
+  "validation": "Factory RGB intrinsics retained; software aligned-depth scale passed separate training/reserved frames and fresh candidate/installed MCP RGB-D checks",
+  "metric_validation_source": "/home/jack-xiang/rax-runtime/camera-recalibration-20261030T052107Z/verification-installed/checks/verification.json",
+  "calibrated_aligned_depth": {
+    "source": "/home/jack-xiang/rax-runtime/camera-recalibration-20261030T052107Z/side-depth-fit/result.json",
+    "scope": "Observed side-camera board region and depth range only",
+    "profiles": {
+      "640x480@6": {
+        "depth_scale_factor": 0.992793787900544,
+        "factory_depth_units_m": 0.0010000000474974513,
+        "depth_alignment": "realsense_factory_color",
+        "validated_depth_range_m": [
+          0.768,
+          0.923
+        ]
+      }
+    }
+  },
+  "previous_metric_validation_source": "/home/jack-xiang/rax-runtime/camera-recalibration-20261030T003223Z/verification-metric/checks-full-board/verification.json"
 }

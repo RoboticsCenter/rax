@@ -31,6 +31,11 @@ physically.
   configured ceiling for this call; omit it to use that ceiling. Select a lower speed
   near contact or when carrying requires it. `relative: true` adds a base-frame displacement to the
   current TCP position. It does not translate along rotated tool axes. Requires operator arming.
+  `timeout_s` accepts 1–120 seconds; the repository default is 60 seconds, and the
+  live tool description reports this session's configured default. For a large
+  rotation at low speed, request `timeout_s: 120` explicitly. This changes the
+  time allowance, not motion speed. A timed-out move still stops and needs recovery;
+  do not automatically replay it with a longer timeout.
 - `xarm_move_joints {positions | preset: "home"}`: joint-space move with six joint
   angles in radians, or the backend home preset. The path is sampled with controller FK
   and checked against the workspace box before moving. Requires operator arming.

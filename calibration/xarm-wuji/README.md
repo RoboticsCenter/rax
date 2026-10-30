@@ -1,113 +1,61 @@
 # xArm + Wuji camera calibration
 
-Camera extrinsics were refitted, installed and verified on 2026-10-29 PDT
-(2026-10-30 UTC). The wrist optical calibration from the earlier run that day
-was retained. The board is 10×13 ChArUco, with 20 mm squares, 15 mm markers and
-DICT_4X4_100. `board.json` preserves its legacy 14-row ID layout with the last
-physical row absent.
+Both camera extrinsics were refitted and verified on 2026-10-29 America/Los_Angeles,
+following movement of the side camera. The saved full 18-pose procedure was used.
+The board is 10×13 ChArUco, 20 mm squares and 15 mm markers, DICT_4X4_100.
+`board.json` preserves its legacy 14-row ID layout with the final physical row absent.
 
-`examples/xarm-wuji.json` and the host runtime config reference these files.
-Runtime RGB-D is 640×480 at 6 fps; calibration RGB captures use 1280×720 at 6 fps.
-
-| Camera | Serial | Current calibration |
-| --- | --- | --- |
-| Wrist D435 | 262422074331 | New camera-to-TCP/flange extrinsics; retained fitted RGB intrinsics, stereo alignment and depth correction |
-| Fixed side D435 | 348522070593 | New camera-to-base extrinsics; factory RGB/depth intrinsics retained |
-
-Both intrinsics files are unchanged and retain factory device/profile guards.
-Wrist RGB is rectified with the fitted Brown5 model. Native depth receives the
-software factor **1.0048860716612322** before projection through the fitted stereo
-transform and nearest-surface Z buffer. Output depth is color-camera Z. Factory
-depth units remain 0.0010000000474974513 m; firmware settings are unchanged.
-
-## Current validation
-
-All 18 capture poses were accepted: 15 training and three reserved poses. The
-hand held its measured posture. Three fresh candidate observations and three
-fresh installed observations passed through `xarm_observe` and
-`xarm_pixel_to_position` using the corresponding calibration files.
+The fit accepted 15 training and 3 reserved wrist poses. Side-camera
+consistency was checked across repeated observations of the same fixed board.
+The hand held its measured posture. The arm returned to its starting pose.
+The side fit selects native or multiscale detections by corner count, using the
+existing PnP solver and pose-consistency limits; its last three frames are reserved.
+A separate no-motion collection fitted the side camera's aligned-depth scale
+from 12 training frames and verified it on six reserved frames before fresh MCP checks.
+Small-marker detection uses denser threshold windows only when the original
+fallback still has fewer than 12 corners. It selects by corner count and retains
+native-pixel coordinates; point-count and geometric acceptance limits are unchanged.
 
 | Check | Result |
 | --- | --- |
-| Wrist hand-eye maximum training residual | 1.52 mm / 0.63° |
-| Wrist hand-eye maximum reserved residual | 1.44 mm / 0.38° |
-| Side-camera maximum stationary-board consistency residual | 3.37 mm / 0.41° |
-| Installed wrist board-point median range / worst 95th percentile | 1.39–1.45 / 3.47 mm |
-| Installed side board-point median range / worst 95th percentile | 1.43–2.42 / 6.33 mm |
-| Installed cross-camera median range / worst 95th percentile | 2.60–2.81 / 5.36 mm |
+| Wrist maximum training residual | 1.72 mm / 1.00° |
+| Wrist maximum reserved residual | 1.54 mm / 0.53° |
+| Side maximum board consistency residual | 1.41 mm / 0.27° |
+| Installed wrist RGB-D | 1.58–1.60 mm median; 4.07 mm worst 95th percentile |
+| Installed side RGB-D | 1.18–1.71 mm median; 3.51 mm worst 95th percentile |
+| Installed cross-camera agreement | 2.11–2.47 mm median; 6.14 mm worst 95th percentile |
 
-Installed checks used 15–19 common corners per frame.
-Gates remain: hand-eye ≤5 mm / 1°; RGB-D median ≤5 mm and 95th percentile ≤10 mm;
-cross-camera 95th percentile ≤10 mm; at least 12 valid points per view and
-≤0.2 mm arm translation during each capture. The 18 camera commissioning tests passed.
+Three fresh candidate and three fresh installed observations passed through
+`xarm_observe` and `xarm_pixel_to_position` at 640×480, 6 FPS. Collection RGB used
+1280×720, 6 FPS. Acceptance limits: pose residual ≤5 mm / 1°; RGB-D median ≤5 mm,
+95th percentile ≤10 mm; cross-camera 95th percentile ≤10 mm; at least 12 valid
+points per view and shared across views; arm translation during capture ≤0.2 mm.
 
-The first fresh verification had only 4–8 decoded side corners and failed the
-point-count gate. Small-marker detection now tries larger decoding images and
-threshold windows when needed, choosing by decoded corner count. Every result
-is mapped back to native pixel centers before geometry calculations. Acceptance
-limits were unchanged, and new fresh observations passed afterward.
-
-The arm returned to [0.2531, -0.00134, 0.31412] m. Final readback showed state 4,
-zero arm error, disarmed motion, and fresh disabled hand feedback without faults.
-
-## Retained optical calibration
-
-The earlier native collection supplied 15 training and three reserved RGB poses.
-Wrist RGB reprojection RMS was 0.227 px. Twelve views supported IR/RGB stereo
-fitting with RMS 0.168 px; 255 training measurements supplied the depth factor.
-All 18 saved RGB-D views passed the original limits. These are historical
-optical-calibration measurements, not a new fit in this extrinsics-only run.
-The complete previous report is preserved in this run's backup.
-
-## Coordinate conventions and scope
-
-Matrices use column vectors and metres; `T_A_B` maps B coordinates into A:
-
-- `wrist_T_cam_tcp.yaml`: TCP → wrist color camera.
-- `wrist_T_cam_flange.yaml`: flange → wrist color camera.
-- `side_T_cam_base.yaml`: arm base → side color camera.
-- `calibrated_depth_to_color.T_color_depth`: corrected native depth → wrist color camera.
-
-Wrist: `T_base_cam = T_base_tcp @ inverse(T_cam_tcp)`.
-Side: `T_base_cam = inverse(T_cam_base)`.
-
-TCP readback was [0, 0, 172, 0, 0, 0] mm/rad; payload was 0.82 kg with CoG
-[0, 0, 48] mm. These are controller settings, not measured palm geometry.
-Recompute the TCP-relative transform if TCP settings change and recalibrate
-after moving either mount. Accuracy is qualified around the observed tabletop
-and calibration poses: ±25 mm sideways, 0–50 mm upward and rotations up to 21.2°.
-Full-workspace accuracy and manipulation remain unqualified.
-
-## Evidence and repeatability
-
-Current evidence: `/home/jack-xiang/rax-runtime/camera-recalibration-20261030T041535Z/`
-
-- `collection/`: raw images, poses, fit and reserved-pose residuals.
-- `verification-candidate-multiscale/checks/`: fresh candidate RGB-D checks.
-- `verification-installed/checks/`: fresh checks through the active config.
-- `backup/calibration/`: complete previous calibration and optical-fit report.
-- `installed-manifest.json`: active extrinsics and retained-intrinsics hashes.
-
-The earlier RGB/stereo/depth evidence remains under
+Wrist fitted RGB intrinsics, stereo depth alignment and metric depth correction
+are unchanged. The side camera retains its factory RGB/depth intrinsics.
+The side SDK-aligned depth receives a software factor of 0.9927937879,
+qualified at 640×480, 6 FPS over the measured board range [0.768, 0.923] m.
+Other RGB-D profiles require their own metric qualification. The correction is
+guarded by camera serial, factory intrinsics, profile, depth units and a ±2% bound.
+It cannot be combined with fitted stereo/depth registration. Both files retain
+their device/profile checks; only the wrist intrinsics file has an unchanged hash.
+The wrist software depth factor remains 1.0048860716612322; firmware is unchanged.
+Earlier optical-calibration evidence is under
 `/home/jack-xiang/rax-runtime/camera-recalibration-20261030T003223Z/`.
 
-Stop camera viewers/frontends before collection; each owns the devices. Load
-`/home/jack-xiang/rax-runtime/environment.sh` and pass `--backend-options
-"$RAX_BACKEND_OPTIONS"`. Keep the board flat and fixed throughout.
+Matrices use metres and column vectors: `T_A_B` maps B coordinates into A.
+`wrist_T_cam_tcp.yaml` maps TCP to wrist camera; `wrist_T_cam_flange.yaml` maps
+flange to wrist camera; `side_T_cam_base.yaml` maps base to side camera.
+Wrist base pose is `T_base_tcp @ inverse(T_cam_tcp)`; side pose is `inverse(T_cam_base)`.
+TCP offset is [0.0, 0.0, 172.0, 0.0, 0.0, 0.0] mm/rad. Payload/CoG readbacks are
+controller settings, not physical verification of the assembly.
 
-1. Run `scripts/xarm-charuco-calibrate --preflight --use-installed-intrinsics
-   --root NEW_PREFLIGHT_ROOT`.
-2. After operator clearance and arm readiness, collect with
-   `--use-installed-intrinsics --yes --prepare-hand --root NEW_COLLECTION_ROOT
-   --install --calibration-dir CANDIDATE_DIR`. These flags authorize real motion.
-   The hand holds its posture; no finger homing occurs.
-3. Start a disarmed RGB-D MCP frontend using candidate calibration paths. Run
-   `scripts/xarm-charuco-verify --socket SOCKET --session SESSION --fit
-   COLLECTION/result.json --output NEW_CHECK_DIRECTORY`.
-4. Install only after fresh checks pass, preserving a backup, then repeat the
-   same verification through the active runtime config.
+Observed board/tabletop region and calibration poses: +/-25 mm sideways, 0–50 mm upward, rotations up to 21.2 degrees. Full-workspace accuracy and manipulation are not established by these measurements.
+Recalibrate after mount movement; account for any TCP-setting changes.
 
-For an optical refit, collect with `--capture-native`, then use
-`scripts/xarm-charuco-fit` and `scripts/xarm-charuco-stereo-fit`. The latter's
-`--fit-depth-scale` uses training measurements only. Fresh MCP checks still
-apply; image-fit residuals alone do not establish metric depth accuracy.
+Evidence: `/home/jack-xiang/rax-runtime/camera-recalibration-20261030T052107Z/` contains collection, candidate/installed verification,
+the previous calibration backup and the installed file-hash manifest.
+Repeat with `scripts/xarm-charuco-calibrate --preflight --use-installed-intrinsics`,
+then the operator-authorized collection using `--yes --prepare-hand` into a candidate
+directory. Run `scripts/xarm-charuco-verify` before and after installation.
+The motion flags authorize real arm motion; keep the board fixed throughout.

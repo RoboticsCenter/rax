@@ -34,6 +34,7 @@ from . import end_effectors
 PROJECT = Path(__file__).resolve().parents[2]
 WORKSPACE_NAME = 'agent-workspace'
 HOME_Q = (0.0, -0.70, -1.20, 0.0, 1.90, 0.0)
+MAX_POSE_TIMEOUT_S = 120.0
 LOWER = np.array([-2*np.pi, -2.059, -3.927, -2*np.pi, -1.692, -2*np.pi])
 UPPER = np.array([2*np.pi, 2.094, 0.192, 2*np.pi, np.pi, 2*np.pi])
 DEFAULTS = {
@@ -49,7 +50,7 @@ DEFAULTS = {
     'joint_limit_margin_rad': 0.05,
     'cartesian_speed_mps': 0.05,
     'cartesian_acc_mps2': 0.20,
-    'move_timeout_s': 30.0,
+    'move_timeout_s': 60.0,
     'settle_s': 0.3,
     'poll_period_s': 0.05,
     'joint_tolerance_rad': 0.02,
@@ -312,12 +313,16 @@ class XArmBackend:
                 f'call; speed is capped at {self.options["cartesian_speed_mps"] * 1000:g} mm/s. '
                 'Optional speed_mps selects a lower speed for this move; omitted uses the configured cap. Omit quaternion '
                 'to keep the current orientation. relative=true adds position to the current TCP position. '
+                f'timeout_s allows 1..{MAX_POSE_TIMEOUT_S:g} seconds; omitted uses '
+                f'{min(self.options["move_timeout_s"], MAX_POSE_TIMEOUT_S):g} seconds. '
+                'Request more time for large rotations or slow moves. '
                 'Requires operator arming. Returns the measured pose and error.',
              'inputSchema': _schema({'position': VEC3, 'quaternion': QUAT, 'relative': {'type': 'boolean'},
                                      'speed_mps': {'type': 'number', 'minimum': 0.001,
                                                    'maximum': self.options['cartesian_speed_mps']},
                                      'tolerance_mm': {'type': 'number', 'minimum': 0.5, 'maximum': 20},
-                                     'timeout_s': {'type': 'number', 'minimum': 1, 'maximum': 60}},
+                                     'timeout_s': {'type': 'number', 'minimum': 1, 'maximum': MAX_POSE_TIMEOUT_S,
+                                                   'default': min(self.options['move_timeout_s'], MAX_POSE_TIMEOUT_S)}},
                                     ['position'])},
             {'name': 'xarm_move_joints', 'description':
                 'Joint-space move with xArm set_servo_angle. positions: 6 joint angles (rad); or preset "home". '
@@ -641,10 +646,13 @@ class XArmBackend:
         # Direct operator calls and the MCP frontend must obey the same ceiling.
         _validate_arguments(speed, {'type': 'number', 'minimum': 0.001,
                                    'maximum': self.options['cartesian_speed_mps']}, 'speed_mps')
+        timeout = min(self.options['move_timeout_s'], MAX_POSE_TIMEOUT_S) if timeout_s is None else timeout_s
+        _validate_arguments(timeout, {'type': 'number', 'minimum': 1,
+                                     'maximum': MAX_POSE_TIMEOUT_S}, 'timeout_s')
+        timeout = float(timeout)
         goal_p, goal_q = self._pose_goal({'position': position, 'quaternion': quaternion, 'relative': relative},
                                          self.arm.state())
         self._require_armed()
-        timeout = min(float(timeout_s or self.options['move_timeout_s']), 60.0)
         motion_start = time.time()
         try:
             self.arm.move_pose(goal_p, goal_q, speed_mps=speed,
@@ -668,7 +676,7 @@ class XArmBackend:
         if clip:
             result['motion_clip'] = clip
         self.last_motion = {'tool': 'xarm_move_pose', 'at': time.time(), **result}
-        return {**result, 'speed_mps': speed, 'target_position': np.round(goal_p, 5).tolist(),
+        return {**result, 'speed_mps': speed, 'timeout_s': timeout, 'target_position': np.round(goal_p, 5).tolist(),
                 'target_quaternion': np.round(goal_q, 5).tolist()}, []
 
     def _held(self, exc, goal_p):

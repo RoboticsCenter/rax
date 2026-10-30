@@ -14,12 +14,44 @@ from services.xarm.calibration import (
     ColorRectification,
     DepthRegistration,
     calibrated_depth_scale,
+    aligned_depth_scale,
     depth_to_color_transform,
     validate_intrinsics,
 )
 from services.xarm.charuco import detect_board, detect_small_board, distortion, make_board
 
 PROJECT = Path(__file__).resolve().parents[2]
+
+
+def test_aligned_depth_scale_preserves_factory_default_and_guards_profile():
+    live = {'width': 640, 'height': 480, 'fps': 6}
+    assert aligned_depth_scale({}, .001, live) == 1.0
+    reference = {'calibrated_aligned_depth': {'profiles': {'640x480@6': {
+        'depth_scale_factor': .993, 'factory_depth_units_m': .001,
+        'depth_alignment': 'realsense_factory_color'}}}}
+    factor = aligned_depth_scale(reference, .001, live)
+    np.testing.assert_allclose(np.array([0., .8, 1.]) * factor, [0., .7944, .993])
+    with pytest.raises(ValueError, match='factory depth units'):
+        aligned_depth_scale(reference, .0001, live)
+    with pytest.raises(ValueError, match='no aligned depth correction'):
+        aligned_depth_scale(reference, .001, {**live, 'width': 1280})
+    for invalid in (float('nan'), float('inf'), .97, 1.03):
+        reference['calibrated_aligned_depth']['profiles']['640x480@6']['depth_scale_factor'] = invalid
+        with pytest.raises(ValueError, match='factor or factory depth units'):
+            aligned_depth_scale(reference, .001, live)
+
+
+def test_aligned_depth_scale_rejects_double_correction_or_wrong_alignment():
+    live = {'width': 640, 'height': 480, 'fps': 6}
+    model = {'depth_scale_factor': .993, 'factory_depth_units_m': .001,
+             'depth_alignment': 'realsense_factory_color'}
+    reference = {'calibrated_aligned_depth': {'profiles': {'640x480@6': model}}}
+    for key in ('calibrated_color_profiles', 'calibrated_depth_to_color'):
+        with pytest.raises(ValueError, match='cannot be combined'):
+            aligned_depth_scale({**reference, key: {'present': True}}, .001, live)
+    model['depth_alignment'] = 'native_depth'
+    with pytest.raises(ValueError, match='factory color alignment'):
+        aligned_depth_scale(reference, .001, live)
 
 
 def calibration_script():
@@ -85,7 +117,8 @@ def test_nonzero_inverse_distortion_is_not_silently_treated_as_brown():
         distortion({'distortion_model': 'inverse_brown_conrady', 'distortion_coeffs': [.1, 0, 0, 0, 0]})
 
 
-def test_distant_oblique_board_preserves_projected_corner_geometry():
+@pytest.mark.parametrize('gain,offset,quality,max_error_px', [(1., 0., 85, .8), (.55, 65., 70, 2.)])
+def test_distant_oblique_board_preserves_projected_corner_geometry(gain, offset, quality, max_error_px):
     settings = {'dictionary': 'DICT_4X4_100', 'squares_x': 10, 'squares_y': 13,
                 'layout_squares_y': 14, 'square_m': .02, 'marker_m': .015, 'legacy_pattern': True}
     board, detector = make_board(settings)
@@ -95,13 +128,18 @@ def test_distant_oblique_board_preserves_projected_corner_geometry():
     transform = cv.getPerspectiveTransform(source, destination)
     frame = cv.warpPerspective(rendered, transform, (640, 480),
                                flags=cv.INTER_AREA, borderValue=255)
-    frame = cv.imdecode(cv.imencode('.jpg', frame, [cv.IMWRITE_JPEG_QUALITY, 85])[1], 0)
+    frame = np.clip(frame.astype(float)*gain+offset, 0, 255).astype(np.uint8)
+    frame = cv.imdecode(cv.imencode('.jpg', frame, [cv.IMWRITE_JPEG_QUALITY, quality])[1], 0)
     previous_window = detector.getDetectorParameters().adaptiveThreshWinSizeMax
     corners, ids, _, _ = detect_small_board(frame, board, detector, settings)
     assert ids is not None and len(ids) >= 12
     original_pixels = board.getChessboardCorners()[ids.ravel(), :2]/.02*80 - .5
     expected = cv.perspectiveTransform(original_pixels.reshape(-1, 1, 2), transform)
-    assert np.max(np.linalg.norm(corners-expected, axis=2)) < .8
+    errors = np.linalg.norm(corners-expected, axis=2)
+    # Compression can displace individual low-contrast corners; the IDs and
+    # original-pixel mapping must remain correct, with subpixel mean error.
+    assert errors.mean() < .8
+    assert errors.max() < max_error_px
     assert detector.getDetectorParameters().adaptiveThreshWinSizeMax == previous_window
 
 

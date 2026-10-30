@@ -86,6 +86,16 @@ def detect_small_board(gray, board, detector, settings):
             candidate = at_scale(scale, larger_detector)
             if count(candidate) > count(best):
                 best = candidate
+        if count(best) < 12:
+            # A narrow marker footprint can fall between the default threshold
+            # window sizes. Sample those sizes more densely before giving up.
+            params.adaptiveThreshWinSizeStep = min(4, params.adaptiveThreshWinSizeStep)
+            dense_detector = cv.aruco.CharucoDetector(
+                board, detector.getCharucoParameters(), params, detector.getRefineParameters())
+            for scale in (3, 4, 5):
+                candidate = at_scale(scale, dense_detector)
+                if count(candidate) > count(best):
+                    best = candidate
     return best
 
 

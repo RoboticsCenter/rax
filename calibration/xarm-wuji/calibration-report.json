@@ -1,8 +1,8 @@
 {
   "status": "calibrated_and_installed",
   "installed": true,
-  "installed_utc": "2026-10-30T04:25:22.956571+00:00",
-  "method": "Camera extrinsics refit using installed optical calibration; 15 training and 3 reserved poses, followed by candidate and installed MCP RGB-D verification",
+  "installed_utc": "2026-10-30T05:30:04.632243+00:00",
+  "method": "Full 18-pose extrinsics collection; wrist hand-eye fit with reserved poses; fixed-side fit; separately fitted side aligned-depth scale using 12 training and six reserved RGB-D frames; fresh candidate and installed MCP checks. Existing RGB intrinsics and wrist optical calibration retained.",
   "board": {
     "dictionary": "DICT_4X4_100",
     "squares_x": 10,
@@ -18,140 +18,137 @@
     "marker_dimension_source": "New print at intended dimensions; operator confirmation, replacing the prior undersized print.",
     "layout_source": ".local-runtime/camera-new-board-20261027/layout-check.json"
   },
-  "collection": "/home/jack-xiang/rax-runtime/camera-recalibration-20261030T041535Z/collection",
-  "runtime_verification": "/home/jack-xiang/rax-runtime/camera-recalibration-20261030T041535Z/verification-installed/checks/verification.json",
-  "candidate_verification": "/home/jack-xiang/rax-runtime/camera-recalibration-20261030T041535Z/verification-candidate-multiscale/checks/verification.json",
-  "previous_calibration_backup": "/home/jack-xiang/rax-runtime/camera-recalibration-20261030T041535Z/backup/calibration",
+  "collection": "/home/jack-xiang/rax-runtime/camera-recalibration-20261030T052107Z/collection",
   "training_views": 15,
   "held_out_views": 3,
   "residuals": [
     {
       "index": 0,
       "held_out": false,
-      "translation_error_m": 0.0007984801070177862,
-      "rotation_error_deg": 0.15155324220917168
+      "translation_error_m": 0.0004650757016206429,
+      "rotation_error_deg": 0.2552040313440916
     },
     {
       "index": 1,
       "held_out": false,
-      "translation_error_m": 0.0010445146247783678,
-      "rotation_error_deg": 0.14993855543573076
+      "translation_error_m": 0.000899718016230969,
+      "rotation_error_deg": 0.132625615280543
     },
     {
       "index": 2,
       "held_out": false,
-      "translation_error_m": 0.0013020511769070268,
-      "rotation_error_deg": 0.6321216638886934
+      "translation_error_m": 0.0013468271749218614,
+      "rotation_error_deg": 0.999024032079936
     },
     {
       "index": 3,
       "held_out": false,
-      "translation_error_m": 0.000791442009491056,
-      "rotation_error_deg": 0.3482358957380298
+      "translation_error_m": 0.0010340546283492973,
+      "rotation_error_deg": 0.463854030834763
     },
     {
       "index": 4,
       "held_out": false,
-      "translation_error_m": 0.0011802186148202791,
-      "rotation_error_deg": 0.6322198087628542
+      "translation_error_m": 0.0014900537167313428,
+      "rotation_error_deg": 0.5027187649827126
     },
     {
       "index": 5,
       "held_out": false,
-      "translation_error_m": 0.0006366866840978538,
-      "rotation_error_deg": 0.3785636620154329
+      "translation_error_m": 0.0002708404012968805,
+      "rotation_error_deg": 0.417717471582654
     },
     {
       "index": 6,
       "held_out": false,
-      "translation_error_m": 0.000867993827072752,
-      "rotation_error_deg": 0.2301819989226218
+      "translation_error_m": 0.0007791883201472984,
+      "rotation_error_deg": 0.33758243280047917
     },
     {
       "index": 7,
       "held_out": false,
-      "translation_error_m": 0.0003792131912373672,
-      "rotation_error_deg": 0.3214199490265078
+      "translation_error_m": 0.0004292547829796786,
+      "rotation_error_deg": 0.2799080701295502
     },
     {
       "index": 8,
       "held_out": false,
-      "translation_error_m": 0.001317502788062757,
-      "rotation_error_deg": 0.16112075644238077
+      "translation_error_m": 0.0016269510427746334,
+      "rotation_error_deg": 0.7509480630489765
     },
     {
       "index": 9,
       "held_out": false,
-      "translation_error_m": 0.0014419005972711389,
-      "rotation_error_deg": 0.4161114768887851
+      "translation_error_m": 0.0009926769648708875,
+      "rotation_error_deg": 0.18579705128645901
     },
     {
       "index": 10,
       "held_out": false,
-      "translation_error_m": 0.001477882311011724,
-      "rotation_error_deg": 0.29199671146883727
+      "translation_error_m": 0.001718723070166788,
+      "rotation_error_deg": 0.231907895019438
     },
     {
       "index": 11,
       "held_out": false,
-      "translation_error_m": 0.0009031169960743936,
-      "rotation_error_deg": 0.1660718992624234
+      "translation_error_m": 0.0010869933120168085,
+      "rotation_error_deg": 0.2259106749679373
     },
     {
       "index": 12,
       "held_out": false,
-      "translation_error_m": 0.0010496776126284616,
-      "rotation_error_deg": 0.47205782791471734
+      "translation_error_m": 0.0014901119353728299,
+      "rotation_error_deg": 0.43451422883529284
     },
     {
       "index": 13,
       "held_out": false,
-      "translation_error_m": 0.0011664743517793234,
-      "rotation_error_deg": 0.24215426447215982
+      "translation_error_m": 0.001049592583239058,
+      "rotation_error_deg": 0.20914729582074434
     },
     {
       "index": 14,
       "held_out": false,
-      "translation_error_m": 0.0015247264723062507,
-      "rotation_error_deg": 0.46610592092048947
+      "translation_error_m": 0.0015969892762133899,
+      "rotation_error_deg": 0.6290669180811626
     },
     {
       "index": 15,
       "held_out": true,
-      "translation_error_m": 0.0005451540286013057,
-      "rotation_error_deg": 0.2676978889172049
+      "translation_error_m": 0.0009358773742465239,
+      "rotation_error_deg": 0.23781809811631677
     },
     {
       "index": 16,
       "held_out": true,
-      "translation_error_m": 0.0014442133810993857,
-      "rotation_error_deg": 0.3757390475246795
+      "translation_error_m": 0.001538354482555563,
+      "rotation_error_deg": 0.5314526731113498
     },
     {
       "index": 17,
       "held_out": true,
-      "translation_error_m": 0.0009200582784840417,
-      "rotation_error_deg": 0.14833701606594135
+      "translation_error_m": 0.0007449893959037502,
+      "rotation_error_deg": 0.16928255399127012
     }
   ],
   "T_base_board": [
     [
-      -0.9890517009134512,
-      -0.14749083273387956,
-      0.0048153068101923205,
-      0.36833644610008365
+      -0.9887163268124648,
+      -0.1497998071231442,
+      0.00020707567828753593,
+      0.32823770472875213
     ],
     [
-      -0.1475264966525712,
-      0.9890244399280255,
-      -0.008160270245218976,
-      -0.06631856236106398
+      -0.14979622121220534,
+      0.9886810158580985,
+      -0.008422647585106316,
+      -0.05365813798026551
     ],
     [
-      -0.0035588910672312195,
-      -0.008781314509962194,
-      -0.9999551103973863,
-      -0.00544725270410417
+      0.0010569791917463165,
+      -0.00835862833649462,
+      -0.9999645074337995,
+      -0.005728532582572773
     ],
     [
       0.0,
@@ -163,79 +160,221 @@
   "fixed_camera_residuals": {
     "side": [
       {
-        "translation_error_m": 0.003371959618399419,
-        "rotation_error_deg": 0.41158966186656526
+        "translation_error_m": 0.0006884537055907927,
+        "rotation_error_deg": 0.07598122391343617
       },
       {
-        "translation_error_m": 0.0004616071858309505,
-        "rotation_error_deg": 0.09509279216209889
+        "translation_error_m": 0.00025047623740500924,
+        "rotation_error_deg": 0.06276905692442539
       },
       {
-        "translation_error_m": 0.0010744424632770399,
-        "rotation_error_deg": 0.07871491124624971
+        "translation_error_m": 0.0007440475923849991,
+        "rotation_error_deg": 0.04860405985222119
       },
       {
-        "translation_error_m": 0.002753261254760106,
-        "rotation_error_deg": 0.2381498239512738
+        "translation_error_m": 0.0009838969654199622,
+        "rotation_error_deg": 0.12033093752718546
       },
       {
-        "translation_error_m": 0.0003013552160258361,
-        "rotation_error_deg": 0.07184673146222453
+        "translation_error_m": 0.0005797987487951555,
+        "rotation_error_deg": 0.14577074113860666
       },
       {
-        "translation_error_m": 0.0011655369517503311,
-        "rotation_error_deg": 0.15579312500863274
+        "translation_error_m": 0.0006090557466950822,
+        "rotation_error_deg": 0.11563747438579385
       },
       {
-        "translation_error_m": 0.0005752222012403253,
-        "rotation_error_deg": 0.16950651427596536
+        "translation_error_m": 0.001408354461195276,
+        "rotation_error_deg": 0.04195550317090062
       },
       {
-        "translation_error_m": 0.00048457524254322867,
-        "rotation_error_deg": 0.07287297734261307
+        "translation_error_m": 0.000746012522768954,
+        "rotation_error_deg": 0.18157701223639525
       },
       {
-        "translation_error_m": 0.0013924101397663265,
-        "rotation_error_deg": 0.2338936507633356
+        "translation_error_m": 0.0009444813433104274,
+        "rotation_error_deg": 0.15162921439517069
       },
       {
-        "translation_error_m": 0.0003987246254877287,
-        "rotation_error_deg": 0.10383666544883702
+        "translation_error_m": 0.0004167087738050729,
+        "rotation_error_deg": 0.14684881050686588
       },
       {
-        "translation_error_m": 0.0012445775636533945,
-        "rotation_error_deg": 0.19016049938446433
+        "translation_error_m": 0.0004543861978263968,
+        "rotation_error_deg": 0.01571196543741532
       },
       {
-        "translation_error_m": 0.0003303766497789827,
-        "rotation_error_deg": 0.1774971056864722
+        "translation_error_m": 0.0006595727484338847,
+        "rotation_error_deg": 0.08453392311748588
       },
       {
-        "translation_error_m": 0.0004510737215767211,
-        "rotation_error_deg": 0.1780083579715406
+        "translation_error_m": 0.00038935901216869225,
+        "rotation_error_deg": 0.10034925091775447
       },
       {
-        "translation_error_m": 0.00021713915868264982,
-        "rotation_error_deg": 0.16505031774980083
+        "translation_error_m": 0.00038199198233294837,
+        "rotation_error_deg": 0.09354119496609414
       },
       {
-        "translation_error_m": 0.0004044305878548332,
-        "rotation_error_deg": 0.27201565998340055
-      },
-      {
-        "translation_error_m": 0.0007880637020014213,
-        "rotation_error_deg": 0.19465134048584398
-      },
-      {
-        "translation_error_m": 0.0006125089045610289,
-        "rotation_error_deg": 0.22893637608633194
-      },
-      {
-        "translation_error_m": 0.0010035413485016025,
-        "rotation_error_deg": 0.1857974328584767
+        "translation_error_m": 0.0008414315829062721,
+        "rotation_error_deg": 0.26930957728963234
       }
     ]
   },
+  "side_refinement": "/home/jack-xiang/rax-runtime/camera-recalibration-20261030T052107Z/side-multiscale-refit/result.json",
+  "side_reserved_residuals": [
+    {
+      "index": 15,
+      "held_out": true,
+      "translation_error_m": 0.0014997757454185785,
+      "rotation_error_deg": 0.09249402865161543
+    },
+    {
+      "index": 16,
+      "held_out": true,
+      "translation_error_m": 0.0003068990296997305,
+      "rotation_error_deg": 0.16741213318945095
+    },
+    {
+      "index": 17,
+      "held_out": true,
+      "translation_error_m": 0.0011955649860269182,
+      "rotation_error_deg": 0.11202047044155174
+    }
+  ],
+  "side_depth_scale_fit": {
+    "path": "/home/jack-xiang/rax-runtime/camera-recalibration-20261030T052107Z/side-depth-fit/result.json",
+    "factor": 0.992793787900544,
+    "depth_range_m": [
+      0.768,
+      0.923
+    ],
+    "training_points": 184,
+    "reserved_points": 81
+  },
+  "rejected_candidate_verification": {
+    "path": "/home/jack-xiang/rax-runtime/camera-recalibration-20261030T052107Z/verification-candidate-before-side-refinement/checks/verification.json",
+    "reason": "One side-camera depth median was 5.40 mm, exceeding 5 mm. Refit side extrinsics from higher-coverage detections in the saved full collection before new fresh validation."
+  },
+  "candidate_verification": "/home/jack-xiang/rax-runtime/camera-recalibration-20261030T052107Z/verification-candidate/checks/verification.json",
+  "runtime_verification": "/home/jack-xiang/rax-runtime/camera-recalibration-20261030T052107Z/verification-installed/checks/verification.json",
+  "runtime_rgbd": {
+    "ok": true,
+    "frames": [
+      {
+        "frame_id": "202610292230140b6a22",
+        "ok": true,
+        "cross_camera": {
+          "count": 16,
+          "median_mm": 2.1128475970814034,
+          "p95_mm": 6.137459894999518,
+          "max_mm": 7.3763134423640055
+        },
+        "cameras": {
+          "wrist": {
+            "depth_vs_base_board": {
+              "count": 104,
+              "median_mm": 1.5986562273272995,
+              "p95_mm": 4.07473466606307,
+              "max_mm": 5.799551713660242
+            },
+            "intrinsics_source": "charuco_rectified",
+            "depth_registration_source": "charuco_stereo"
+          },
+          "side": {
+            "depth_vs_base_board": {
+              "count": 16,
+              "median_mm": 1.706724762055056,
+              "p95_mm": 3.506429421330657,
+              "max_mm": 3.687162477606171
+            },
+            "intrinsics_source": "realsense_factory",
+            "depth_registration_source": "realsense_factory"
+          }
+        },
+        "rgb_board_pose_difference": {
+          "translation_mm": 1.8822018839071104,
+          "rotation_deg": 0.2743566725311718
+        },
+        "arm_moved_during_capture_mm": 0.0
+      },
+      {
+        "frame_id": "2026102922301515c329",
+        "ok": true,
+        "cross_camera": {
+          "count": 12,
+          "median_mm": 2.4714499711581714,
+          "p95_mm": 4.1539095020403956,
+          "max_mm": 4.160528812542943
+        },
+        "cameras": {
+          "wrist": {
+            "depth_vs_base_board": {
+              "count": 104,
+              "median_mm": 1.5803130941449748,
+              "p95_mm": 3.880952930432948,
+              "max_mm": 4.672803656681537
+            },
+            "intrinsics_source": "charuco_rectified",
+            "depth_registration_source": "charuco_stereo"
+          },
+          "side": {
+            "depth_vs_base_board": {
+              "count": 12,
+              "median_mm": 1.1790558912537192,
+              "p95_mm": 2.3073123044613206,
+              "max_mm": 2.781936777117381
+            },
+            "intrinsics_source": "realsense_factory",
+            "depth_registration_source": "realsense_factory"
+          }
+        },
+        "rgb_board_pose_difference": {
+          "translation_mm": 4.795076995932968,
+          "rotation_deg": 0.4612167066196186
+        },
+        "arm_moved_during_capture_mm": 0.0
+      },
+      {
+        "frame_id": "2026102922301596ebe4",
+        "ok": true,
+        "cross_camera": {
+          "count": 15,
+          "median_mm": 2.4269322199023233,
+          "p95_mm": 4.467391448517136,
+          "max_mm": 5.296225070746147
+        },
+        "cameras": {
+          "wrist": {
+            "depth_vs_base_board": {
+              "count": 104,
+              "median_mm": 1.5899352113910121,
+              "p95_mm": 3.7498781566521964,
+              "max_mm": 4.672645305944791
+            },
+            "intrinsics_source": "charuco_rectified",
+            "depth_registration_source": "charuco_stereo"
+          },
+          "side": {
+            "depth_vs_base_board": {
+              "count": 19,
+              "median_mm": 1.6716273875898582,
+              "p95_mm": 2.938210548893369,
+              "max_mm": 3.7141749424036776
+            },
+            "intrinsics_source": "realsense_factory",
+            "depth_registration_source": "realsense_factory"
+          }
+        },
+        "rgb_board_pose_difference": {
+          "translation_mm": 4.292069450837292,
+          "rotation_deg": 0.6934214370265633
+        },
+        "arm_moved_during_capture_mm": 0.0
+      }
+    ]
+  },
+  "previous_calibration_backup": "/home/jack-xiang/rax-runtime/camera-recalibration-20261030T052107Z/backup/calibration",
   "retained_optical_calibration": {
     "installed_utc": "2026-10-30T00:49:37.659029+00:00",
     "rgb_fit": "/home/jack-xiang/rax-runtime/camera-recalibration-20261030T003223Z/rgb-fit",
@@ -519,122 +658,26 @@
     },
     "source_report": "/home/jack-xiang/rax-runtime/camera-recalibration-20261030T041535Z/backup/calibration/calibration-report.json"
   },
-  "runtime_rgbd": {
-    "ok": true,
-    "frames": [
-      {
-        "frame_id": "20261029212533f56a99",
-        "ok": true,
-        "cross_camera": {
-          "count": 15,
-          "median_mm": 2.8053520278211117,
-          "p95_mm": 5.355677406347272,
-          "max_mm": 6.992853494818845
-        },
-        "cameras": {
-          "wrist": {
-            "depth_vs_base_board": {
-              "count": 108,
-              "median_mm": 1.4513624585236649,
-              "p95_mm": 3.220153292212874,
-              "max_mm": 4.926966911939078
-            },
-            "intrinsics_source": "charuco_rectified",
-            "depth_registration_source": "charuco_stereo"
-          },
-          "side": {
-            "depth_vs_base_board": {
-              "count": 15,
-              "median_mm": 2.34432839493673,
-              "p95_mm": 6.104662240537345,
-              "max_mm": 7.98154180865572
-            },
-            "intrinsics_source": "realsense_factory",
-            "depth_registration_source": "realsense_factory"
-          }
-        },
-        "rgb_board_pose_difference": {
-          "translation_mm": 5.72924755077027,
-          "rotation_deg": 0.3851019245819451
-        },
-        "arm_moved_during_capture_mm": 0.0
-      },
-      {
-        "frame_id": "20261029212533f390a4",
-        "ok": true,
-        "cross_camera": {
-          "count": 17,
-          "median_mm": 2.596150997149436,
-          "p95_mm": 3.4999988352440727,
-          "max_mm": 3.5057096285916285
-        },
-        "cameras": {
-          "wrist": {
-            "depth_vs_base_board": {
-              "count": 104,
-              "median_mm": 1.4161546453304785,
-              "p95_mm": 3.2776345127056006,
-              "max_mm": 4.914602401577057
-            },
-            "intrinsics_source": "charuco_rectified",
-            "depth_registration_source": "charuco_stereo"
-          },
-          "side": {
-            "depth_vs_base_board": {
-              "count": 21,
-              "median_mm": 2.417664404289735,
-              "p95_mm": 4.322191435287184,
-              "max_mm": 4.773289893172967
-            },
-            "intrinsics_source": "realsense_factory",
-            "depth_registration_source": "realsense_factory"
-          }
-        },
-        "rgb_board_pose_difference": {
-          "translation_mm": 5.270157808926736,
-          "rotation_deg": 0.4436133772171854
-        },
-        "arm_moved_during_capture_mm": 0.0
-      },
-      {
-        "frame_id": "2026102921253405fa16",
-        "ok": true,
-        "cross_camera": {
-          "count": 19,
-          "median_mm": 2.67394839142419,
-          "p95_mm": 5.135452491525269,
-          "max_mm": 5.7288742349610215
-        },
-        "cameras": {
-          "wrist": {
-            "depth_vs_base_board": {
-              "count": 106,
-              "median_mm": 1.386952776215057,
-              "p95_mm": 3.465639071028579,
-              "max_mm": 4.301803664069757
-            },
-            "intrinsics_source": "charuco_rectified",
-            "depth_registration_source": "charuco_stereo"
-          },
-          "side": {
-            "depth_vs_base_board": {
-              "count": 19,
-              "median_mm": 1.428892268980893,
-              "p95_mm": 6.32776101143906,
-              "max_mm": 6.7568901757234014
-            },
-            "intrinsics_source": "realsense_factory",
-            "depth_registration_source": "realsense_factory"
-          }
-        },
-        "rgb_board_pose_difference": {
-          "translation_mm": 6.509811514741889,
-          "rotation_deg": 0.4991469730011394
-        },
-        "arm_moved_during_capture_mm": 0.0
-      }
-    ]
+  "unchanged_intrinsics_hashes": {
+    "wrist_intrinsics.json": "10edaff77345619458dac0955d93838d6c5e949ee98dcfcc04bc130078bcf462"
   },
+  "updated_intrinsics_hashes": {
+    "side_intrinsics.json": "2da867ef10215856932282b3f1401ceed8000cc45e6992c6ada3a5b9760627a0"
+  },
+  "regression_tests": {
+    "passed": 21,
+    "command": ".venv/bin/python -m pytest local_tests/unit/test_camera_commissioning.py -q"
+  },
+  "additional_rejected_checks": [
+    {
+      "path": "/home/jack-xiang/rax-runtime/camera-recalibration-20261030T052107Z/verification-candidate-before-depth-correction/checks/verification.json",
+      "reason": "Side aligned depth had a consistent metric bias; fitted a profile-specific software factor from separate training/reserved data."
+    },
+    {
+      "path": "/home/jack-xiang/rax-runtime/camera-recalibration-20261030T052107Z/verification-candidate-before-dense-detector/checks/verification.json",
+      "reason": "One frame had only eight decoded points; geometry passed. Added denser threshold-window fallback without changing point or geometric acceptance limits."
+    }
+  ],
   "tcp_offset_mm_rad": [
     0.0,
     0.0,
@@ -663,7 +706,7 @@
       1.02
     ]
   },
-  "scope": "Observed tabletop and bounded calibration poses: +/-25 mm sideways, 0\u201350 mm upward, rotations up to 21.2 degrees. Full-workspace accuracy and manipulation remain unqualified. Both camera extrinsics refitted; prior wrist RGB intrinsics, stereo alignment and metric depth correction retained, along with side factory intrinsics.",
+  "scope": "Observed board/tabletop region and calibration poses: +/-25 mm sideways, 0\u201350 mm upward, rotations up to 21.2 degrees. Full-workspace accuracy and manipulation are not established by these measurements.",
   "session_disarmed": true,
   "hand_disable_confirmed": true,
   "final_state": {
@@ -678,15 +721,5 @@
     "hand_enabled": false,
     "hand_feedback_fresh": true,
     "hand_faults": []
-  },
-  "regression_tests": {
-    "passed": 18,
-    "command": ".venv/bin/python -m pytest local_tests/unit/test_camera_commissioning.py -q"
-  },
-  "rejected_verifications": [
-    {
-      "path": "/home/jack-xiang/rax-runtime/camera-recalibration-20261030T041535Z/verification-candidate/checks/verification.json",
-      "reason": "Only 4\u20138 decoded side corners at runtime resolution, below 12-point minimum. Additional image scales and adaptive-threshold windows improved decoding without changing geometric gates."
-    }
-  ]
+  }
 }
