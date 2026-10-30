@@ -19,9 +19,10 @@ to complete the task yourself through the robot tools, then automate what worked
 3. View the current camera images. Identify the relevant objects and a short sequence
    of manipulation stages.
 4. Ground the next target in current observations with
-   [object-localization](../object-localization/SKILL.md), choose a small action, and
-   pick the motion tool for it as [robot-interface](../robot-interface/SKILL.md)
-   describes.
+   [object-localization](../object-localization/SKILL.md), and choose an action whose
+   full path has established clearance. Use [robot-interface](../robot-interface/SKILL.md)
+   for motion tools, speed and limits. For arm travel through verified clear space,
+   use a complete supported move; reserve smaller steps for contact or uncertain geometry.
 5. Inspect the reply and new images, revise the next action, and save useful
    parameters and evidence. Work through the checklist until every condition holds.
 

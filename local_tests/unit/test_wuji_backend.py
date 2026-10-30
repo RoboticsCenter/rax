@@ -160,6 +160,61 @@ def test_wuji_fault_rejects_arm_motion_before_dispatch(make_backend):
     assert arm.commands == 0
 
 
+@pytest.mark.parametrize('failure', [None, 'state', 'joint_drift', 'rotation_drift', 'fault',
+                                   'nonfinite', 'feedback_loss', 'hand_stop'])
+def test_arm_timeout_only_latches_uncertainty_when_stop_is_unconfirmed(make_backend, monkeypatch, failure):
+    import numpy as np
+    from scipy.spatial.transform import Rotation
+
+    class StoppingArm(FakeArm):
+        def state(self):
+            state = super().state()
+            if self.holds:
+                state['state'] = 4
+                if failure == 'state':
+                    state['state'] = 1
+                elif failure == 'joint_drift':
+                    self.q = self.q + .002
+                    state['joints'] = self.q.copy()
+                elif failure == 'rotation_drift':
+                    self.quat = (Rotation.from_rotvec([0, 0, .02]) * Rotation.from_quat(self.quat)).as_quat()
+                    state['tcp_quaternion'] = self.quat.copy()
+                elif failure == 'fault':
+                    state['error_code'] = 19
+                elif failure == 'nonfinite':
+                    state['tcp_position'] = np.full(3, np.nan)
+                elif failure == 'feedback_loss':
+                    raise ConnectionError('feedback disconnected after stop ACK')
+            return state
+
+    backend, arm, hand, root = make_wuji(make_backend, arm=StoppingArm(), stream_enabled=False)
+    arming.write(root, True)
+    if failure == 'hand_stop':
+        hand.fail_stop = True
+
+    def expire(*args, **kwargs):
+        raise TimeoutError('injected arm motion deadline')
+
+    monkeypatch.setattr(backend, '_monitor_pose', expire)
+    front = Frontend(Session(backend.config), backend)
+    try:
+        response = front.call('xarm_move_pose', {'position': [.44, 0, .3]})
+        assert response['isError']
+        error = json.loads(response['content'][0]['text'])['error']
+        assert error['type'] == 'TimeoutError' and not error['no_action_executed']
+        assert error['control_uncertain'] is (failure is not None)
+        assert front.status()['control_uncertain'] is (failure is not None)
+        stop = error['robot_state']['assembly_stop']
+        if failure is None:
+            assert stop['arm']['confirmed'] and stop['hand']['confirmed']
+            assert stop['arm']['samples'] >= 5 and stop['arm']['stationary_s'] >= .4
+        else:
+            assert not all(item['confirmed'] for item in stop.values())
+        assert arm.commands == 1 and arm.holds and hand.stops  # No reset or replay.
+    finally:
+        front.close()
+
+
 def test_joint_guard_failure_stops_both_devices(make_backend):
     def outside(arm):
         arm.pos[2] = -1

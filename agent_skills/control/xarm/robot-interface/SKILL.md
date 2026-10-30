@@ -31,16 +31,21 @@ physically.
   configured ceiling for this call; omit it to use that ceiling. Select a lower speed
   near contact or when carrying requires it. `relative: true` adds a base-frame displacement to the
   current TCP position. It does not translate along rotated tool axes. Requires operator arming.
-  `timeout_s` accepts 1–120 seconds; the repository default is 60 seconds, and the
-  live tool description reports this session's configured default. For a large
-  rotation at low speed, request `timeout_s: 120` explicitly. This changes the
-  time allowance, not motion speed. A timed-out move still stops and needs recovery;
-  do not automatically replay it with a longer timeout.
+  `timeout_s` accepts 1–600 seconds; the repository default is 300 seconds, and the
+  live tool description reports this session's configured default. The call returns
+  as soon as the target settles; the timeout is only a maximum. For an unusually slow
+  move, request `timeout_s: 600`. This changes the time allowance, not motion speed.
+  A timed-out move stops both devices. When feedback confirms both stopped,
+  `control_uncertain` is false; timeout alone does not latch uncertainty. If either
+  stop cannot be confirmed, uncertainty remains true. Inspect the measured pose and
+  fresh views, and restore arm/hand readiness through operator controls before
+  another move; do not automatically replay the failed target.
 - `xarm_move_joints {positions | preset: "home"}`: joint-space move with six joint
   angles in radians, or the backend home preset. The path is sampled with controller FK
-  and checked against the workspace box before moving. Requires operator arming.
+  and checked against the workspace box before moving. The configured move timeout
+  (default 300 seconds) covers the entire call, including all segments. Requires operator arming.
 {% if robot.has_hand %}
-- `wuji_status`, `wuji_move_joints`, `wuji_pose`, `wuji_hold`,
+- `wuji_status`, `wuji_move_joints`, `wuji_pose`, `wuji_home`, `wuji_hold`,
   `wuji_set_effort`, `wuji_set_impedance`: see
   [hand-control](../hand-control/SKILL.md) before moving fingers or grasping.
 - `xarm_hold`: stop the arm and request hand emergency stop. Inspect each reported

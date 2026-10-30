@@ -34,7 +34,7 @@ from . import end_effectors
 PROJECT = Path(__file__).resolve().parents[2]
 WORKSPACE_NAME = 'agent-workspace'
 HOME_Q = (0.0, -0.70, -1.20, 0.0, 1.90, 0.0)
-MAX_POSE_TIMEOUT_S = 120.0
+MAX_POSE_TIMEOUT_S = 600.0
 LOWER = np.array([-2*np.pi, -2.059, -3.927, -2*np.pi, -1.692, -2*np.pi])
 UPPER = np.array([2*np.pi, 2.094, 0.192, 2*np.pi, np.pi, 2*np.pi])
 DEFAULTS = {
@@ -50,7 +50,7 @@ DEFAULTS = {
     'joint_limit_margin_rad': 0.05,
     'cartesian_speed_mps': 0.05,
     'cartesian_acc_mps2': 0.20,
-    'move_timeout_s': 60.0,
+    'move_timeout_s': 300.0,
     'settle_s': 0.3,
     'poll_period_s': 0.05,
     'joint_tolerance_rad': 0.02,
@@ -328,7 +328,8 @@ class XArmBackend:
                 'Joint-space move with xArm set_servo_angle. positions: 6 joint angles (rad); or preset "home". '
                 'The path is sampled through the controller FK and checked against workspace/table clearance '
                 'before moving. Longer moves execute bounded SDK segments within this call; '
-                'the caller need not subdivide joint targets. Requires operator arming.',
+                'the caller need not subdivide joint targets. Uses the configured move timeout '
+                f'({self.options["move_timeout_s"]:g} seconds) for the whole call. Requires operator arming.',
              'inputSchema': _schema({'positions': {'type': 'array', 'items': NUMBER, 'minItems': 6,
                                                    'maxItems': 6},
                                      'preset': {'type': 'string', 'enum': ['home']}})},
@@ -507,8 +508,12 @@ class XArmBackend:
             try:
                 return handler(**arguments)
             except Exception as exc:
-                outcome = self._stop_assembly()
-                exc.control_certain = False
+                # Deadline expiry is not itself lost control. Confirm the stop from
+                # feedback before telling the frontend whether control is known.
+                timed_out = isinstance(exc, TimeoutError)
+                outcome = self._stop_assembly(verify_arm=timed_out)
+                exc.control_certain = timed_out and all(
+                    result.get('confirmed') is True for result in outcome.values())
                 exc.robot_state = {**getattr(exc, 'robot_state', {}), 'assembly_stop': outcome,
                                    'hand': self.end_effector.status()}
                 raise
@@ -539,7 +544,37 @@ class XArmBackend:
         self.last_motion = {'tool': name, 'at': time.time(), **result}
         return result, []
 
-    def _stop_assembly(self):
+    def _stop_arm_verified(self):
+        """A stop ACK alone is insufficient: require stable, healthy state-4 feedback."""
+        self.arm.hold()
+        outcome = {'requested': True, 'sdk_returned': True, 'confirmed': False}
+        deadline = time.monotonic() + 2.0
+        anchor, stable_since, samples = None, None, 0
+        while time.monotonic() < deadline:
+            state = self.arm.state()
+            q = np.asarray(state['joints'], dtype=float)
+            p = np.asarray(state['tcp_position'], dtype=float)
+            quat = np.asarray(state['tcp_quaternion'], dtype=float)
+            healthy = (state.get('state') == 4 and state.get('error_code') == 0
+                       and state.get('warn_code') == 0 and q.shape == (6,) and p.shape == (3,)
+                       and quat.shape == (4,) and all(np.all(np.isfinite(v)) for v in (q, p, quat)))
+            if not healthy:
+                anchor, stable_since, samples = None, None, 0
+            else:
+                stable = (anchor is not None and np.max(np.abs(q-anchor[0])) <= .001
+                          and np.linalg.norm(p-anchor[1]) <= .0005
+                          and np.linalg.norm(rotation_error(quat, anchor[2])) <= np.radians(.1))
+                if not stable:
+                    anchor, stable_since, samples = (q.copy(), p.copy(), quat.copy()), time.monotonic(), 0
+                samples += 1
+                elapsed = time.monotonic() - stable_since
+                if samples >= 5 and elapsed >= .4:
+                    return {**outcome, 'confirmed': True, 'stationary_s': round(elapsed, 3),
+                            'samples': samples, 'measured': self._pose_report(state)}
+            time.sleep(.05)
+        return {**outcome, 'reason': 'Healthy stationary stop feedback was not confirmed within 2 seconds'}
+
+    def _stop_assembly(self, *, verify_arm=False):
         """Independent stop dispatch; one blocked SDK cannot suppress the other stop."""
         outcomes = {}
         lock = threading.Lock()
@@ -552,7 +587,7 @@ class XArmBackend:
                 value = {'requested': True, 'sdk_returned': False, 'confirmed': False, 'error': str(exc)}
             with lock:
                 outcomes[name] = value
-        actions = [('arm', self.arm.hold)]
+        actions = [('arm', self._stop_arm_verified if verify_arm else self.arm.hold)]
         if self.has_hand:
             actions.append(('hand', self.end_effector.stop))
         threads = [threading.Thread(target=attempt, args=action, daemon=True) for action in actions]
@@ -692,9 +727,8 @@ class XArmBackend:
         goal = self._joint_goal(arguments)
         start = np.asarray(self.arm.state()['joints'])
         waypoints = self._joint_plan(start, goal)
-        step = float(np.max(np.abs(goal - start)))
         self._require_armed()
-        timeout = min(self.options['move_timeout_s'], max(2.0, step / self.options['joint_speed_radps']) + 10.0)
+        timeout = float(self.options['move_timeout_s'])
         started, motion_start = time.monotonic(), time.time()
         try:
             previous = start
