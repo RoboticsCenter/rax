@@ -48,7 +48,7 @@ def shortcut(tmp_path, monkeypatch):
                 raise subprocess.CalledProcessError(1, command)
             state.update(mode='holding', enabled=True, owns_control=True,
                          target_positions=[0.1]*20, fault=None)
-        elif action == 'recover-thermal':
+        elif action in ('recover-thermal', 'recover-stall'):
             assert not arming.read(root)['armed']
             state.update(mode='disabled', fault=None, faults=[])
         elif action == 'stop':
@@ -170,6 +170,26 @@ def test_prepare_button_recovers_cooled_thermal_fault_before_readying_arm(shortc
     assert shortcut.state['enabled'] and arming.read(shortcut.root)['armed']
 
 
+def test_prepare_button_recovers_cleared_stall_before_readying_arm(shortcut):
+    from test_wuji_preparation import stall_state
+    shortcut.state.update(stall_state())
+    arming.write(shortcut.root, True, minutes=10)
+    shortcut.module.main(['--yes'])
+    assert [a for a, _ in shortcut.calls] == [
+        'status', 'recover-stall', 'status', 'ready', 'arm', 'status', 'prepare', 'status']
+    assert shortcut.state['enabled'] and arming.read(shortcut.root)['armed']
+
+
+def test_active_stall_blocks_preparation_and_leaves_reply_pending(shortcut):
+    from test_wuji_preparation import stall_state
+    shortcut.state.update(stall_state())
+    shortcut.state['diagnostics']['error_code_current'][1] = 7
+    with pytest.raises(RuntimeError, match='zero native error codes'):
+        shortcut.module.main(['--yes'])
+    assert [a for a, _ in shortcut.calls] == ['status', 'stop']
+    assert not arming.read(shortcut.root)['armed']
+
+
 def test_hot_hand_never_reaches_arm_ready_and_reply_can_remain_pending(shortcut):
     from test_wuji_preparation import thermal_state
     shortcut.state.update(thermal_state(65.))
@@ -179,13 +199,14 @@ def test_hot_hand_never_reaches_arm_ready_and_reply_can_remain_pending(shortcut)
     assert not arming.read(shortcut.root)['armed']
 
 
-def test_failed_reconnect_is_not_retried_and_never_readies_arm(shortcut):
-    from test_wuji_preparation import thermal_state
-    shortcut.state.update(thermal_state())
-    shortcut.failures.add('recover-thermal')
+@pytest.mark.parametrize('kind', ['thermal', 'stall'])
+def test_failed_reconnect_is_not_retried_and_never_readies_arm(shortcut, kind):
+    from test_wuji_preparation import stall_state, thermal_state
+    shortcut.state.update(thermal_state() if kind == 'thermal' else stall_state())
+    shortcut.failures.add(f'recover-{kind}')
     with pytest.raises(subprocess.CalledProcessError):
         shortcut.module.main(['--yes'])
-    assert [a for a, _ in shortcut.calls] == ['status', 'recover-thermal', 'stop']
+    assert [a for a, _ in shortcut.calls] == ['status', f'recover-{kind}', 'stop']
     assert not arming.read(shortcut.root)['armed']
 
 

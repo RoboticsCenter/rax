@@ -23,9 +23,11 @@ credentials and the session's private files unreadable. The robot is reachable o
 through the MCP tools.
 """
 import argparse
+from dataclasses import replace
 import fcntl
 import hashlib
 import json
+import math
 import os
 from pathlib import Path
 import shutil
@@ -82,6 +84,10 @@ USAGE_PROMPT = ("The model usage limit paused this session until it reset. Call 
 # request. For OpenAI-backed runs, start Claude Code on a known Claude model and use
 # modelOverrides in settings.json so the request sent to our relay carries the OpenAI id.
 OPENAI_CLI_MODEL = 'claude-opus-5'
+
+
+class SessionBudgetExpired(TimeoutError):
+    """The operator's cumulative runtime allowance has been consumed."""
 
 
 def claude_binary(path=None):
@@ -364,7 +370,7 @@ def watch(agent, model, timeout, *, stop_on_limit=True):
     deadline, limited = time.monotonic() + timeout, None
     while agent.poll() is None:
         if time.monotonic() >= deadline:
-            raise subprocess.TimeoutExpired(agent.args, timeout)
+            raise SessionBudgetExpired('Session runtime allowance exhausted')
         if stop_on_limit and model.limited_until > time.time():
             limited = limited or time.monotonic()
             if time.monotonic() - limited > USAGE_STOP_SECONDS:
@@ -403,7 +409,7 @@ def launch(config, deployed, *, prompt, interactive=True, seconds=None, max_mode
             model = start_relay(config, deployed, max_model_calls=max_model_calls or config.max_model_calls)
             server = start_robot_service(config, deployed, log, started_at=started_at)
             environment = agent_environment(deployed, model.address)
-            budget = seconds or config.session_seconds
+            budget = config.session_seconds if seconds is None else seconds
 
             def run(prompt, remaining):
                 nonlocal agent
@@ -455,8 +461,22 @@ def main():
     parser.add_argument('--exec-prompt', help='Run non-interactively with this prompt')
     parser.add_argument('--non-interactive', action='store_true', help='Run START_PROMPT.md without a terminal UI')
     parser.add_argument('--resume', action='store_true', help="Continue a stopped session's own conversation")
+    parser.add_argument('--session-hours', type=float,
+                        help='Set and save the total session runtime allowance, including earlier attempts')
+    parser.add_argument('--max-model-calls', type=int,
+                        help='Set and save the total model-call allowance, including calls already used')
     args = parser.parse_args()
     config = Configuration.load(args.config)
+    overrides = {}
+    if args.session_hours is not None:
+        if not math.isfinite(args.session_hours) or not 60 <= args.session_hours * 3600 <= 604800:
+            parser.error('--session-hours must be between 1/60 and 168 hours')
+        overrides['session_seconds'] = int(args.session_hours * 3600)
+    if args.max_model_calls is not None:
+        if args.max_model_calls < 1:
+            parser.error('--max-model-calls must be positive')
+        overrides['max_model_calls'] = args.max_model_calls
+    config = replace(config, **overrides)
     validate_workspace_location(config)
     signal.signal(signal.SIGTERM, _interrupt)
     config.root.mkdir(parents=True, exist_ok=True, mode=0o700)
@@ -472,7 +492,10 @@ def main():
                 raise SystemExit(str(exc))
             seconds -= int(attempt_seconds(attempts))
             if seconds < 60:
-                raise SystemExit('The session has no wall-clock budget left to resume')
+                raise SystemExit(f'The session has exhausted its {config.session_seconds / 3600:g}-hour '
+                                 'runtime allowance (cumulative across resumes). '
+                                 'To continue, rerun with --resume --session-hours TOTAL_HOURS, '
+                                 'using a larger total allowance.')
             lifecycle.update(resumed=True, attempts=attempts)
         elif record.exists():
             raise FileExistsError('This session was already launched; use --resume or a fresh configuration')
@@ -487,6 +510,13 @@ def main():
                 deployed = redeploy(config)
             else:
                 deployed = deploy(config, key_file=args.key_file, gemini_key_file=gemini_key)
+            if overrides:
+                # Only the explicit budget options change the deployed service's
+                # configuration; preserve its commissioned backend settings.
+                saved = json.loads(deployed['configuration'].read_text())
+                saved.update(overrides)
+                write_private_json(deployed['configuration'], saved)
+                write_private_json(args.config, config.to_dict())
             if args.prepare_only:
                 print(json.dumps({k: str(v) for k, v in deployed.items()}, indent=2))
                 lifecycle['status'] = 'prepared-only'
@@ -509,6 +539,13 @@ def main():
                                 on_wait=usage_wait)
             lifecycle.update(status='exited', returncode=returncode)
             raise SystemExit(returncode)
+        except SessionBudgetExpired:
+            lifecycle.update(status='budget-exhausted', returncode=124)
+            print(f'Session stopped: its {config.session_seconds / 3600:g}-hour runtime allowance '
+                  'is exhausted (cumulative across resumes).\n'
+                  'To continue this conversation, rerun the launcher with --resume '
+                  '--session-hours TOTAL_HOURS, using a larger total allowance.', file=sys.stderr)
+            raise SystemExit(124) from None
         except KeyboardInterrupt:
             lifecycle['status'] = 'stopped'
             raise SystemExit(130)

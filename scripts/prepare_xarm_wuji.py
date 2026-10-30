@@ -73,10 +73,13 @@ def main(argv=None):
         saved.flush()
         env['RAX_BACKEND_OPTIONS'] = saved.name
         try:
-            if not hand_ready(state) and preparation_action(state, options['end_effector']) == 'reconnect':
-                arming.write(root, False, reason='operator-requested thermal recovery before preparation')
-                print('Thermal fault has cooled: reconnecting the disabled hand once before preparation.', flush=True)
-                run('bash', 'scripts/wuji', 'recover-thermal', '--session', str(root), capture=True)
+            action = 'prepare' if hand_ready(state) else preparation_action(state, options['end_effector'])
+            if action in ('reconnect', 'reconnect-stall'):
+                kind = 'stall' if action == 'reconnect-stall' else 'thermal'
+                arming.write(root, False, reason=f'operator-requested {kind} recovery before preparation')
+                detail = 'Device stall has cleared' if kind == 'stall' else 'Thermal fault has cooled'
+                print(f'{detail}: reconnecting the disabled hand once before preparation.', flush=True)
+                run('bash', 'scripts/wuji', f'recover-{kind}', '--session', str(root), capture=True)
                 state = hand_status()
                 if state.get('fault') or state.get('faults') or not state.get('fresh') or state.get('enabled'):
                     raise PreparationBlocked('Hand recovery did not establish a healthy disabled state.')

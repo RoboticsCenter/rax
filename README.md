@@ -236,6 +236,10 @@ bash scripts/start_agent.sh --config <session>/operator-input.json --resume
 - `--resume` continues the session's own Claude Code conversation in the same workspace,
   with the wall-clock budget that is left. A non-interactive run that exhausts its Claude
   usage window waits for the reset by itself, off the session clock, and then continues.
+- To extend an existing session, pass `--resume --session-hours 8 --max-model-calls 2000`
+  to `start_agent.sh`. These set and save **total** allowances across all attempts;
+  prior runtime and calls still count. Omit either option to keep its existing limit.
+  Runtime exhaustion stops the services cleanly with exit code 124.
 - Stop a session with Ctrl-C or SIGTERM to the launcher; it stops the agent, then the
   robot service.
 
@@ -280,6 +284,13 @@ other request needs it. It lets you:
   **DISARM ALL** covers every session;
 - watch the robot (TCP pose, joints, gripper, bridge health), the agent's latest camera
   frame, its transcript, the robot-call log and the service logs.
+
+For Wuji sessions, **Ready & send reply** can recover a retained thermal fault after
+cooling, or a retained `Stall` warning after the device has cleared it. It checks
+that the hand is disabled and stationary, all native error codes are zero, and
+temperatures are below the configured limit for two seconds before reconnecting
+once. Recovery evidence is saved under `operator/`. Preparation must succeed
+before the reply is sent. **Send reply only** sends text without preparing the robot.
 
 Never give the URL or token to an agent.
 

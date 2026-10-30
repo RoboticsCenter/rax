@@ -5,18 +5,21 @@ from pathlib import Path
 import sys
 
 from .client import operation, request, socket_path
-from .preparation import recover_cooled_thermal
+from .preparation import recover_cleared_stall, recover_cooled_thermal
 
 
 def main(argv=None):
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument('action', choices=('status', 'prepare', 'disable', 'stop', 'reconnect', 'recover-thermal'))
+    parser.add_argument('action', choices=('status', 'prepare', 'disable', 'stop', 'reconnect',
+                                           'recover-thermal', 'recover-stall'))
     parser.add_argument('--session', type=Path, required=True, help='Session directory printed by configure_session')
     args = parser.parse_args(argv)
     if args.action == 'status':
         result = request(socket_path(args.session), 'status')
     elif args.action == 'recover-thermal':
         result = recover_cooled_thermal(args.session)
+    elif args.action == 'recover-stall':
+        result = recover_cleared_stall(args.session)
     else:
         op = {'stop': 'emergency', 'reconnect': 'connect'}.get(args.action, args.action)
         result = operation(args.session, op)
