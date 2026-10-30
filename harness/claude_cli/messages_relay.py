@@ -167,10 +167,12 @@ class UsageLog:
     def __init__(self, path):
         self.path, self.lock = (Path(path) if path else None), threading.Lock()
 
-    def record(self, model, usage):
+    def record(self, model, usage, *, reasoning_effort=None):
         if self.path is None or not usage:
             return
         row = {'time': time.time(), 'model': model}
+        if reasoning_effort is not None:
+            row['reasoning_effort'] = reasoning_effort
         for key in ('input_tokens', 'output_tokens', 'cache_creation_input_tokens', 'cache_read_input_tokens'):
             if isinstance(usage.get(key), int):
                 row[key] = usage[key]
@@ -337,7 +339,7 @@ def _openai_tools(tools):
     return converted
 
 
-def openai_request(payload):
+def openai_request(payload, *, reasoning_effort=None):
     body = {'model': _openai_model(payload['model']), 'input': _openai_input(payload.get('messages', [])),
             'max_output_tokens': payload.get('max_tokens')}
     if instructions := _anthropic_system(payload):
@@ -349,7 +351,11 @@ def openai_request(payload):
     if isinstance(payload.get('metadata'), dict):
         body['metadata'] = payload['metadata']
     thinking = payload.get('thinking') or {}
-    if isinstance(thinking, dict) and thinking.get('type') == 'enabled':
+    # The operator's effort must survive Claude Code's adaptive/missing thinking
+    # fields and must not be downgraded by the Messages-to-Responses translation.
+    if reasoning_effort is not None:
+        body['reasoning'] = {'effort': reasoning_effort}
+    elif isinstance(thinking, dict) and thinking.get('type') == 'enabled':
         body['reasoning'] = {'effort': 'high'}
     return body
 
@@ -432,7 +438,10 @@ def usage_reset(response):
 
 class MessagesRelay:
     def __init__(self, path, credential, *, base_url, models, max_calls=1000, client_write_timeout=120,
-                 usage_log=None, calls_file=None):
+                 usage_log=None, calls_file=None, reasoning_effort=None):
+        if reasoning_effort is not None and reasoning_effort not in {'low', 'medium', 'high', 'xhigh', 'max'}:
+            raise ValueError('Invalid operator reasoning effort')
+        self.reasoning_effort = reasoning_effort
         allowed = set()
         for model in models:
             if not isinstance(model, str) or not MODEL_ID.fullmatch(model):
@@ -545,7 +554,8 @@ class MessagesRelay:
                         headers.pop('anthropic-version', None)
                         headers.pop('anthropic-beta', None)
                         headers['Accept'] = 'application/json'
-                        upstream_body = json.dumps(openai_request(payload), separators=(',', ':')).encode()
+                        request = openai_request(payload, reasoning_effort=relay.reasoning_effort)
+                        upstream_body = json.dumps(request, separators=(',', ':')).encode()
                         target = url.path.rstrip('/') + '/v1/responses'
                     else:
                         upstream_body = body
@@ -587,7 +597,8 @@ class MessagesRelay:
                             return
                         message = anthropic_message_from_openai(json.loads(data), payload.get('model'))
                         if counted:
-                            relay.usage.record(payload.get('model'), message.get('usage') or {})
+                            relay.usage.record(payload.get('model'), message.get('usage') or {},
+                                               reasoning_effort=(request.get('reasoning') or {}).get('effort'))
                         if payload.get('stream'):
                             data = _anthropic_sse(message)
                             ctype = 'text/event-stream'

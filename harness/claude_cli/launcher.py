@@ -324,7 +324,7 @@ def start_relay(config, deployed, *, max_model_calls):
     model = MessagesRelay(('127.0.0.1', 0), credential, base_url=relay['base_url'],
                           models=relay.get('models') or [relay['model']], max_calls=max_model_calls,
                           calls_file=config.root/'model-calls.json', client_write_timeout=config.session_seconds,
-                          usage_log=config.root/'model-usage.jsonl')
+                          usage_log=config.root/'model-usage.jsonl', reasoning_effort=config.agent_effort)
     model.start()
     return model
 

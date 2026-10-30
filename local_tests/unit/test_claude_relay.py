@@ -138,7 +138,9 @@ def test_client_tools_and_inline_images_pass(relay):
     assert call(body)[0] == 200 and received
 
 
-def test_openai_provider_translates_messages_tools_and_usage(tmp_path):
+@pytest.mark.parametrize('thinking', [None, {'type': 'enabled', 'budget_tokens': 1024},
+                                     {'type': 'adaptive'}, {'type': 'disabled'}])
+def test_openai_provider_translates_messages_tools_and_usage(tmp_path, thinking):
     received = []
 
     class Handler(BaseHTTPRequestHandler):
@@ -169,7 +171,8 @@ def test_openai_provider_translates_messages_tools_and_usage(tmp_path):
     threading.Thread(target=upstream.serve_forever, daemon=True).start()
     router = MessagesRelay(tmp_path/'relay.sock', Credential('openai', key_file=private(tmp_path/'openai.key', 'sk-oai')),
                            base_url=f'http://127.0.0.1:{upstream.server_port}/api',
-                           models=[OPENAI_MODEL], client_write_timeout=5, usage_log=tmp_path/'usage.jsonl')
+                           models=[OPENAI_MODEL], client_write_timeout=5, usage_log=tmp_path/'usage.jsonl',
+                           reasoning_effort='xhigh')
     router.start()
     try:
         connection = http.client.HTTPConnection('localhost', timeout=5)
@@ -188,6 +191,9 @@ def test_openai_provider_translates_messages_tools_and_usage(tmp_path):
                            {'type': 'tool_result', 'tool_use_id': 'toolu_1', 'content': [
                                {'type': 'text', 'text': 'ok'},
                                {'type': 'image', 'mimeType': 'image/jpeg', 'data': 'AA=='}]}]}]}
+        if thinking is not None:
+            payload['thinking'] = thinking
+        payload['output_config'] = {'effort': 'high'}  # The operator setting takes precedence.
         connection.request('POST', '/v1/messages', json.dumps(payload).encode(), {'Content-Type': 'application/json'})
         response = connection.getresponse()
         body = json.loads(response.read())
@@ -200,6 +206,7 @@ def test_openai_provider_translates_messages_tools_and_usage(tmp_path):
         assert path == '/api/v1/responses'
         assert headers['Authorization'] == 'Bearer sk-oai' and 'anthropic-version' not in headers
         assert upstream_body['model'] == 'gpt-6-astra'
+        assert upstream_body['reasoning'] == {'effort': 'xhigh'}
         assert upstream_body['instructions'] == 'You are inside RAX.'
         assert upstream_body['tools'][0]['type'] == 'function'
         assert upstream_body['parallel_tool_calls'] is False
@@ -213,6 +220,7 @@ def test_openai_provider_translates_messages_tools_and_usage(tmp_path):
         row = json.loads((tmp_path/'usage.jsonl').read_text())
         assert row['model'] == OPENAI_MODEL and row['input_tokens'] == 5
         assert row['cache_read_input_tokens'] == 2 and row['output_tokens'] == 7
+        assert row['reasoning_effort'] == 'xhigh'
     finally:
         router.close()
         upstream.shutdown()

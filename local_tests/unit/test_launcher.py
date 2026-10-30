@@ -1,5 +1,6 @@
 """Host-run Claude Code launcher: workspace confinement, sandbox, credentials and resume."""
 import json
+from dataclasses import replace
 from pathlib import Path
 import sys
 import time
@@ -150,6 +151,19 @@ def test_a_used_session_root_is_refused(deployed, tmp_path):
     config, _ = deployed
     with pytest.raises(FileExistsError):
         launcher.deploy(config, key_file=tmp_path/'anthropic.key', claude=tmp_path/'bin/claude')
+
+
+@pytest.mark.parametrize('effort', ['high', 'xhigh', 'max'])
+def test_relay_uses_operator_effort_and_preserves_spent_budget(deployed, effort):
+    config, d = deployed
+    config = replace(config, agent_effort=effort, max_model_calls=1000)
+    (config.root/'model-calls.json').write_text(json.dumps({'calls': 30}))
+    relay = launcher.start_relay(config, d, max_model_calls=config.max_model_calls)
+    try:
+        assert relay.reasoning_effort == effort
+        assert relay.max_calls == 1000 and relay.calls == 30
+    finally:
+        relay.close()
 
 
 def test_resume_picks_the_newest_top_level_conversation(tmp_path):
