@@ -80,7 +80,7 @@ class Frontend:
         self.s, self.backend, self.gemini = session, backend, gemini
         self.started_at = started_at
         self.timings = Timings()
-        # Set when a motion tool raised after dispatch; reported until a motion completes.
+        # Report unknown control until a move completes or a recovery tool verifies a stop.
         # Interlocks (arming, workspace limits, holds) belong to the backend itself.
         self.control_uncertain = False
         self._dispatch = threading.Lock()
@@ -103,6 +103,9 @@ class Frontend:
             value['robot_status'] = self.backend.status()
         except Exception as exc:
             value['robot_status_error'] = public_failure(exc, operation='status')
+        if getattr(self.backend, 'control_uncertain', False):
+            self.control_uncertain = True
+        value['control_uncertain'] = self.control_uncertain
         return value
 
     def gemini_call(self, arguments, failure):
@@ -139,7 +142,11 @@ class Frontend:
                     timeout = float(arguments.get('timeout_s', 900))
                     if not 30 <= timeout <= 3600:
                         raise ValueError('timeout_s must be 30..3600')
-                    request = operator.open_request(self.s.config.root, arguments.get('kind'), arguments.get('message'))
+                    operator.validate_request(arguments.get('kind'), arguments.get('message'))
+                    faults = [r for r in operator.pending(self.s.config.root)
+                              if r.get('source') == 'xarm_controller'] if arguments.get('kind') == 'help' else []
+                    request = faults[0] if faults else operator.open_request(
+                        self.s.config.root, arguments.get('kind'), arguments.get('message'))
                     print(f"OPERATOR REQUEST [{request['kind']}] {request['message']}", file=sys.stderr, flush=True)
                     failure['stage'] = 'operator_wait'
                     value = operator.wait(self.s.config.root, request, timeout)
@@ -160,6 +167,9 @@ class Frontend:
                     value, images = self.backend.call(name, arguments)
                     if mutating:
                         self.control_uncertain = False  # A motion completed: control is known again.
+                    elif name in getattr(self.backend, 'recovery_tools', ()):
+                        # Explicit stop verification may establish control without any new motion.
+                        self.control_uncertain = value.get('control_certain') is not True
                 else:
                     raise PermissionError('Unknown tool')
                 value = jsonable(value)
@@ -170,8 +180,17 @@ class Frontend:
                               'result': result['content'][0]['text'][:65536], 'images': len(images)})
                 return result
             except Exception as exc:
+                needs_operator = getattr(exc, 'operator_required', False) is True
+                if needs_operator:
+                    # Validation can discover a fault before backend.call runs.
+                    handler = getattr(self.backend, 'handle_control_fault', None)
+                    if handler:
+                        try:
+                            handler(exc)
+                        except Exception as notification_error:
+                            exc.operator_notification_failed = type(notification_error).__name__
                 held = getattr(exc, 'control_certain', False) is True
-                if mutating and failure['stage'] == 'robot_execution':
+                if needs_operator or (mutating and failure['stage'] == 'robot_execution'):
                     # A backend-handled stop (refusal, disarm, timeout) leaves the arm holding at a
                     # measured pose; anything else may have left motion in flight.
                     self.control_uncertain = not held
@@ -179,6 +198,14 @@ class Frontend:
                                        held=held and mutating)
                 if isinstance(getattr(exc, 'robot_state', None), dict):
                     error['robot_state'] = jsonable(exc.robot_state)
+                if needs_operator:
+                    error['operator_required'] = True
+                    error['operator_request'] = getattr(exc, 'operator_request', None)
+                    error['recovery'] = ('Operator recovery is required. Motion has been disarmed and stops '
+                                         'requested; inspect assembly_stop for confirmation. Do not clear '
+                                         'errors, re-enable, home, or replay this target automatically.')
+                    if getattr(exc, 'operator_notification_failed', None):
+                        error['operator_notification_failed'] = exc.operator_notification_failed
                 try:
                     self.s.audit({'event': 'mcp_error', 'call_id': call_id, **error})
                 except Exception:

@@ -49,18 +49,34 @@ physically.
   `wuji_set_effort`, `wuji_set_impedance`: see
   [hand-control](../hand-control/SKILL.md) before moving fingers or grasping.
 - `xarm_hold`: stop the arm and request hand emergency stop. Inspect each reported
-  result; delivery and physical stopping are distinct. Always allowed, but queued
+  result; delivery and physical stopping are distinct. It verifies measured arm
+  standstill and hand stop confirmation. A confirmed assembly stop clears
+  `control_uncertain` without a probe move; an unconfirmed stop leaves it true.
+  This disarms motion, disables the hand, and does not clear controller errors, ready the arm or
+  arm the session. Use operator controls to restore readiness afterward.
+  Always allowed, but queued
   behind an active MCP call. The operator's direct stop/disarm path bypasses MCP.
 {% else %}
 - `{{ robot.gripper }} {action: open | move | grasp, width?, force?, speed?}`: position
   control for the xArm gripper. `speed` is an integer in the xArm SDK units. `force`
   only applies when the operator configured a G2 gripper; for the standard gripper,
   verify object retention from images.
-- `xarm_hold`: stop/hold the current motion. Always allowed.
+- `xarm_hold`: stop and verify arm standstill. A confirmed stop clears
+  `control_uncertain` without a move. It does not clear controller errors or ready
+  the arm. Always allowed.
 {% endif %}
 
 ## Limits and arming
 
+- Every nonzero xArm controller error, failed native SDK command, missing/invalid
+  controller feedback, unexpected paused/stopped state or non-position mode aborts
+  motion independently of its timeout. RAX disarms, requests stops and opens an
+  operator help request. The existing armed telemetry loop also watches the arm
+  during hand motion and idle holds. Warnings alone remain reported as warnings.
+  An error's `operator_request` identifies the existing dashboard alert; use
+  `request_operator(kind="help", ...)` to wait on it rather than creating a duplicate.
+  `last_controller_fault` in status is historical; use live error/state fields for
+  current health. Do not automatically clear a controller fault or replay its target.
 - Motion tools work only while the operator has armed motion. If `status`
   says motion is not armed, stop and report; never try to work around it.
 - The operator may disarm at any time. A running move then sends a hold command and the

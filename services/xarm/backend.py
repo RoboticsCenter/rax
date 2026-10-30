@@ -29,6 +29,7 @@ from scipy.spatial.transform import Rotation
 from . import arming
 from .calibration import CameraModel, backproject, camera_specs, project as project_to_pixel
 from .sdk import MotionStopped, TargetRejected, XArmDriver
+from .faults import ControllerFault, check_controller
 from . import end_effectors
 
 PROJECT = Path(__file__).resolve().parents[2]
@@ -201,6 +202,7 @@ class CameraService:
 
 class XArmBackend:
     mutating = frozenset({'xarm_move_pose', 'xarm_move_joints', 'xarm_gripper'})
+    recovery_tools = frozenset({'xarm_hold'})
 
     def __init__(self, config, *, arm=None, cameras=None, hand=None, camera_models=None):
         self.config = config
@@ -227,13 +229,16 @@ class XArmBackend:
             spec['name']: CameraModel.from_spec(spec) for spec in camera_specs(self.options)}
         self.arm = arm or XArmDriver(self.options)
         try:
-            self.end_effector = hand if hand is not None else end_effectors.make(config, self.arm, on_fault=self.arm.hold)
+            self.end_effector = hand if hand is not None else end_effectors.make(config, self.arm, on_fault=self._stop_arm)
         except BaseException:
             close = getattr(self.arm, 'close', None)
             if close:
                 close()
             raise
         self._closed = False
+        self._control_fault_lock = threading.Lock()
+        self._last_control_fault = None
+        self.control_uncertain = False
         self.workspace = config.root/WORKSPACE_NAME
         self.frames_root = self.workspace/'runtime'/'frames'
         self.depth = config.observation_profile == 'rgbd'
@@ -267,7 +272,13 @@ class XArmBackend:
         while not self._stop.wait(period):
             now = time.time()
             try:
-                state = self.arm.state()
+                try:
+                    state = self.arm.state()
+                except Exception as exc:
+                    if arming.read(self.config.root)['armed']:
+                        self.handle_control_fault(ControllerFault(f'xArm feedback unavailable: {exc}', category='feedback'))
+                    raise
+                self._watch_controller(state)
                 if not self.has_hand and tick % max(1, int(self.options['robot_log_hz'] / 2)) == 0:
                     width = self.end_effector.status().get('width')
                 tick += 1
@@ -275,6 +286,8 @@ class XArmBackend:
                           'tcp_position': np.round(state['tcp_position'], 5).tolist(),
                           'tcp_quaternion': np.round(state['tcp_quaternion'], 5).tolist(),
                           'joints': np.round(np.asarray(state['joints']), 4).tolist(),
+                          'controller_state': state.get('state'), 'controller_mode': state.get('mode'),
+                          'error_code': state.get('error_code'), 'warn_code': state.get('warn_code'),
                           'gripper_width': None if width is None else round(float(width), 4)}
                 if self.has_hand:
                     record.pop('gripper_width')
@@ -356,7 +369,8 @@ class XArmBackend:
                                                        'count': {'type': 'integer', 'minimum': 2, 'maximum': 16}},
                                                       ['seconds'])})},
             {'name': 'xarm_hold', 'inputSchema': _schema(),
-             'description': 'Stop/hold the current motion. Always allowed.'},
+             'description': 'Disarm, stop and verify arm standstill. A confirmed stop clears control_uncertain '
+                            'without a probe move. Does not clear controller errors or ready the arm. Always allowed.'},
         ]
         if self.has_hand:
             from services.wuji.config import tools
@@ -365,8 +379,10 @@ class XArmBackend:
             definitions[0]['description'] = ('xArm pose and joints, Wuji hand feedback, controller errors, '
                                              'operator arming, cameras and configured workspace limits.')
             next(t for t in definitions if t['name'] == 'xarm_hold')['description'] = (
-                'Stop the arm and request Wuji emergency stop independently. Always allowed. '
-                'Reports each outcome; an SDK return alone does not confirm physical stopping.')
+                'Disarm, stop the arm and request Wuji emergency stop independently. Verify arm standstill '
+                'and hand stop confirmation. Clears control_uncertain only when both are confirmed; no probe '
+                'move required. Does not clear controller errors, re-enable or prepare either device. '
+                'Always allowed; queued behind any active MCP call. Operator direct stop bypasses that queue.')
         return definitions
 
     def _require_armed(self):
@@ -453,6 +469,7 @@ class XArmBackend:
             goal = validate_tool(name, arguments, self.hand_config)
             if name in MUTATING_TOOLS:
                 self._require_armed()
+                self._motion_state()
                 state = self.end_effector.require_ready()
                 if name in MOTION_TOOLS:
                     Trajectory(state['target_positions'], goal['positions'], self.hand_config, goal['duration_s'])
@@ -471,10 +488,13 @@ class XArmBackend:
         if definition is None:
             raise ValueError(f'unknown tool {name}')
         _validate_arguments(arguments, definition['inputSchema'])
+        if name in self.mutating:
+            self._require_armed()
+            arm_state = self._motion_state()
         if name == 'xarm_move_pose':
-            self._pose_goal(arguments, self.arm.state())
+            self._pose_goal(arguments, arm_state)
         elif name == 'xarm_move_joints':
-            self._joint_plan(np.asarray(self.arm.state()['joints']), self._joint_goal(arguments))
+            self._joint_plan(np.asarray(arm_state['joints']), self._joint_goal(arguments))
         elif name == 'xarm_gripper':
             action = arguments['action']
             if action in ('move', 'grasp') and 'width' not in arguments:
@@ -497,6 +517,17 @@ class XArmBackend:
                 self.end_effector.require_ready()
 
     def call(self, name, arguments):
+        try:
+            result = self._call(name, arguments)
+            if name in self.mutating:
+                self.control_uncertain = False
+            return result
+        except Exception as exc:
+            if getattr(exc, 'operator_required', False):
+                self.handle_control_fault(exc)
+            raise
+
+    def _call(self, name, arguments):
         if self.has_hand and name.startswith('wuji_'):
             self.validate(name, arguments)
             return self._hand_call(name, arguments)
@@ -508,6 +539,8 @@ class XArmBackend:
             try:
                 return handler(**arguments)
             except Exception as exc:
+                if getattr(exc, 'operator_required', False):
+                    raise
                 # Deadline expiry is not itself lost control. Confirm the stop from
                 # feedback before telling the frontend whether control is known.
                 timed_out = isinstance(exc, TimeoutError)
@@ -518,6 +551,72 @@ class XArmBackend:
                                    'hand': self.end_effector.status()}
                 raise
         return handler(**arguments)
+
+    def _motion_state(self):
+        try:
+            state = self.arm.state()
+        except Exception as exc:
+            raise ControllerFault(f'xArm feedback unavailable: {exc}', category='feedback') from exc
+        return check_controller(state)
+
+    def _dispatch_arm(self, method, *args, **kwargs):
+        try:
+            return method(*args, **kwargs)
+        except TargetRejected:
+            raise
+        except Exception as exc:
+            # A transport timeout during dispatch is not an ordinary progress timeout.
+            raise ControllerFault(f'xArm command dispatch failed: {exc}', category='transport') from exc
+
+    def _watch_controller(self, state):
+        # Reuse the existing telemetry poll, including during hand motion and idle holds.
+        if arming.read(self.config.root)['armed']:
+            try:
+                check_controller(state)
+            except ControllerFault as exc:
+                self.handle_control_fault(exc)
+
+    def handle_control_fault(self, exc):
+        """Stop/disarm once and publish an operator request without waiting for the agent."""
+        from services.controller import operator
+        if getattr(exc, '_control_fault_handled', False):
+            return
+        with self._control_fault_lock:
+            key = (type(exc).__name__, str(exc))
+            previous = self._last_control_fault
+            if previous and previous['key'] == key and not arming.read(self.config.root)['armed']:
+                exc.control_certain = previous['control_certain']
+                exc.robot_state = previous['robot_state']
+                exc.operator_request = previous['operator_request']
+                exc._control_fault_handled = True
+                return
+            state = dict(getattr(exc, 'robot_state', {}))
+            if getattr(exc, 'sdk_code', None) is not None:
+                state.update(sdk_code=exc.sdk_code, sdk_operation=exc.sdk_operation)
+            try:
+                arming.write(self.config.root, False, reason=str(exc))
+            except Exception as disarm_error:
+                state['disarm_error'] = str(disarm_error)
+            outcome = self._stop_assembly(verify_arm=True, require_healthy=False)
+            state['assembly_stop'] = outcome
+            exc.robot_state = state
+            exc.control_certain = all(result.get('confirmed') is True for result in outcome.values())
+            self.control_uncertain = not exc.control_certain
+            exc.operator_request = None
+            try:
+                request = operator.fault_request(self.config.root, 'xarm_controller',
+                    f'{str(exc)[:2000]}. Session disarmed; arm and hand stops requested. '
+                    f'Stop confirmation: { {name: result.get("confirmed", False) for name, result in outcome.items()} }. '
+                    'Inspect the controller and scene and recover using operator controls. '
+                    'Do not automatically clear errors, re-enable, home or replay the failed target. '
+                    'After recovery, xarm_hold can verify a stop and clear control uncertainty without moving.')
+                exc.operator_request = {k: request[k] for k in ('id', 'kind', 'source', 'status')}
+            except Exception as notification_error:
+                exc.operator_notification_failed = str(notification_error)
+            exc._control_fault_handled = True
+            self._last_control_fault = {'key': key, 'at': time.time(), 'robot_state': state,
+                                        'control_certain': exc.control_certain,
+                                        'operator_request': exc.operator_request}
 
     def _hand_call(self, name, arguments):
         if name == 'wuji_status':
@@ -544,9 +643,19 @@ class XArmBackend:
         self.last_motion = {'tool': name, 'at': time.time(), **result}
         return result, []
 
-    def _stop_arm_verified(self):
+    def _stop_arm(self):
+        # Disarm before intentional stops so telemetry cannot mistake them for
+        # an unexpected controller halt, and no subsequent move can be queued.
+        try:
+            if arming.read(self.config.root)['armed']:
+                arming.write(self.config.root, False, reason='RAX requested an arm stop; operator readiness required')
+        finally:
+            result = self.arm.hold()
+        return result
+
+    def _stop_arm_verified(self, *, require_healthy=True):
         """A stop ACK alone is insufficient: require stable, healthy state-4 feedback."""
-        self.arm.hold()
+        self._stop_arm()
         outcome = {'requested': True, 'sdk_returned': True, 'confirmed': False}
         deadline = time.monotonic() + 2.0
         anchor, stable_since, samples = None, None, 0
@@ -555,8 +664,9 @@ class XArmBackend:
             q = np.asarray(state['joints'], dtype=float)
             p = np.asarray(state['tcp_position'], dtype=float)
             quat = np.asarray(state['tcp_quaternion'], dtype=float)
-            healthy = (state.get('state') == 4 and state.get('error_code') == 0
-                       and state.get('warn_code') == 0 and q.shape == (6,) and p.shape == (3,)
+            healthy = (state.get('state') == 4
+                       and (not require_healthy or (state.get('error_code') == 0 and state.get('warn_code') == 0))
+                       and q.shape == (6,) and p.shape == (3,)
                        and quat.shape == (4,) and all(np.all(np.isfinite(v)) for v in (q, p, quat)))
             if not healthy:
                 anchor, stable_since, samples = None, None, 0
@@ -574,7 +684,7 @@ class XArmBackend:
             time.sleep(.05)
         return {**outcome, 'reason': 'Healthy stationary stop feedback was not confirmed within 2 seconds'}
 
-    def _stop_assembly(self, *, verify_arm=False):
+    def _stop_assembly(self, *, verify_arm=False, require_healthy=True):
         """Independent stop dispatch; one blocked SDK cannot suppress the other stop."""
         outcomes = {}
         lock = threading.Lock()
@@ -587,7 +697,8 @@ class XArmBackend:
                 value = {'requested': True, 'sdk_returned': False, 'confirmed': False, 'error': str(exc)}
             with lock:
                 outcomes[name] = value
-        actions = [('arm', self._stop_arm_verified if verify_arm else self.arm.hold)]
+        actions = [('arm', (lambda: self._stop_arm_verified(require_healthy=require_healthy))
+                    if verify_arm else self._stop_arm)]
         if self.has_hand:
             actions.append(('hand', self.end_effector.stop))
         threads = [threading.Thread(target=attempt, args=action, daemon=True) for action in actions]
@@ -604,15 +715,16 @@ class XArmBackend:
         return self.status(), []
 
     def _hold(self):
-        if self.has_hand:
-            return {'assembly_stop': self._stop_assembly()}, []
-        self.arm.hold()
-        return {'held': True, **self._pose_report(self.arm.state())}, []
+        outcome = self._stop_assembly(verify_arm=True, require_healthy=False)
+        certain = all(result.get('confirmed') is True for result in outcome.values())
+        self.control_uncertain = not certain
+        return {'assembly_stop': outcome, 'held': certain, 'control_certain': certain}, []
 
     def _guard(self, state):
         if not arming.read(self.config.root)['armed']:
-            self.arm.hold()
+            self._stop_arm()
             raise MotionStopped('the operator disarmed motion; the arm holds')
+        check_controller(state)
         if self.has_hand:
             self.end_effector.require_ready()
         self._check_box(state['tcp_position'], margin=self.options['workspace_guard_margin_m'], what='measured TCP')
@@ -621,7 +733,7 @@ class XArmBackend:
         start = time.monotonic()
         inside_since = None
         while True:
-            state = self.arm.state()
+            state = self._motion_state()
             self._guard(state)
             err_p = float(np.linalg.norm(goal_p - state['tcp_position']))
             err_r = float(np.linalg.norm(rotation_error(goal_q, state['tcp_quaternion'])))
@@ -637,7 +749,7 @@ class XArmBackend:
             else:
                 inside_since = None
             if now - start > timeout_s:
-                self.arm.hold()
+                self._stop_arm()
                 raise self._held(TimeoutError(f"pose not reached in {timeout_s:.1f}s: position error "
                                                f"{err_p * 1000:.1f} mm, rotation error "
                                                f"{np.degrees(err_r):.2f} deg; the arm holds where it is"),
@@ -685,28 +797,35 @@ class XArmBackend:
         _validate_arguments(timeout, {'type': 'number', 'minimum': 1,
                                      'maximum': MAX_POSE_TIMEOUT_S}, 'timeout_s')
         timeout = float(timeout)
-        goal_p, goal_q = self._pose_goal({'position': position, 'quaternion': quaternion, 'relative': relative},
-                                         self.arm.state())
         self._require_armed()
+        goal_p, goal_q = self._pose_goal({'position': position, 'quaternion': quaternion, 'relative': relative},
+                                         self._motion_state())
         motion_start = time.time()
         try:
-            self.arm.move_pose(goal_p, goal_q, speed_mps=speed,
+            self._dispatch_arm(self.arm.move_pose, goal_p, goal_q, speed_mps=speed,
                                acc_mps2=self.options['cartesian_acc_mps2'], timeout_s=timeout)
             result = self._monitor_pose(goal_p, goal_q, tolerance_m=tolerance_mm/1000.0,
                                         tolerance_rad=np.radians(max(0.5, tolerance_mm/3.0)),
                                         timeout_s=timeout)
         except ValueError as exc:
-            self.arm.hold()
+            self._stop_arm()
             self._schedule_motion_clip('xarm_move_pose', motion_start, time.time(), 'failed', exc)
             raise self._held(MotionStopped(f'{exc}; the arm holds'), goal_p) from exc
         except TargetRejected as exc:
-            self.arm.hold()
+            if getattr(exc, 'operator_required', False):
+                self._schedule_motion_clip('xarm_move_pose', motion_start, time.time(), 'failed', exc)
+                self._motion_state()  # Prefer the actual controller fault over the SDK return code.
+                raise
+            self._stop_arm()
             self._schedule_motion_clip('xarm_move_pose', motion_start, time.time(), 'failed', exc)
             raise self._held(TargetRejected(f'the controller refused this target: {exc}; the arm holds'),
                              goal_p) from exc
         except (MotionStopped, TimeoutError) as exc:
             self._schedule_motion_clip('xarm_move_pose', motion_start, time.time(), 'failed', exc)
             raise self._held(exc, goal_p)
+        except ControllerFault as exc:
+            self._schedule_motion_clip('xarm_move_pose', motion_start, time.time(), 'failed', exc)
+            raise
         clip = self._schedule_motion_clip('xarm_move_pose', motion_start, time.time(), 'completed')
         if clip:
             result['motion_clip'] = clip
@@ -725,15 +844,15 @@ class XArmBackend:
     def _move_joints(self, positions=None, preset=None):
         arguments = {'positions': positions} if positions is not None else {'preset': preset}
         goal = self._joint_goal(arguments)
-        start = np.asarray(self.arm.state()['joints'])
-        waypoints = self._joint_plan(start, goal)
         self._require_armed()
+        start = np.asarray(self._motion_state()['joints'])
+        waypoints = self._joint_plan(start, goal)
         timeout = float(self.options['move_timeout_s'])
         started, motion_start = time.monotonic(), time.time()
         try:
             previous = start
             for waypoint in waypoints:
-                state = self.arm.state()
+                state = self._motion_state()
                 self._guard(state)
                 measured = np.asarray(state['joints'])
                 # The nominal segment was already checked. Recheck geometry only
@@ -743,28 +862,35 @@ class XArmBackend:
                 remaining = timeout - (time.monotonic() - started)
                 if remaining <= 0:
                     raise TimeoutError(f'joint move exceeded its {timeout:.1f}s timeout before the next segment')
-                self.arm.move_joints(waypoint, speed_radps=self.options['joint_speed_radps'],
+                self._dispatch_arm(self.arm.move_joints, waypoint, speed_radps=self.options['joint_speed_radps'],
                                      acc_radps2=self.options['joint_acc_radps2'], timeout_s=remaining)
                 while True:
-                    state = self.arm.state()
+                    state = self._motion_state()
                     self._guard(state)
                     error = np.abs(np.asarray(state['joints']) - waypoint)
                     if float(error.max()) <= self.options['joint_tolerance_rad']:
                         break
                     if time.monotonic() - started > timeout:
-                        self.arm.hold()
+                        self._stop_arm()
                         raise TimeoutError(f"joint target not reached in {timeout:.1f}s: largest error "
                                            f"{float(error.max()):.3f} rad; the arm holds where it is")
                     time.sleep(self.options['poll_period_s'])
                 previous = waypoint
         except (MotionStopped, TimeoutError, TargetRejected, ValueError) as exc:
-            self.arm.hold()
+            if getattr(exc, 'operator_required', False):
+                self._schedule_motion_clip('xarm_move_joints', motion_start, time.time(), 'failed', exc)
+                self._motion_state()
+                raise
+            self._stop_arm()
             self._schedule_motion_clip('xarm_move_joints', motion_start, time.time(), 'failed', exc)
             report = self._pose_report(self.arm.state())
             exc.control_certain = True
             exc.robot_state = report
             raise exc
-        state = self.arm.state()
+        except ControllerFault as exc:
+            self._schedule_motion_clip('xarm_move_joints', motion_start, time.time(), 'failed', exc)
+            raise
+        state = self._motion_state()
         error = np.abs(np.asarray(state['joints']) - goal)
         result = {'seconds': round(time.monotonic() - started, 2),
                   'segments': len(waypoints), 'max_joint_error_rad': round(float(error.max()), 4),
@@ -777,6 +903,7 @@ class XArmBackend:
 
     def _gripper(self, action, width=None, force=None, speed=None):
         self._require_armed()
+        self._motion_state()
         if action == 'open':
             width = self.options['gripper_max_width_m']
         state = self.end_effector.status()
@@ -955,6 +1082,8 @@ class XArmBackend:
                  'motion_archive': None if self.motion_archive is None else {
                      'directory': 'motion-archive', 'padding_s': self.options['motion_archive_padding_s']},
                  'last_motion': self.last_motion}
+        if self._last_control_fault:
+            value['last_controller_fault'] = self._last_control_fault
         value['end_effector'] = self.end_effector_kind
         if self.has_hand:
             value['hand'] = self.end_effector.status()
@@ -979,7 +1108,7 @@ class XArmBackend:
 
     def _close_arm_and_cameras(self):
         try:
-            self.arm.hold()
+            self._stop_arm()
         except Exception:
             pass
         for thread in list(self.motion_clip_threads):

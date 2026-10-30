@@ -35,7 +35,11 @@ def _code_result(result, op):
     else:
         return result
     if code != 0:
-        raise TargetRejected(f'{op} returned xArm code {code}')
+        exc = TargetRejected(f'{op} returned xArm code {code}')
+        exc.operator_required = True
+        exc.sdk_code = code
+        exc.sdk_operation = op
+        raise exc
     if len(payload) == 1:
         return payload[0]
     return payload

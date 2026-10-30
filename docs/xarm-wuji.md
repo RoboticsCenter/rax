@@ -221,15 +221,25 @@ and parent liveness while the agent is thinking or waiting for an operator.
 | Tool | Arguments | Result/behavior |
 | --- | --- | --- |
 | `wuji_status` | none | Measured/target positions, rad/s velocities, effort in A, diagnostics, independent stream ages, profile, limits, posture names, mode and current action. |
-| `wuji_move_joints` | `positions`: 20 finite radians; optional `duration_s` | Smooth bounded move and measured settling. Holds the final target afterward. |
+| `wuji_move_joints` | `positions`: 20 finite radians; optional `duration_s`, `completion` | Bounded trajectory. Default `position` requires target accuracy. Explicit `contact` also accepts a stable shortfall while preserving the commanded hold. |
 | `wuji_pose` | `name`; optional `duration_s` | Same motion path using an operator-configured posture. Unknown names refuse before dispatch. |
 | `wuji_home` | optional `duration_s` | Return to configured `home` through the custom movement controller, retaining active gains/damping and motion limits. Waits for measured settling. Requires preparation and arming. |
 | `wuji_set_effort` | `effort_a`: 20 signed amperes; optional `duration_s` | Slew-bounded feed-forward current ramp, holding the position reference and MIT gains. Current bias persists after return. Not calibrated fingertip-force control. |
 | `wuji_set_impedance` | One or more 20-element arrays: `kp`, `kd`, `current_limit_a` | Adjust active gains/current caps within the operator profile, with device readback. Requires zero feed-forward bias and a measured stationary prepared hand. |
 | `wuji_hold` | none | Retain a stationary target; brake a moving S-curve to a bounded rest target. Falls back to emergency stop when disarmed/unreliable or bounded braking is unavailable. |
-| `xarm_hold` | none | Independently request arm hold and hand emergency stop; report both outcomes. |
+| `xarm_hold` | none | Disarm and independently stop the arm and hand. Clears `control_uncertain` only when both stops are confirmed. Does not clear controller errors or re-enable either device. |
 
 Joint order is thumb S1–S4, index S1–S4, middle S1–S4, ring S1–S4, pinky S1–S4.
+For intentional grasp closure, `completion="contact"` requires the reference to
+finish and measured joints to remain stable with low velocity and fresh,
+fault-free feedback. A residual above the position tolerance but within the
+unchanged tracking guard returns `ok=true`, `outcome="held_short_of_target"`,
+`reached=false`, and `contact_verified=false`. The controller keeps the target,
+gains, damping, current caps and feed-forward bias. RAX does not stop the assembly
+solely for this accepted result. Motion, stale feedback, hardware faults and
+tracking-error violations are not accepted as contact completion. Home and named
+postures remain position-accuracy moves. Retention must be verified separately.
+
 There is no scalar width or `is_grasped` field for the hand. Wuji sessions do not
 publish `xarm_gripper`. The arm tools retain their existing arguments, configured
 TCP and quaternion order `[x,y,z,w]`.
@@ -260,6 +270,23 @@ joint/arm moves, holds and agent pauses. Twenty zeros ramp the bias away. Measur
 joint position, tracking deviation, velocity, feedback freshness, thermal/fault,
 arming and parent-process guards remain enforced. Completion acknowledges the final
 command write, not measured force convergence, contact or grasp success.
+
+The operator-only `effort_velocity_grace_s` setting defaults to **0** (an immediate
+stop above `max_velocity_rad_s`). It can be set up to **0.020 s** to tolerate a
+brief measured-speed excursion under current bias. With grace enabled, speed at
+or above **twice** the normal bound still stops immediately. Measured displacement
+during the excursion is limited to `max_velocity_rad_s * effort_velocity_grace_s`;
+reaching either that displacement or the grace deadline also stops. Missing new
+feedback cannot extend the deadline. A late low-speed sample does not erase an
+expired deadline. The reference speed, current caps and other guards are unchanged.
+This is transient tolerance, not additional commanded hand speed or calibrated force.
+
+Status exposes the effective bounds and retained triggering joint, velocities,
+positions and source headers under `effort_control.velocity_guard`. `last_trip`
+is historical after operator recovery; current `fault`/`mode` determine whether
+the hand is healthy. Tolerated excursions are counted and the last event is retained.
+Changing this profile setting requires restarting the owner; it is not an agent
+tool parameter, and recovery never replays the previous bias.
 
 `wuji_set_impedance` changes only the supplied arrays and keeps the target posture.
 The operator profile's `kp`, `kd`, and `current_limit_a` are ceilings; positive kp

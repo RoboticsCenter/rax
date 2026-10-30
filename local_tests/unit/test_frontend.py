@@ -158,3 +158,26 @@ def test_a_held_stop_is_not_uncertain(tmp_path):
         assert 'holds at robot_state' in error['recovery'] and not f.control_uncertain
     finally:
         f.close()
+
+
+def test_help_wait_reuses_backend_fault_alert(tmp_path):
+    from services.controller import operator
+    f = frontend(tmp_path)
+    root = f.s.config.root
+    existing = operator.fault_request(root, 'xarm_controller', 'xArm controller error 21')
+    assert operator.fault_request(root, 'xarm_controller', 'same fault')['id'] == existing['id']
+
+    def answer():
+        threading.Event().wait(.1)
+        operator.reply(root, existing['id'], 'controller recovered')
+    helper = threading.Thread(target=answer)
+    helper.start()
+    try:
+        reply = text(f.call('request_operator', {'kind': 'help', 'message': 'Waiting for fault recovery',
+                                                 'timeout_s': 30}))
+        assert reply['status'] == 'answered' and reply['reply'] == 'controller recovered'
+        assert not operator.pending(root)
+        assert len([p for p in operator.directory(root).glob('*.json') if not p.name.endswith('.reply.json')]) == 1
+    finally:
+        helper.join()
+        f.close()

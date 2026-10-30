@@ -166,8 +166,9 @@ class WujiClient:
             raise RuntimeError('Wuji hand is not prepared and holding with fresh fault-free feedback; ask the operator')
         return state
 
-    def move(self, positions, duration_s=None):
-        result = operation(self.root, 'move', {'positions': positions, 'duration_s': duration_s},
+    def move(self, positions, duration_s=None, completion='position'):
+        result = operation(self.root, 'move', {'positions': positions, 'duration_s': duration_s,
+                                              'completion': completion},
                            timeout=self.cfg['max_duration_s']+self.cfg['settle_timeout_s']+2)
         return result
 

@@ -92,15 +92,29 @@ def snapshot_learning(session_root, label='manual', *, request=None, reply=None)
     return dest
 
 
-def open_request(session_root, kind, message):
+def validate_request(kind, message):
     if kind not in KINDS:
         raise ValueError(f'kind must be one of {KINDS}')
     if not isinstance(message, str) or not message.strip() or len(message) > 4000:
         raise ValueError('message: 1..4000 characters')
+
+
+def open_request(session_root, kind, message, *, source=None):
+    validate_request(kind, message)
     request = {'id': uuid.uuid4().hex[:12], 'kind': kind, 'message': message.strip(), 'created': time.time(),
                'status': 'pending'}
+    if source is not None:
+        request['source'] = source
     _write(directory(session_root)/f"{request['id']}.json", request)
     return request
+
+
+def fault_request(session_root, source, message):
+    """Notify without blocking the failing tool or opening duplicate fault alerts."""
+    for request in pending(session_root):
+        if request.get('source') == source:
+            return request
+    return open_request(session_root, 'help', message, source=source)
 
 
 def reply(session_root, request_id, text='', *, done=True, by=None):

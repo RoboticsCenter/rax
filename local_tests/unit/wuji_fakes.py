@@ -118,7 +118,7 @@ class FakeHandClient:
     def require_ready(self):
         return self.status()
 
-    def move(self, positions, duration_s=None):
+    def move(self, positions, duration_s=None, completion='position'):
         self.moves.append(list(positions))
         if self.fail_move:
             raise RuntimeError('injected hand transport loss')

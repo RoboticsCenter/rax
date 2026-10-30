@@ -33,9 +33,13 @@ guaranteed release shape. Preparation holds the measured posture. Establish an
 appropriate opening, opposing finger placement and release in clear space using
 bounded visible motions; record successful joint targets. Do not command an
 empty-hand fist around an object or treat a settling timeout as proof of grasp.
-If the available position tools cannot hold the cube within their existing
-tracking/settling guards, request operator help instead of increasing gains,
-current caps or tolerances.
+Use `wuji_move_joints(..., completion="contact")` for deliberate cube-contact
+closures. A stable shortfall may return `held_short_of_target` with `reached=false`
+while preserving the commanded hold. This is not proof of contact or retention;
+inspect the measured errors and views, then verify retention with a short lift.
+Keep position completion for ordinary moves and release; home remains strict.
+If the hand cannot establish a stable hold within its tracking and hardware
+guards, request operator help instead of increasing gains, caps or tolerances.
 
 The task session limits arm translation to 50 mm per call and Cartesian speed
 to 15 mm/s; take smaller steps near the table and objects. Check retention with

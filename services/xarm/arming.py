@@ -8,6 +8,8 @@ import os
 from pathlib import Path
 import time
 
+from services.json_io import write_private_json
+
 
 def arm_file(session_root):
     return Path(session_root)/'operator'/'armed.json'
@@ -36,8 +38,6 @@ def write(session_root, armed, *, minutes=None, by=None, reason=None):
     value = {'armed': bool(armed), 'since': now, 'by': by or os.environ.get('USER'),
              'until': now + 60 * minutes if armed and minutes else None,
              'reason': reason}
-    tmp = path.with_suffix('.tmp')
-    tmp.write_text(json.dumps(value))
-    tmp.chmod(0o600)
-    os.replace(tmp, path)
+    # Operator and fault-monitor processes may revoke arming concurrently.
+    write_private_json(path, value)
     return value

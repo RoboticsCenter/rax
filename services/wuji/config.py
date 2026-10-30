@@ -22,6 +22,7 @@ DEFAULTS = {
     'feedback_pause_error_rad': .10, 'settle_position_range_rad': .004,
     'allow_encoder_warning': False, 'max_temperature_c': 65.,
     'max_effort_slew_a_s': .5,
+    'effort_velocity_grace_s': 0.,
     'postures': {}, 'lock_paths': [],
 }
 REQUIRED = {'serial', 'profile_revision', 'lower_rad', 'upper_rad', 'current_limit_a', 'kp', 'kd'}
@@ -83,6 +84,7 @@ def validate_config(value):
         'settle_position_range_rad': (.0001, .05),
         'max_temperature_c': (20, 90),
         'max_effort_slew_a_s': (.01, 2.),
+        'effort_velocity_grace_s': (0., .02),
     }
     for key, (lo, hi) in bounds.items():
         cfg[key] = number(cfg[key], key, lo, hi)
@@ -142,10 +144,16 @@ def impedance(args, cfg):
     return result
 
 
+def completion_mode(value):
+    if value not in ('position', 'contact'):
+        raise ValueError('completion must be position or contact')
+    return value
+
+
 def validate_tool(name, args, cfg):
     if not isinstance(args, dict) or name not in TOOL_NAMES:
         raise ValueError('unknown Wuji tool or invalid arguments')
-    allowed = {'wuji_move_joints': {'positions', 'duration_s'}, 'wuji_pose': {'name', 'duration_s'},
+    allowed = {'wuji_move_joints': {'positions', 'duration_s', 'completion'}, 'wuji_pose': {'name', 'duration_s'},
                'wuji_home': {'duration_s'},
                'wuji_set_effort': {'effort_a', 'duration_s'},
                'wuji_set_impedance': {'kp', 'kd', 'current_limit_a'}}.get(name, set())
@@ -169,7 +177,10 @@ def validate_tool(name, args, cfg):
         duration = args.get('duration_s')
         if 'duration_s' in args:
             duration = number(duration, 'duration_s', .1, cfg['max_duration_s'])
-        return {'positions': list(q), 'duration_s': duration}
+        result = {'positions': list(q), 'duration_s': duration}
+        if 'completion' in args:
+            result['completion'] = completion_mode(args['completion'])
+        return result
     return {}
 
 
@@ -190,9 +201,15 @@ def tools(cfg):
              'Configured feedback mode slows progress when measured joints lag and requires stable final positions. '
              'Order: thumb S1..S4, index S1..S4, middle S1..S4, ring S1..S4, pinky S1..S4. '
              'Absolute radians. Requires operator preparation and arming. Holds target after completion; '
-             'convergence does not prove a grasp. No collision planning.',
+             'convergence does not prove a grasp. For a deliberate grasp, completion="contact" also accepts '
+             'a stable shortfall after the reference finishes, within the unchanged tracking-error guard. '
+             'Returns held_short_of_target with reached=false and contact_verified=false while preserving '
+             'the target, gains and holding effort. Position mode remains the default. No collision planning.',
              {'positions': {'type': 'array', 'items': {'type': 'number'}, 'minItems': 20, 'maxItems': 20},
-              'duration_s': duration}, ['positions']),
+              'duration_s': duration,
+              'completion': {'type': 'string', 'enum': ['position', 'contact'], 'default': 'position',
+                             'description': 'Use contact only for an intentional object-contact closure. '
+                                            'Stable shortfall is not proof of contact or retention.'}}, ['positions']),
         tool('wuji_pose', 'Move to an operator-configured posture using the same bounds as wuji_move_joints. '
              f'Available names: {", ".join(sorted(cfg["postures"])) or "none commissioned"}.',
              {'name': {'type': 'string'}, 'duration_s': duration}, ['name']),

@@ -17,7 +17,8 @@ from pathlib import Path
 
 from services.xarm import arming
 
-from .config import JOINT_NAMES, effort, impedance, number, target, validate_config, validate_tool
+from .config import JOINT_NAMES, completion_mode, effort, impedance, number, target, validate_config, validate_tool
+from .guards import EffortVelocityGuard
 from .motion import FeedbackPath, SettlingWindow, smooth_minimum_duration
 from .scurve import SCurvePath, next_deadline, require_ruckig
 from .sdk import WujiDriver
@@ -78,6 +79,7 @@ class Controller:
         self.command_velocity = [0.]*20
         self.command_acceleration = [0.]*20
         self.command_effort = [0.]*20
+        self.effort_velocity_guard = EffortVelocityGuard(config)
         self.control_parameters = {k: list(config[k]) for k in ('kp', 'kd', 'current_limit_a')}
         self.first_command_at = self.last_command_at = None
         self.command_count = self.skipped_slots = 0
@@ -94,7 +96,7 @@ class Controller:
         if job is not None and job['id'] is not None:
             with self.lock:
                 self.results[job['id']] = {'done': True, 'ok': outcome in ('reached', 'prepared', 'held', 'stopped', 'connected',
-                                                                         'effort_set', 'impedance_set'),
+                                                                         'effort_set', 'impedance_set', 'held_short_of_target'),
                                            'outcome': outcome, 'command_id': job['id'], **extra}
 
     def submit(self, ident, op, args=None):
@@ -173,6 +175,7 @@ class Controller:
                  'profile_control_parameters': {k: deepcopy(self.cfg[k]) for k in ('kp', 'kd', 'current_limit_a')},
                  'effort_control': {'units': 'A', 'calibrated_contact_force': False,
                                     'max_slew_a_s': self.cfg['max_effort_slew_a_s'],
+                                    'velocity_guard': self.effort_velocity_guard.status(),
                                     'persists_until_changed_or_stopped': True},
                  'diagnostics_policy': {k: self.cfg[k] for k in ('allow_encoder_warning', 'max_temperature_c')},
                  'stop': deepcopy(self.stopping)}
@@ -226,6 +229,7 @@ class Controller:
 
     def _fail(self, reason):
         self.command_effort = [0.]*20
+        self.effort_velocity_guard.reset()
         self.fault = str(reason)
         self._finish(self.active, 'fault', reason=self.fault, control_certain=False)
         self.active = None
@@ -269,6 +273,7 @@ class Controller:
         self.command_velocity, self.command_acceleration = [0.]*20, [0.]*20
         behavior = 'disable' if job['op'] == 'disable' else 'emergency'
         self.command_effort = [0.]*20
+        self.effort_velocity_guard.reset()
         self.mode = 'stopping'
         self.target = None
         since = self.clock()
@@ -325,6 +330,7 @@ class Controller:
             self.command_velocity = [0.]*20
             self.command_acceleration = [0.]*20
             self.command_effort = [0.]*20
+            self.effort_velocity_guard.reset()
             self.first_command_at = self.last_command_at = None
             self.command_count = self.skipped_slots = 0
             self.max_command_interval = 0.
@@ -372,12 +378,16 @@ class Controller:
             job['completion'] = ('impedance_set', {'control_parameters': deepcopy(desired),
                                                   'target_positions': list(self.target), 'readback_verified': True})
             return
+        completion = completion_mode(job['args'].get('completion', 'position'))
         if self.cfg['motion_mode'] == 'scurve':
             trajectory = SCurvePath(self.target, job['args']['positions'], self.cfg, job['args'].get('duration_s'),
                                     velocity=self.command_velocity, acceleration=self.command_acceleration)
         else:
             trajectory = Trajectory(self.target, job['args']['positions'], self.cfg, job['args'].get('duration_s'))
         self.active = {**job, 'trajectory': trajectory, 'started': self.clock(), 'settled_since': None}
+        if completion == 'contact':
+            self.active['contact_settler'] = SettlingWindow(trajectory.goal, self.cfg['max_tracking_error_rad'],
+                                                          self.cfg['settle_s'], self.cfg['settle_position_range_rad'])
         if self.cfg['motion_mode'] == 'feedback':
             self.active['feedback'] = FeedbackPath(trajectory, self.cfg, self.active['started'])
         elif self.cfg['motion_mode'] == 'scurve':
@@ -386,6 +396,24 @@ class Controller:
             self.active['settler'] = SettlingWindow(trajectory.goal, self.cfg['tolerance_rad'],
                                                   self.cfg['settle_s'], self.cfg['settle_position_range_rad'])
         self.mode = 'executing'
+
+    def _contact_settled(self, job, state, reference_complete):
+        window = job.get('contact_settler')
+        if window is None:
+            return False
+        if not reference_complete or max(map(abs, state['velocity_rad_s'])) > self.cfg['stopped_velocity_rad_s']:
+            window.rows.clear()
+            return False
+        return window.update(state['received_monotonic']['state'], state['positions'])
+
+    def _contact_result(self, goal, state):
+        errors = [a-b for a, b in zip(goal, state['positions'])]
+        return {'completion': 'contact', 'stable': True, 'holding': True, 'contact_verified': False,
+                'joint_errors_rad': errors,
+                'shortfall_joints': [name for name, error in zip(JOINT_NAMES, errors)
+                                     if abs(error) > self.cfg['tolerance_rad']],
+                'reason': 'Stable shortfall accepted for deliberate contact; target remains held. '
+                          'Contact and object retention require separate observation.'}
 
     def _advance_scurve(self, job, state, elapsed):
         path = job['scurve']
@@ -403,10 +431,11 @@ class Controller:
             settled = False
         else:
             settled = path.complete and job['settler'].update(state['received_monotonic']['state'], state['positions'])
+        contact = not settled and self._contact_settled(job, state, path.complete)
         expired = elapsed > path.duration+self.cfg['settle_timeout_s']
         if expired and not path.complete:
             raise RuntimeError('S-curve reference missed its wall-time deadline; emergency stop required')
-        if settled or expired:
+        if settled or contact or expired:
             error = max(abs(a-b) for a, b in zip(path.goal, state['positions']))
             result = {'reached': bool(settled), 'positions': state['positions'],
                       'target_positions': list(path.goal), 'command_positions': list(self.target),
@@ -414,26 +443,30 @@ class Controller:
                       'profile_revision': self.cfg['profile_revision'],
                       'accepted_tolerance_rad': self.cfg['tolerance_rad'], 'trajectory_complete': path.complete,
                       **path.status()}
-            if not settled:
+            if contact:
+                result.update(self._contact_result(path.goal, state))
+            elif not settled:
                 result['reason'] = 'S-curve finished but measured joints did not settle within tolerance'
-            job['completion'] = ('reached' if settled else 'target_not_reached', result)
+            job['completion'] = ('reached' if settled else 'held_short_of_target' if contact else 'target_not_reached', result)
 
     def _advance_feedback(self, job, state, elapsed):
         path = job['feedback']
         self.target, self.command_velocity = path.advance(self.clock(), state['positions'])
         error = max(abs(a-b) for a, b in zip(path.path.goal, state['positions']))
         settled = path.complete and job['settler'].update(state['received_monotonic']['state'], state['positions'])
-        if settled or elapsed > path.path.duration+self.cfg['settle_timeout_s']:
+        contact = not settled and self._contact_settled(job, state, path.complete)
+        if settled or contact or elapsed > path.path.duration+self.cfg['settle_timeout_s']:
             result = {'reached': bool(settled), 'positions': state['positions'],
                       'target_positions': list(path.path.goal), 'command_positions': list(self.target),
                       'max_joint_error_rad': error, 'seconds': elapsed,
                       'profile_revision': self.cfg['profile_revision'], 'motion_mode': 'feedback',
                       'accepted_tolerance_rad': self.cfg['tolerance_rad'],
                       'trajectory_complete': path.complete, **path.status()}
-            if not settled:
+            if contact:
+                result.update(self._contact_result(path.path.goal, state))
+            elif not settled:
                 result['reason'] = 'feedback motion did not reach stable tolerance within its bounded time budget'
-            self._finish(job, 'reached' if settled else 'target_not_reached', **result)
-            self.active, self.mode = None, 'holding'
+            job['completion'] = ('reached' if settled else 'held_short_of_target' if contact else 'target_not_reached', result)
             self.command_velocity = [0.]*20
 
     def tick(self, *, publish=True):
@@ -495,23 +528,30 @@ class Controller:
                     error = max(abs(a-b) for a, b in zip(self.target, state['positions']))
                     job['settled_since'] = (job['settled_since'] or self.clock()) if error <= self.cfg['tolerance_rad'] else None
                     if job['settled_since'] is not None and self.clock()-job['settled_since'] >= self.cfg['settle_s']:
-                        self._finish(job, 'reached', reached=True, positions=state['positions'],
-                                     target_positions=list(self.target), max_joint_error_rad=error,
-                                     seconds=elapsed, profile_revision=self.cfg['profile_revision'])
-                        self.active, self.mode = None, 'holding'
+                        job['completion'] = ('reached', {'reached': True, 'positions': state['positions'],
+                            'target_positions': list(self.target), 'max_joint_error_rad': error,
+                            'seconds': elapsed, 'profile_revision': self.cfg['profile_revision']})
+                    elif self._contact_settled(job, state, True):
+                        job['completion'] = ('held_short_of_target', {
+                            'reached': False, 'positions': state['positions'], 'target_positions': list(self.target),
+                            'command_positions': list(self.target), 'max_joint_error_rad': error,
+                            'seconds': elapsed, 'profile_revision': self.cfg['profile_revision'],
+                            'trajectory_complete': True, 'motion_mode': 'timed',
+                            'accepted_tolerance_rad': self.cfg['tolerance_rad'],
+                            **self._contact_result(self.target, state)})
                     elif elapsed > job['trajectory'].duration+self.cfg['settle_timeout_s']:
-                        self._finish(job, 'target_not_reached', reached=False, max_joint_error_rad=error,
-                                     positions=state['positions'], target_positions=list(self.target),
-                                     reason='target did not settle; bounded target remains held, inspect before retry')
-                        self.active, self.mode = None, 'holding'
+                        job['completion'] = ('target_not_reached', {'reached': False, 'max_joint_error_rad': error,
+                            'positions': state['positions'], 'target_positions': list(self.target),
+                            'reason': 'target did not settle; bounded target remains held, inspect before retry'})
             if self.mode in ('holding', 'executing', 'enabling'):
                 state = self._admit(self.epoch)
                 if max(abs(a-b) for a, b in zip(self.target, state['positions'])) > self.cfg['max_tracking_error_rad']:
                     raise RuntimeError('hand tracking error exceeded the configured bound')
                 if any(self.command_effort):
                     target(state['positions'], self.cfg)  # Measured joint limits also bound current-driven motion.
-                    if max(map(abs, state['velocity_rad_s'])) > self.cfg['max_velocity_rad_s']:
-                        raise RuntimeError('effort-driven measured joint velocity exceeded the configured bound')
+                    self.effort_velocity_guard.check(state, self.clock())
+                else:
+                    self.effort_velocity_guard.reset()
                 self._send(tick_epoch)
                 with self.lock:
                     # Do not report success until the final write returned, and

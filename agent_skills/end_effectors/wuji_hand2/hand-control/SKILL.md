@@ -24,6 +24,25 @@ acceleration and tracking error. Optional `duration_s` must allow those bounds;
 omitting it lets the backend choose. A rejection calls for revising the target,
 not retrying the same command.
 
+For a deliberate grasp closure where object contact is expected, call
+`wuji_move_joints(positions=closure_target, completion="contact")`. The reference
+must finish and measured joints must remain stable for the configured settling
+window, with low measured velocity and error within `max_tracking_error_rad`.
+An endpoint shortfall can then return `outcome: held_short_of_target`, `ok: true`,
+`reached: false`, `holding: true`, and `contact_verified: false`. The hand keeps
+the commanded target, gains, damping, current caps and feed-forward bias; RAX
+does not disable it solely for this accepted shortfall. Inspect per-joint errors,
+images and actual object motion. A stable obstruction is not proof of a grasp;
+verify retention with a short lift only when the scene supports that action.
+Do not reflexively call `xarm_hold` or increase the target after this outcome,
+because that would respectively release the hold or add unverified closing effort.
+
+Omit `completion` (or use `"position"`) for ordinary positioning and release.
+`wuji_home` and named `wuji_pose` postures always require position accuracy.
+Contact completion does not relax the tracking-error guard, joint limits,
+freshness, encoder/fault checks, current caps, or speed/acceleration/jerk limits.
+Unstable feedback or an unfinished trajectory still cannot complete as a contact hold.
+
 With `motion_mode: scurve`, the backend also limits reference jerk and sends
 matching position/velocity commands. Movements start from the preceding commanded
 state and finish at zero reference velocity/acceleration. Requested durations may
@@ -42,7 +61,8 @@ position/velocity references. Omit `duration_s` to let the controller choose the
 duration. Missing home configuration is an error; do not substitute zeros.
 This moves to a saved posture; it does not recalibrate encoders or enable the hand.
 
-All three motion tools wait for measured settling and keep the final target afterward.
+All three motion tools wait for measured settling and keep the final target afterward;
+only explicit contact completion permits a stable target shortfall.
 They do not certify self-collision clearance or a successful grasp.
 
 `effort_a`, motor current and current limits are **amperes**, not calibrated contact
@@ -85,6 +105,13 @@ tracking errors and diagnostics. To remove the bias, ramp to twenty zeros with
 `wuji_set_effort`. Reducing bias or stiffness can release an object; support it first.
 Disarm, faults and emergency stop cancel the bias and request motor disable.
 
+`effort_control.velocity_guard` reports the operator's measured-speed policy.
+An optional, bounded grace period tolerates brief excursions; sustained overspeed,
+the immediate hard cutoff, or excessive displacement still stop the hand. This
+does not change reference speed or grant permission to increase force through a
+fault. `last_trip` retains the triggering feedback as history after recovery;
+use current `fault`, `mode`, freshness and diagnostics to assess readiness.
+
 `wuji_set_impedance(kp=[...], kd=[...], current_limit_a=[...])` accepts one or more
 twenty-element arrays; omitted parameters retain their active values. First clear
 the feed-forward bias and verify the measured hand is stationary. Values cannot
@@ -107,7 +134,8 @@ without these parameters no longer fully specifies the control state.
 1. Observe and localize the object. Choose or develop an evidence-supported preshape and approach
    with clearance for every finger, the thumb and the palm. Arm tools move the
    configured TCP; it is not a moving fingertip frame.
-2. Close gradually with bounded targets. Observe the hand and object after each
+2. Close gradually with bounded targets and `completion="contact"` for expected
+   contact. Observe the hand and object after each
    meaningful change. A finger that stops short can indicate contact, a limit,
    collision or a fault; it does not establish object retention. Do not add an
    arbitrary squeeze offset or raise current to overcome an unexplained stop.
@@ -163,6 +191,12 @@ A fault, stale feedback, unexpected enabled state or `control_uncertain` means s
 and request operator help. A timeout/target-not-reached is not grasp success. The
 backend can stop both devices after a failed motion; check status again before
 planning recovery. Reconnection never resumes an interrupted trajectory.
+
+After recovery, `xarm_hold` can verify a stopped assembly and clear
+`control_uncertain` without a movement probe. It requests hand disable and does
+not ready, prepare or arm either device; operator readiness is still required
+before homing or another episode. An xArm controller fault already opens a
+dashboard help request; a subsequent help call waits on that existing request.
 
 An operator may configure the specific auto-clearing encoder warning to be logged
 under `warnings`/`warning_history`. This does not waive other faults or establish
