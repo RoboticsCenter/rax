@@ -169,10 +169,105 @@ def test_joint_path_checked_by_controller_fk(make_backend):
     low[1] = -1.9
     with pytest.raises(ValueError, match='workspace box|minimum'):
         backend.validate('xarm_move_joints', {'positions': low.tolist()})
-    with pytest.raises(ValueError, match='per call'):
-        backend.validate('xarm_move_joints', {'positions': (START_Q + [1.3, 0, 0, 0, 0, 0]).tolist()})
+    backend.validate('xarm_move_joints', {'positions': (START_Q + [1.3, 0, 0, 0, 0, 0]).tolist()})
     value, _ = backend.call('xarm_move_joints', {'preset': 'home'})
     assert np.allclose(arm.q, HOME_Q) and value['max_joint_error_rad'] == 0
+
+
+@pytest.mark.parametrize('distance,lag', [(2.25, 0.), (2.38, .019)])
+def test_long_home_is_one_call_with_bounded_sdk_commands(make_backend, distance, lag):
+    class LaggingArm(FakeArm):
+        def __init__(self):
+            super().__init__(q=np.asarray(HOME_Q) + [distance, 0, 0, 0, 0, 0])
+            self.steps, self.speeds = [], []
+
+        def move_joints(self, joints, **kwargs):
+            self.steps.append(float(np.max(np.abs(joints-self.q))))
+            self.speeds.append(kwargs['speed_radps'])
+            super().move_joints(joints, **kwargs)
+            self.q = self.q.copy()
+            self.q[0] += lag
+
+    backend, arm, root = make_backend(arm=LaggingArm())
+    arming.write(root, True)
+    backend.validate('xarm_move_joints', {'preset': 'home'})
+    result, _ = backend.call('xarm_move_joints', {'preset': 'home'})
+    assert result['segments'] == arm.commands and arm.commands >= 2
+    assert max(arm.steps) <= backend.options['max_joint_step_rad']
+    assert arm.speeds == [backend.options['joint_speed_radps']]*arm.commands
+    assert result['max_joint_error_rad'] <= backend.options['joint_tolerance_rad']
+
+
+def test_long_move_checks_later_path_before_any_dispatch(make_backend):
+    class ObstructedArm(FakeArm):
+        def forward_kinematics(self, joints):
+            p, q = super().forward_kinematics(joints)
+            if 1.7 < joints[0] < 2.0:
+                p[2] = .01
+            return p, q
+
+    backend, arm, root = make_backend(arm=ObstructedArm())
+    arming.write(root, True)
+    with pytest.raises(ValueError, match='workspace box|minimum'):
+        backend.call('xarm_move_joints', {'positions': (START_Q + [2.25, 0, 0, 0, 0, 0]).tolist()})
+    assert arm.commands == 0
+
+
+def test_disarm_prevents_remaining_joint_segments(make_backend):
+    backend, arm, root = make_backend()
+    arm.on_step = lambda _: arming.write(root, False)
+    arming.write(root, True)
+    with pytest.raises(MotionStopped, match='disarmed'):
+        backend.call('xarm_move_joints', {'positions': (START_Q + [2.25, 0, 0, 0, 0, 0]).tolist()})
+    assert arm.commands == 1 and arm.holds
+
+
+def test_changed_feedback_cannot_make_next_sdk_segment_exceed_limit(make_backend):
+    arm = FakeArm(q=np.asarray(HOME_Q) + [2.25, 0, 0, 0, 0, 0])
+    reads = [0]
+
+    def drift_after_completion(arm):
+        reads[0] += 1
+        if reads[0] == 2:  # First segment completed; next segment has not dispatched.
+            arm.q = arm.q + [.3, 0, 0, 0, 0, 0]
+
+    arm.on_step = drift_after_completion
+    backend, arm, root = make_backend(arm=arm)
+    arming.write(root, True)
+    with pytest.raises(ValueError, match='per SDK command'):
+        backend.call('xarm_move_joints', {'preset': 'home'})
+    assert arm.commands == 1 and arm.holds
+
+
+def test_joint_segment_rejection_never_dispatches_later_segments(make_backend):
+    class RejectingArm(FakeArm):
+        def move_joints(self, joints, **kwargs):
+            if self.commands == 1:
+                self.commands += 1
+                raise TargetRejected('injected second segment refusal')
+            super().move_joints(joints, **kwargs)
+
+    backend, arm, root = make_backend(arm=RejectingArm())
+    arming.write(root, True)
+    with pytest.raises(TargetRejected, match='second segment'):
+        backend.call('xarm_move_joints', {'positions': (START_Q + [4., 0, 0, 0, 0, 0]).tolist()})
+    assert arm.commands == 2 and arm.holds
+
+
+def test_segmenting_does_not_restart_the_move_timeout(make_backend, monkeypatch):
+    clock = [100.]
+
+    class SlowArm(FakeArm):
+        def move_joints(self, joints, **kwargs):
+            super().move_joints(joints, **kwargs)
+            clock[0] += 31.
+
+    backend, arm, root = make_backend(arm=SlowArm())
+    monkeypatch.setattr('services.xarm.backend.time.monotonic', lambda: clock[0])
+    arming.write(root, True)
+    with pytest.raises(TimeoutError, match='timeout before the next segment'):
+        backend.call('xarm_move_joints', {'positions': (START_Q + [2.25, 0, 0, 0, 0, 0]).tolist()})
+    assert arm.commands == 1 and arm.holds
 
 
 def test_gripper_requires_arming_and_moves(make_backend):

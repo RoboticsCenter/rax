@@ -1,23 +1,23 @@
 matrix:
-- - -0.9621401651012745
-  - 0.26982405334140425
-  - 0.03848743869509047
-  - 0.2622848734391461
-- - 0.1693699648747213
-  - 0.7025328918225768
-  - -0.6912028290637594
-  - -0.10645515885655096
-- - -0.2135418406243352
-  - -0.6585153879339677
-  - -0.7216352029640382
-  - 0.8352482413836333
+- - -0.9788425636904946
+  - 0.17437412322990825
+  - 0.10705559609671239
+  - 0.30332022651164164
+- - 0.008912540429799436
+  - 0.5590435947400575
+  - -0.8290903604572923
+  - 0.03452215409633473
+- - -0.20442064996205456
+  - -0.8105947966326436
+  - -0.5487697819133047
+  - 0.9641868491592945
 - - 0.0
   - 0.0
   - 0.0
   - 1.0
 source:
-  method: training-only Brown5 color intrinsic fit and hand-eye; three reserved views
-  result: /home/jerry/rax/.local-runtime/sessions/charuco-wuji-20261027-run06-fit/result.json
+  method: ChArUco with held-out validation
+  result: /home/jack-xiang/rax-runtime/camera-recalibration-20261030T041535Z/collection/result.json
   board:
     dictionary: DICT_4X4_100
     squares_x: 10
@@ -43,4 +43,25 @@ source:
   - 0.0
   - 0.0
   - 0.0
+  camera_specs:
+  - name: wrist
+    serial: '262422074331'
+    mount: tcp
+    intrinsics: /home/jack-xiang/rax-hand/rax-xarmwuji/calibration/xarm-wuji/wrist_intrinsics.json
+    extrinsics: /home/jack-xiang/rax-hand/rax-xarmwuji/calibration/xarm-wuji/wrist_T_cam_tcp.yaml
+    width: 1280
+    height: 720
+    depth_min_m: 0.1
+    depth_max_m: 1.5
+    calibration_raw_color: false
+  - name: side
+    serial: '348522070593'
+    mount: fixed
+    intrinsics: /home/jack-xiang/rax-hand/rax-xarmwuji/calibration/xarm-wuji/side_intrinsics.json
+    extrinsics: /home/jack-xiang/rax-hand/rax-xarmwuji/calibration/xarm-wuji/side_T_cam_base.yaml
+    width: 1280
+    height: 720
+    depth_min_m: 0.25
+    depth_max_m: 3.0
+    calibration_raw_color: false
   quality_check_passed: true

@@ -153,10 +153,13 @@ def test_a_used_session_root_is_refused(deployed, tmp_path):
         launcher.deploy(config, key_file=tmp_path/'anthropic.key', claude=tmp_path/'bin/claude')
 
 
-@pytest.mark.parametrize('effort', ['high', 'xhigh', 'max'])
+@pytest.mark.parametrize('effort', ['medium', 'high', 'xhigh', 'max'])
 def test_relay_uses_operator_effort_and_preserves_spent_budget(deployed, effort):
     config, d = deployed
     config = replace(config, agent_effort=effort, max_model_calls=1000)
+    args = launcher.claude_arguments(
+        launcher.deployed_paths(config, d['claude'], d['model']), prompt='go', interactive=True)
+    assert args[args.index('--effort')+1] == effort
     (config.root/'model-calls.json').write_text(json.dumps({'calls': 30}))
     relay = launcher.start_relay(config, d, max_model_calls=config.max_model_calls)
     try:

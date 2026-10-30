@@ -106,9 +106,13 @@ class DepthRegistration:
     Register native points instead, using the selected depth-to-color geometry and a
     nearest-surface Z buffer. Invalid input and out-of-view points stay invalid.
     """
-    def __init__(self, depth_K, depth_shape, depth_coeffs, color_K, rotation, translation, color_shape):
+    def __init__(self, depth_K, depth_shape, depth_coeffs, color_K, rotation, translation, color_shape,
+                 *, depth_scale_factor=1.0):
         if np.any(np.asarray(depth_coeffs)):
             raise ValueError('calibrated color registration currently requires zero native depth distortion')
+        if not np.isfinite(depth_scale_factor) or not .98 <= depth_scale_factor <= 1.02:
+            raise ValueError('calibrated depth scale factor must be within two percent of factory units')
+        self.depth_scale_factor = float(depth_scale_factor)
         y, x = np.indices(depth_shape, dtype=np.float32)
         K = np.asarray(depth_K, np.float32)
         rays = np.stack([(x-K[0, 2])/K[0, 0], (y-K[1, 2])/K[1, 1], np.ones_like(x)], axis=-1)
@@ -117,7 +121,7 @@ class DepthRegistration:
         self.K, self.shape = np.asarray(color_K, np.float32), color_shape
 
     def apply(self, depth):
-        values = np.asarray(depth, np.float32).ravel()
+        values = np.asarray(depth, np.float32).ravel() * self.depth_scale_factor
         valid = np.isfinite(values) & (values > 0)
         points = self.rays[valid]*values[valid, None]+self.translation
         points = points[points[:, 2] > 0]
@@ -135,6 +139,19 @@ class DepthRegistration:
                 np.minimum.at(output, v[inside]*width+u[inside], points[inside, 2])
         output[~np.isfinite(output)] = 0
         return output.reshape(height, width)
+
+
+def calibrated_depth_scale(reference, factory_units_m):
+    """Use an optional board-fitted metric scale only with its recorded units."""
+    fitted = (reference or {}).get('calibrated_depth_to_color') or {}
+    if 'depth_scale_factor' not in fitted:
+        return 1.0
+    factor = float(fitted['depth_scale_factor'])
+    expected = float(fitted['factory_depth_units_m'])
+    if (not np.isfinite(factor) or not .98 <= factor <= 1.02 or not np.isfinite(expected)
+            or expected <= 0 or not np.isclose(factory_units_m, expected, rtol=0, atol=1e-10)):
+        raise ValueError('calibrated depth scale factor or factory depth units mismatch')
+    return factor
 
 
 def depth_to_color_transform(reference, native_K, native_shape, native_coeffs, rotation, translation):

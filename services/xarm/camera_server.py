@@ -75,8 +75,10 @@ class CameraWorker:
         self.K = [[intr.fx, 0.0, intr.ppx], [0.0, intr.fy, intr.ppy], [0.0, 0.0, 1.0]]
         self.distortion_model = str(intr.model).rsplit('.', 1)[-1]
         self.distortion_coeffs = list(intr.coeffs)
-        from .calibration import validate_intrinsics, ColorRectification, DepthRegistration, depth_to_color_transform
+        from .calibration import (validate_intrinsics, ColorRectification, DepthRegistration,
+                                  depth_to_color_transform, calibrated_depth_scale)
         self.depth_registration = None
+        self.depth_scale_factor = 1.0
         self.depth_registration_source = 'realsense_factory' if self.depth_enabled else None
         try:
             live = {'K': self.K, 'width': intr.width, 'height': intr.height,
@@ -98,9 +100,12 @@ class CameraWorker:
                     rotation, translation, self.depth_registration_source = depth_to_color_transform(
                         reference, depth_K, (di.height, di.width), di.coeffs,
                         np.asarray(ext.rotation).reshape(3, 3, order='F'), ext.translation)
+                    self.depth_scale_factor = calibrated_depth_scale(
+                        reference, profile.get_device().first_depth_sensor().get_depth_scale())
                     self.depth_registration = DepthRegistration(
                         depth_K, (di.height, di.width), di.coeffs, self.K,
-                        rotation, translation, (intr.height, intr.width))
+                        rotation, translation, (intr.height, intr.width),
+                        depth_scale_factor=self.depth_scale_factor)
                     self.align = None
         except BaseException:
             self.pipeline.stop()
@@ -305,6 +310,7 @@ class Cameras:
                      'intrinsics_source': worker.rectification.source,
                      'serial': str(worker.spec['serial']), 'fps': self.fps,
                      'depth_scale_m': worker.depth_scale, 'depth_alignment': 'color' if worker.depth_enabled else None,
+                     'depth_scale_factor': getattr(worker, 'depth_scale_factor', 1.0),
                      'depth_registration_source': worker.depth_registration_source}
             if metres is not None:
                 depth_file = out_dir/f'{name}_depth.png'

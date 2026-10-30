@@ -120,7 +120,7 @@
     ]
   },
   "runtime_depth_alignment": "color",
-  "validation": "Qualified on 2026-10-27: held-out calibration poses and live 640x480 RGB-D MCP metric checks passed",
+  "validation": "Training, reserved views and fresh MCP RGB-D checks passed",
   "calibrated_color_profiles": {
     "640x480@6": {
       "width": 640,
@@ -128,14 +128,14 @@
       "fps": 6,
       "K": [
         [
-          610.9968983720685,
+          608.9857066514435,
           0.0,
-          340.1297610559031
+          342.3074286845343
         ],
         [
           0.0,
-          610.2806603653,
-          245.33407590178905
+          608.3102697980423,
+          257.00521888414926
         ],
         [
           0.0,
@@ -145,11 +145,11 @@
       ],
       "distortion_model": "brown_conrady",
       "distortion_coeffs": [
-        0.10643799459674912,
-        -0.10231883820350178,
-        -0.0018403067054186294,
-        0.0076143185726001835,
-        -0.341313637220918
+        0.05462601863932541,
+        0.28140273304075336,
+        0.0053915268102417745,
+        0.009553929210525601,
+        -1.0496502577313414
       ],
       "source_profile": "1280x720@6",
       "profile_pixel_affine": [
@@ -176,14 +176,14 @@
       "fps": 6,
       "K": [
         [
-          916.4953475581027,
+          913.4785599771652,
           0.0,
-          670.1946263250657
+          673.4611277680124
         ],
         [
           0.0,
-          915.4209288610557,
-          368.0010990876383
+          912.4653432093353,
+          385.50781238146465
         ],
         [
           0.0,
@@ -193,11 +193,11 @@
       ],
       "distortion_model": "brown_conrady",
       "distortion_coeffs": [
-        0.10643799459674912,
-        -0.10231883820350178,
-        -0.0018403067054186294,
-        0.0076143185726001835,
-        -0.341313637220918
+        0.05462601863932541,
+        0.28140273304075336,
+        0.0053915268102417745,
+        0.009553929210525601,
+        -1.0496502577313414
       ],
       "source_profile": "1280x720@6",
       "profile_pixel_affine": [
@@ -221,7 +221,7 @@
   },
   "calibrated_source": {
     "method": "training-only Brown5 color intrinsic fit and hand-eye; three reserved views",
-    "result": "/home/jerry/rax/.local-runtime/sessions/charuco-wuji-20261027-run06-fit/result.json",
+    "result": "/home/jack-xiang/rax-runtime/camera-recalibration-20261030T003223Z/rgb-fit/result.json",
     "board": {
       "dictionary": "DICT_4X4_100",
       "squares_x": 10,
@@ -251,22 +251,22 @@
   "calibrated_depth_to_color": {
     "T_color_depth": [
       [
-        0.999737893171179,
-        0.007744406486530438,
-        -0.021544584605505547,
-        0.012167603980571417
+        0.999761592224122,
+        0.007780515582511139,
+        -0.020401526677161264,
+        0.008534334301679382
       ],
       [
-        -0.007504798785558734,
-        0.9999093365241024,
-        0.011180193518791666,
-        -0.0007024774327437809
+        -0.007853803288702943,
+        0.9999629819758974,
+        -0.0035146054932841766,
+        -0.003971061400506839
       ],
       [
-        0.021629215261786024,
-        -0.01101557534134011,
-        0.9997053736711925,
-        0.010077585117615962
+        0.02037342601014813,
+        0.00367399716131706,
+        0.9997856896642738,
+        0.009225012882138194
       ],
       [
         0.0,
@@ -305,9 +305,79 @@
       "fps": 6
     },
     "method": "ChArUco infrared/RGB stereo with fixed intrinsic models; training views only",
-    "source": "/home/jerry/rax/.local-runtime/sessions/charuco-wuji-20261027-run07-stereo-reproduced/result.json",
-    "stereo_rms_px": 0.3675279969552859,
-    "validation": "Reserved depth and live 640x480 MCP metric checks passed; depth units unchanged"
+    "source": "/home/jack-xiang/rax-runtime/camera-recalibration-20261030T003223Z/stereo-metric-fit/result.json",
+    "stereo_rms_px": 0.16848814905939363,
+    "validation": "Reserved native-depth and fresh 640x480 MCP metric checks passed; factory depth units unchanged",
+    "depth_scale_factor": 1.0048860716612322,
+    "factory_depth_units_m": 0.0010000000474974513,
+    "depth_scale_fit": {
+      "factor": 1.0048860716612322,
+      "training_samples": 255,
+      "training_views": [
+        {
+          "index": 0,
+          "samples": 21,
+          "median_ratio": 1.0052366556200838
+        },
+        {
+          "index": 1,
+          "samples": 24,
+          "median_ratio": 1.0049677483129942
+        },
+        {
+          "index": 2,
+          "samples": 30,
+          "median_ratio": 1.004238986593931
+        },
+        {
+          "index": 3,
+          "samples": 23,
+          "median_ratio": 1.002807736157768
+        },
+        {
+          "index": 4,
+          "samples": 9,
+          "median_ratio": 1.0061643403266107
+        },
+        {
+          "index": 5,
+          "samples": 19,
+          "median_ratio": 1.0069555821321052
+        },
+        {
+          "index": 6,
+          "samples": 18,
+          "median_ratio": 1.007263077355047
+        },
+        {
+          "index": 7,
+          "samples": 20,
+          "median_ratio": 1.0057952195253077
+        },
+        {
+          "index": 10,
+          "samples": 16,
+          "median_ratio": 1.0003110119984477
+        },
+        {
+          "index": 11,
+          "samples": 21,
+          "median_ratio": 1.0027116174964836
+        },
+        {
+          "index": 13,
+          "samples": 15,
+          "median_ratio": 1.0048448663153473
+        },
+        {
+          "index": 14,
+          "samples": 39,
+          "median_ratio": 1.0058950052949123
+        }
+      ],
+      "method": "Median expected/measured native board depth; training infrared/RGB corners only",
+      "factory_depth_units_m": 0.0010000000474974513
+    }
   },
-  "metric_validation_source": "/home/jerry/rax/.local-runtime/sessions/camera-mcp-check-20261027-installed/report.json"
+  "metric_validation_source": "/home/jack-xiang/rax-runtime/camera-recalibration-20261030T003223Z/verification-metric/checks-full-board/verification.json"
 }

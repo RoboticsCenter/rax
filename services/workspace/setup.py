@@ -79,7 +79,8 @@ class Setup:
         if facts['has_hand']:
             side = self.backend_options['end_effector'].get('handedness', 'right')
             facts.update(effector_name=f'{side} Wuji Hand 2', effector_tool='wuji_move_joints',
-                         hand_status='wuji_status', hand_pose='wuji_pose', hand_hold='wuji_hold')
+                         hand_status='wuji_status', hand_pose='wuji_pose', hand_home='wuji_home',
+                         hand_hold='wuji_hold')
             facts.pop('gripper')  # Accidental gripper-template references fail rendering.
         return facts
 

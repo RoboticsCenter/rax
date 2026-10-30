@@ -55,6 +55,40 @@ def distortion(entry):
     return values
 
 
+def detect_small_board(gray, board, detector, settings):
+    """Detect small markers, returning coordinates in the original image.
+
+    Cubic enlargement helps ArUco decode markers only a few pixels across.
+    Undo OpenCV resize's pixel-center mapping before fitting any geometry.
+    """
+    def at_scale(scale, selected_detector):
+        enlarged = cv.resize(gray, None, fx=scale, fy=scale, interpolation=cv.INTER_CUBIC)
+        corners, ids, markers, marker_ids = detect_board(enlarged, board, selected_detector, settings)
+        if corners is not None:
+            corners = (corners + .5) / scale - .5
+        markers = tuple((marker + .5) / scale - .5 for marker in markers)
+        return corners, ids, markers, marker_ids
+
+    def count(result):
+        return 0 if result[1] is None else len(result[1])
+
+    best = at_scale(3, detector)
+    if count(best) < 12:
+        # Distant, oblique boards can have fewer than ten pixels per marker.
+        # Try larger decoding images with threshold windows covering the larger
+        # markers. Choose solely by decoded corners, never by geometric residual.
+        # Dictionary correction, corner support and validation gates are unchanged.
+        params = detector.getDetectorParameters()
+        params.adaptiveThreshWinSizeMax = max(53, params.adaptiveThreshWinSizeMax)
+        larger_detector = cv.aruco.CharucoDetector(
+            board, detector.getCharucoParameters(), params, detector.getRefineParameters())
+        for scale in (4, 5):
+            candidate = at_scale(scale, larger_detector)
+            if count(candidate) > count(best):
+                best = candidate
+    return best
+
+
 def invert(T):
     out = np.eye(4)
     out[:3, :3] = T[:3, :3].T
@@ -91,6 +125,12 @@ def charuco_pose(frame_dir, camera, board, detector, *, overlay_dir=None, settin
     gray = cv.cvtColor(image, cv.COLOR_BGR2GRAY)
     charuco_corners, charuco_ids, marker_corners, marker_ids = (
         detect_board(gray, board, detector, settings) if settings else detector.detectBoard(gray))
+    if settings and (charuco_ids is None or len(charuco_ids) < 12):
+        enlarged = detect_small_board(gray, board, detector, settings)
+        if enlarged[1] is not None and (charuco_ids is None or len(enlarged[1]) > len(charuco_ids)):
+            # The existing detector maps corners back to native pixels; retain
+            # the same pose fit and reprojection gates on small distant boards.
+            charuco_corners, charuco_ids, marker_corners, marker_ids = enlarged
     markers = 0 if marker_ids is None else len(marker_ids)
     corners = 0 if charuco_ids is None else len(charuco_ids)
 

@@ -37,3 +37,11 @@ def test_the_mock_robot_needs_no_options(tmp_path):
     result = configure(tmp_path, '--robot', 'mock')
     assert result.returncode == 0, result.stderr
     assert json.loads(Path(result.stdout.strip()).read_text())['backend_options'] == {}
+
+
+def test_medium_effort_is_saved_for_a_fresh_session(tmp_path):
+    result = configure(tmp_path, '--robot', 'mock', '--agent-effort', 'medium')
+    assert result.returncode == 0, result.stderr
+    saved = json.loads(Path(result.stdout.strip()).read_text())
+    assert saved['agent_effort'] == 'medium'
+    assert not (Path(saved['root'])/'agent-lifecycle.json').exists()

@@ -20,7 +20,7 @@ if os.environ.get("RAX_PYTHON") and Path(sys.executable).resolve() != Path(os.en
 
 import cv2 as cv
 import numpy as np
-from scipy.spatial.transform import Rotation
+from scipy.spatial.transform import Rotation, Slerp
 
 from services.controller.config import Configuration
 from services.storage_root import artifact_root
@@ -33,7 +33,7 @@ from services.xarm.backend import (
 from services.xarm.charuco import (
     board_settings,
     charuco_pose,
-    detect_board,
+    detect_small_board,
     fit_fixed_camera,
     fit_report,
     invert,
@@ -93,17 +93,42 @@ def pose_plan(p0, q0):
              'held_out': i >= len(offsets)-3} for i, (dp, angles) in enumerate(offsets)]
 
 
+def bounded_transitions(start_position, start_quaternion, goal, max_translation_m):
+    """Retain capture poses while leaving margin beneath the per-command limit."""
+    if not np.isfinite(max_translation_m) or max_translation_m <= 0:
+        raise ValueError('max_translation_m must be finite and positive')
+    start = np.asarray(start_position, dtype=float)
+    finish = np.asarray(goal['position'], dtype=float)
+    count = max(1, int(np.ceil(np.linalg.norm(finish-start)/(0.8*max_translation_m))))
+    turns = Slerp([0., 1.], Rotation.from_quat([start_quaternion, goal['quaternion']]))
+    return [{'position': (start+(finish-start)*fraction).tolist(),
+             'quaternion': turns(fraction).as_quat().tolist()}
+            for fraction in np.linspace(0., 1., count+1)[1:]]
+
+
+def motion_plan(plan, state, opts):
+    previous, rotation = state['tcp_position'], state['tcp_quaternion']
+    expanded = []
+    destinations = [*plan, {'index': 'return', 'position': list(previous), 'quaternion': list(rotation)}]
+    for goal in destinations:
+        steps = bounded_transitions(previous, rotation, goal, opts['max_translation_m'])
+        expanded.extend({**step, 'capture_index': goal['index'], 'final_step': i == len(steps)-1}
+                        for i, step in enumerate(steps))
+        previous, rotation = goal['position'], goal['quaternion']
+    return expanded
+
+
 def validate_plan(plan, state, arm, opts):
     previous = np.asarray(state['tcp_position'])
-    for pose in plan:
+    for pose in motion_plan(plan, state, opts):
         position = np.asarray(pose['position'])
         if np.any(position < opts['workspace_min']) or np.any(position > opts['workspace_max']):
-            raise ValueError(f"pose {pose['index']} is outside the workspace")
+            raise ValueError(f"pose {pose['capture_index']} is outside the workspace")
         if np.linalg.norm(position-previous) > opts['max_translation_m']:
             raise ValueError('calibration step exceeds the configured translation limit')
         problem = arm.check_tcp_limit(position, pose['quaternion'])
         if problem:
-            raise ValueError(f"pose {pose['index']}: {problem}")
+            raise ValueError(f"pose {pose['capture_index']}: {problem}")
         previous = position
 
 
@@ -128,6 +153,8 @@ def parse_args():
     parser.add_argument('--yes', action='store_true', help='operator authorizes the displayed calibration motion')
     parser.add_argument('--prepare-hand', action='store_true', help='operator authorizes holding the measured finger posture')
     parser.add_argument('--capture-native', action='store_true', help='also save synchronized wrist infrared and native depth for stereo calibration')
+    parser.add_argument('--use-installed-intrinsics', action='store_true',
+                        help='refit extrinsics using the existing color models, preserving depth alignment')
     parser.add_argument('--install', action='store_true', help='install extrinsics only if fit and held-out checks pass')
     parser.add_argument('--width', type=int, default=1280)
     parser.add_argument('--height', type=int, default=720)
@@ -136,6 +163,8 @@ def parse_args():
 
 def main():
     args = parse_args()
+    if args.use_installed_intrinsics and args.capture_native:
+        raise SystemExit('--capture-native requires raw color; omit --use-installed-intrinsics for stereo collections')
     if not args.preflight and not args.yes:
         raise SystemExit('Use --preflight first; --yes authorizes robot motion.')
     root = args.root.resolve()
@@ -145,7 +174,7 @@ def main():
     overlays = root/'overlays'
     overlays.mkdir()
     opts = {**DEFAULTS, **json.loads(args.backend_options.read_text())}
-    if args.install and any(
+    if args.install and not args.use_installed_intrinsics and any(
             spec.get('intrinsics') and json.loads(Path(spec['intrinsics']).read_text()).get('calibrated_color_profiles')
             for spec in opts['cameras']):
         raise ValueError('raw collection cannot install extrinsics beside an existing fitted color model; '
@@ -162,7 +191,8 @@ def main():
     opts.update(stream_enabled=False, motion_archive_enabled=False, stream_archive=False,
                 cartesian_speed_mps=.015, cartesian_acc_mps2=.05)
     for spec in opts['cameras']:
-        spec.update(width=args.width, height=args.height, calibration_raw_color=True)
+        spec.update(width=args.width, height=args.height,
+                    calibration_raw_color=not args.use_installed_intrinsics)
         if args.capture_native and spec['mount'] == 'tcp':
             spec['calibration_native'] = True
     settings = board_settings(args)
@@ -180,7 +210,7 @@ def main():
             for name, entry in metadata['cameras'].items():
                 if 'native_calibration' in entry:
                     image = cv.imread(entry['native_calibration']['infrared'], cv.IMREAD_GRAYSCALE)
-                    _, ids, _, _ = detect_board(image, board, detector, settings)
+                    _, ids, _, _ = detect_small_board(image, board, detector, settings)
                     found[name][1]['infrared_corners'] = 0 if ids is None else len(ids)
         return found
     try:
@@ -198,6 +228,7 @@ def main():
                           and d.get('infrared_corners', 12) >= 12, **d} for name, (pose, d) in found.items()}
         preflight = {'ok': all(d['usable'] for d in visible.values()), 'board': settings,
                      'cameras': visible, 'camera_specs': opts['cameras'], 'poses': plan,
+                     'motion_steps': motion_plan(plan, start, opts),
                      'start_position': p0.tolist(), 'start_quaternion': q0.tolist(),
                      'arm_state': start['state'], 'arm_mode': arm.arm.mode, 'arm_error': start['error_code'],
                      'tcp_offset_mm_rad': list(arm.arm.tcp_offset), 'tcp_load': arm.arm.tcp_load,
@@ -221,9 +252,15 @@ def main():
             from services.wuji.client import operation
             print(json.dumps({'prepared': operation(root, 'prepare', timeout=15)}), flush=True)
             wait_hand(backend.end_effector, prepared=True)
+        def move_to(goal):
+            current = arm.state()
+            steps = bounded_transitions(current['tcp_position'], current['tcp_quaternion'],
+                                        goal, opts['max_translation_m'])
+            for step in steps:
+                backend.call('xarm_move_pose', {**step, 'tolerance_mm': 1, 'timeout_s': 20})
+
         for goal in plan:
-            backend.call('xarm_move_pose', {'position': goal['position'], 'quaternion': goal['quaternion'],
-                                           'tolerance_mm': 1, 'timeout_s': 20})
+            move_to(goal)
             time.sleep(.8)
             folder, meta = capture(service, root, names, arm)
             found = detections(folder)
@@ -242,8 +279,7 @@ def main():
             from services.json_io import jsonable
             (root/'collection.json').write_text(json.dumps(jsonable({'samples': samples, 'log': log}), indent=2)+'\n')
             print(json.dumps(entry), flush=True)
-        backend.call('xarm_move_pose', {'position': p0.tolist(), 'quaternion': q0.tolist(),
-                                       'tolerance_mm': 1, 'timeout_s': 20})
+        move_to({'position': p0.tolist(), 'quaternion': q0.tolist()})
     except BaseException as exc:
         result_path.write_text(json.dumps({'ok': False, 'reason': str(exc), 'log': log}, indent=2)+'\n')
         raise

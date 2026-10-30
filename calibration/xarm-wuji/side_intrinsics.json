@@ -120,6 +120,6 @@
     ]
   },
   "runtime_depth_alignment": "color",
-  "validation": "Qualified on 2026-10-27: held-out calibration poses and live 640x480 RGB-D MCP metric checks passed",
-  "metric_validation_source": "/home/jerry/rax/.local-runtime/sessions/camera-mcp-check-20261027-installed/report.json"
+  "validation": "Training, reserved views and fresh MCP RGB-D checks passed",
+  "metric_validation_source": "/home/jack-xiang/rax-runtime/camera-recalibration-20261030T003223Z/verification-metric/checks-full-board/verification.json"
 }

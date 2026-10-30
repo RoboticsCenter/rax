@@ -55,6 +55,16 @@ command the robot: subagents never call motion tools.
    There is no formal evaluation; aim for repeated clean successes. Use
    `request_operator` (kind `help`) when you are blocked by something you cannot fix
    through the tools.
+{% if robot.has_hand %}
+
+For every training episode, start from both home positions and return both devices
+home before the next scene reset: support/release the object, retreat into clear
+space, call `{{ robot.hand_home }}`, then `{{ robot.joints }}` with `preset="home"`.
+Verify measured completion and fresh arm/hand status. Follow the return-home
+procedure in [hand-control](.agents/skills/hand-control/SKILL.md). If a reset is
+blocked or control is uncertain, stop and request help instead of starting the
+next episode. Record the reset outcome with the run.
+{% endif %}
 
 ## Tools and code
 

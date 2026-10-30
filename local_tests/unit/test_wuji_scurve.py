@@ -7,7 +7,7 @@ import pytest
 from test_wuji_controller import Rig
 from wuji_fakes import hand_config
 
-from services.wuji.config import validate_config
+from services.wuji.config import validate_config, validate_tool
 from services.wuji.scurve import SCurvePath, next_deadline
 
 
@@ -156,6 +156,23 @@ def test_full_hand_sequence_reaches_measured_target_and_keeps_holding():
         r.step(.001)
         assert r.driver.goal == goal
     assert r.engine.status()['command_timing']['commands'] > 1000
+
+
+def test_home_uses_custom_scurve_and_keeps_prepared_gains_and_damping():
+    home = [(-1)**i*(.1+i*.01) for i in range(20)]
+    r = rig(kp=8., kd=.15, current_limit_a=1.5, postures={'home': home})
+    r.prepare()
+    before = {key: list(value) for key, value in r.driver.control_parameters.items()}
+    # The MCP alias resolves to the same private move operation as arbitrary targets.
+    goal = validate_tool('wuji_home', {}, r.cfg)
+    r.engine.submit('home', 'move', goal)
+    result = finish(r, 'home')
+    assert result['reached'] and result['trajectory_complete']
+    assert result['peak_nominal_reference_jerk_rad_s3'] <= 2.+1e-7
+    assert r.driver.goal == home and r.driver.command_velocity == [0.]*20
+    assert r.driver.control_parameters == before
+    assert [w[0] for w in r.driver.writes].count('profile') == 1  # Only operator prepare.
+    assert r.engine.mode == 'holding'
 
 
 def test_hold_brakes_smoothly_and_cancels_old_move():

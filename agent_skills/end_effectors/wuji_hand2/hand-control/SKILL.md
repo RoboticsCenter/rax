@@ -35,7 +35,14 @@ reference limits, not measured tracking guarantees.
 The list can be empty. A saved home or fist is not automatically a qualified grasp
 or collision-free preshape for this scene. Never invent names; use bounded
 `wuji_move_joints` experiments to develop task-specific postures and record the evidence.
-Both motion tools wait for measured settling and keep the final target afterward.
+`wuji_home()` moves to the configured `home` posture through the same custom
+controller as `wuji_move_joints` and `wuji_pose`. It retains active gains, damping,
+current limits and current bias; S-curve mode uses the same bounded jerk and
+position/velocity references. Omit `duration_s` to let the controller choose the
+duration. Missing home configuration is an error; do not substitute zeros.
+This moves to a saved posture; it does not recalibrate encoders or enable the hand.
+
+All three motion tools wait for measured settling and keep the final target afterward.
 They do not certify self-collision clearance or a successful grasp.
 
 `effort_a`, motor current and current limits are **amperes**, not calibrated contact
@@ -112,6 +119,29 @@ without these parameters no longer fully specifies the control state.
    rotation. Replan the posture if retention is poor.
 5. Support the object before releasing with a verified posture; confirm separation
    in images, then retreat with clearance.
+
+## Return home between episodes
+
+Begin training episodes from both home positions and finish each episode by
+returning both devices home before requesting the next scene reset. This includes
+failed attempts when recovery is supported by fresh, fault-free state.
+
+1. Support and release any held object with a verified release posture. Confirm
+   the hand is empty, then retreat the arm in bounded steps until the full hand
+   sweep and arm return path have clearance. Home is not a release command.
+2. If a task applied feed-forward current bias, ramp it to zero with
+   `wuji_set_effort` after release. Keep the commissioned gains/damping and caps.
+3. Call `wuji_home()` and require measured completion. Check `wuji_status` for
+   fresh, fault-free holding at the settled home target.
+4. Call `xarm_move_joints(preset="home")` and require measured completion. Check
+   `xarm_status`, `wuji_status` and fresh images before reporting the reset complete.
+5. Only then call `request_operator(kind="reset", ...)` for the next layout.
+   After the operator replies, check status and observations again before starting.
+
+Run these moves sequentially. If a return is refused, faults, times out, or the
+path cannot be established, stop and request specific operator help; do not start
+another episode or run homing unconditionally in an exception/finally handler.
+Record reset completion or the reason it was blocked with each episode result.
 
 ## Hold and failures
 

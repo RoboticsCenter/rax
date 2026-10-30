@@ -5,9 +5,9 @@ from copy import deepcopy
 
 JOINT_NAMES = tuple(f'{finger}_S{joint}' for finger in ('thumb', 'index', 'middle', 'ring', 'pinky')
                     for joint in range(1, 5))
-TOOL_NAMES = ('wuji_status', 'wuji_move_joints', 'wuji_pose', 'wuji_hold',
+TOOL_NAMES = ('wuji_status', 'wuji_move_joints', 'wuji_pose', 'wuji_home', 'wuji_hold',
               'wuji_set_effort', 'wuji_set_impedance')
-MOTION_TOOLS = frozenset({'wuji_move_joints', 'wuji_pose'})
+MOTION_TOOLS = frozenset({'wuji_move_joints', 'wuji_pose', 'wuji_home'})
 CONTROL_TOOLS = frozenset({'wuji_set_effort', 'wuji_set_impedance'})
 MUTATING_TOOLS = MOTION_TOOLS | CONTROL_TOOLS
 DEFAULTS = {
@@ -146,6 +146,7 @@ def validate_tool(name, args, cfg):
     if not isinstance(args, dict) or name not in TOOL_NAMES:
         raise ValueError('unknown Wuji tool or invalid arguments')
     allowed = {'wuji_move_joints': {'positions', 'duration_s'}, 'wuji_pose': {'name', 'duration_s'},
+               'wuji_home': {'duration_s'},
                'wuji_set_effort': {'effort_a', 'duration_s'},
                'wuji_set_impedance': {'kp', 'kd', 'current_limit_a'}}.get(name, set())
     if set(args) - allowed:
@@ -156,8 +157,10 @@ def validate_tool(name, args, cfg):
         duration = number(args['duration_s'], 'duration_s', .1, cfg['max_duration_s']) if 'duration_s' in args else None
         return {'effort_a': effort(args.get('effort_a'), cfg['current_limit_a']), 'duration_s': duration}
     if name in MOTION_TOOLS:
-        if name == 'wuji_pose':
-            pose = args.get('name')
+        if name in ('wuji_pose', 'wuji_home'):
+            pose = 'home' if name == 'wuji_home' else args.get('name')
+            if name == 'wuji_home' and pose not in cfg['postures']:
+                raise ValueError('home posture is not configured; ask the operator')
             if not isinstance(pose, str) or pose not in cfg['postures']:
                 raise ValueError(f'unknown posture; commissioned names: {sorted(cfg["postures"])}')
             q = cfg['postures'][pose]
@@ -193,6 +196,13 @@ def tools(cfg):
         tool('wuji_pose', 'Move to an operator-configured posture using the same bounds as wuji_move_joints. '
              f'Available names: {", ".join(sorted(cfg["postures"])) or "none commissioned"}.',
              {'name': {'type': 'string'}, 'duration_s': duration}, ['name']),
+        tool('wuji_home', 'Return the hand to its operator-configured home posture through the same custom '
+             'motion controller as wuji_move_joints. Uses the configured motion mode, including S-curve '
+             'jerk limits, and preserves active gains, damping and current limits. Waits for measured '
+             'settling and holds home afterward. Requires operator preparation and arming. Refuses if '
+             'home is not configured. This is a posture move, not encoder homing. First support/release '
+             'any object and clear the full finger sweep; no collision planning or arm movement.',
+             {'duration_s': duration}),
         tool('wuji_hold', 'Retain the current bounded commanded posture when dispatched. '
              'Retains the current feed-forward effort and impedance as well. '
              'During S-curve motion, brake smoothly to a nearby bounded resting target; '

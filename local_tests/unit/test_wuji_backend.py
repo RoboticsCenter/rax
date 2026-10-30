@@ -17,8 +17,8 @@ from services.workspace import Setup, build, recipe_for
 from services.xarm import arming
 
 
-def make_wuji(make_backend, **kwargs):
-    cfg = hand_config()
+def make_wuji(make_backend, *, hand_options=None, **kwargs):
+    cfg = hand_config(**(hand_options or {}))
     hand = FakeHandClient(cfg)
     backend, arm, root = make_backend(hand=hand, end_effector=cfg, **kwargs)
     return backend, arm, hand, root
@@ -27,7 +27,7 @@ def make_wuji(make_backend, **kwargs):
 def test_wuji_tools_replace_gripper_and_status_has_real_hand_shape(make_backend):
     backend, arm, hand, root = make_wuji(make_backend)
     names = {t['name'] for t in backend.tools()}
-    assert {'wuji_status', 'wuji_move_joints', 'wuji_pose', 'wuji_hold', 'xarm_move_pose',
+    assert {'wuji_status', 'wuji_move_joints', 'wuji_pose', 'wuji_home', 'wuji_hold', 'xarm_move_pose',
             'wuji_set_effort', 'wuji_set_impedance'} <= names
     assert 'xarm_gripper' not in names
     status, _ = backend.call('xarm_status', {})
@@ -41,8 +41,42 @@ def test_wuji_tools_replace_gripper_and_status_has_real_hand_shape(make_backend)
     value, _ = backend.call('wuji_pose', {'name': 'test_pose'})
     assert value['reached'] and hand.moves == [[.1]*20]
     assert backend.last_motion['tool'] == 'wuji_pose'
-    assert backend.mutating == {'xarm_move_pose', 'xarm_move_joints', 'wuji_move_joints', 'wuji_pose',
+    assert backend.mutating == {'xarm_move_pose', 'xarm_move_joints', 'wuji_move_joints', 'wuji_pose', 'wuji_home',
                                'wuji_set_effort', 'wuji_set_impedance'}
+
+
+def test_hand_home_routes_to_existing_move_and_preserves_tuned_parameters(make_backend):
+    home = [.1, -.1, .15, .2] * 5
+    backend, arm, hand, root = make_wuji(make_backend, hand_options={
+        'postures': {'home': home}, 'motion_mode': 'scurve', 'command_hz': 1000,
+        'kp': 8., 'kd': .15, 'current_limit_a': 1.5})
+    before = hand.status()['control_parameters']
+    with pytest.raises(PermissionError):
+        backend.call('wuji_home', {})
+    assert not hand.moves and arm.commands == 0
+    arming.write(root, True)
+    result, _ = backend.call('wuji_home', {})
+    assert result['reached'] and hand.moves == [home]
+    assert backend.last_motion['tool'] == 'wuji_home'
+    assert hand.status()['control_parameters'] == before and not hand.control_calls
+    assert arm.commands == 0  # Hand-home does not move the arm implicitly.
+
+
+def test_home_refuses_missing_posture_and_failed_move_stops_both_devices(make_backend):
+    backend, arm, hand, root = make_wuji(make_backend)
+    arming.write(root, True)
+    with pytest.raises(ValueError, match='home posture is not configured'):
+        backend.call('wuji_home', {})
+    assert not hand.moves
+    backend.hand_config['postures']['home'] = [.1]*20
+    hand.fail_move = True
+    front = Frontend(Session(backend.config), backend)
+    try:
+        response = front.call('wuji_home', {})
+        assert response.get('isError') and front.control_uncertain
+        assert hand.stops and arm.holds
+    finally:
+        front.close()
 
 
 def test_frontend_validation_and_uncertain_failure_are_distinct(make_backend):
@@ -70,6 +104,22 @@ def test_frontend_validation_and_uncertain_failure_are_distinct(make_backend):
     finally:
         front.close()
     assert hand.closed
+
+
+def test_hand_fault_cancels_remaining_arm_joint_segments(make_backend):
+    backend, arm, hand, root = make_wuji(make_backend)
+    original = hand.require_ready
+
+    def require_ready():
+        if arm.commands:
+            raise RuntimeError('injected hand feedback loss')
+        return original()
+
+    hand.require_ready = require_ready
+    arming.write(root, True)
+    with pytest.raises(RuntimeError, match='hand feedback loss'):
+        backend.call('xarm_move_joints', {'positions': (arm.q + [2.25, 0, 0, 0, 0, 0]).tolist()})
+    assert arm.commands == 1 and hand.stops and arm.holds
 
 
 def test_hand_admission_uses_target_from_same_fresh_owner_snapshot(make_backend, monkeypatch):
@@ -136,6 +186,12 @@ def test_workspace_contract_matches_backend_and_installs_hand_skill(make_backend
         assert 'gripper open' not in text
     assert (workspace/'.agents/skills/hand-control/SKILL.md').is_file()
     assert 'Wuji Hand 2' in (workspace/'AGENTS.md').read_text()
+    assert 'wuji_home' in manifest['contract']['tools']
+    assert 'wuji_home' in (workspace/'AGENTS.md').read_text()
+    assert 'before the next scene reset' in (workspace/'AGENTS.md').read_text()
+    hand_skill = (workspace/'.agents/skills/hand-control/SKILL.md').read_text()
+    assert 'wuji_home()' in hand_skill and 'xarm_move_joints(preset="home")' in hand_skill
+    assert 'wuji_home' in (workspace/'.agents/skills/autonomous-control/SKILL.md').read_text()
 
 
 def test_g2_workspace_retains_tools_and_omits_wuji_skill(tmp_path):
@@ -145,6 +201,7 @@ def test_g2_workspace_retains_tools_and_omits_wuji_skill(tmp_path):
     build(recipe_for(), Setup(robot='xarm', backend_options={'gripper_type': 'g2'}), ws)
     tools = json.loads((ws/'MCP_CONTRACT.json').read_text())['tools']
     assert 'xarm_gripper' in tools and 'wuji_move_joints' not in tools
+    assert 'wuji_home' not in tools and 'wuji_home' not in (ws/'AGENTS.md').read_text()
     assert not (ws/'.agents/skills/hand-control').exists()
 
 
@@ -191,7 +248,8 @@ def test_observation_records_hand_feedback_and_profile(make_backend):
 
 
 def test_real_mcp_socket_and_python_client_with_fake_hardware(make_backend, tmp_path):
-    backend, arm, hand, root = make_wuji(make_backend)
+    backend, arm, hand, root = make_wuji(make_backend, hand_options={
+        'postures': {'test_pose': [.1]*20, 'home': [.05]*20}})
     arming.write(root, True)
     front = Frontend(Session(backend.config), backend)
     stop = threading.Event()
@@ -207,6 +265,8 @@ def test_real_mcp_socket_and_python_client_with_fake_hardware(make_backend, tmp_
                 assert 'wuji_pose' in {t['name'] for t in listing['tools']}
                 assert len(ctx.value('wuji_status')['positions']) == 20
                 assert ctx.value('wuji_pose', name='test_pose')['reached']
+                assert ctx.value('wuji_home')['reached']
+                assert hand.moves[-1] == [.05]*20
                 assert ctx.value('wuji_set_impedance', kp=[1.]*20, current_limit_a=[.25]*20)['outcome'] == 'impedance_set'
                 assert ctx.value('wuji_set_effort', effort_a=[.1]*20)['outcome'] == 'effort_set'
                 with pytest.raises(RuntimeError):

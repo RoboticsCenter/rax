@@ -13,10 +13,11 @@ from services.xarm import charuco
 from services.xarm.calibration import (
     ColorRectification,
     DepthRegistration,
+    calibrated_depth_scale,
     depth_to_color_transform,
     validate_intrinsics,
 )
-from services.xarm.charuco import detect_board, distortion, make_board
+from services.xarm.charuco import detect_board, detect_small_board, distortion, make_board
 
 PROJECT = Path(__file__).resolve().parents[2]
 
@@ -58,10 +59,50 @@ def test_factory_reference_rejects_wrong_device_profile_or_values(tmp_path):
         validate_intrinsics(spec, {**profile, 'distortion_model': 'brown_conrady'})
 
 
+def test_small_infrared_board_returns_original_pixel_coordinates():
+    settings = {'dictionary': 'DICT_4X4_100', 'squares_x': 10, 'squares_y': 13,
+                'layout_squares_y': 14, 'square_m': .02, 'marker_m': .015, 'legacy_pattern': True}
+    board, detector = make_board(settings)
+    rendered = board.generateImage((800, 1120), marginSize=0)
+    small = cv.resize(rendered, (160, 224), interpolation=cv.INTER_AREA)
+    frame = np.full((480, 640), 255, np.uint8)
+    frame[80:304, 200:360] = small
+    original = frame.copy()
+    corners, ids, markers, marker_ids = detect_small_board(frame, board, detector, settings)
+    assert ids is not None and len(ids) >= 80
+    # Each square spans 16 native pixels; intensity boundaries lie between pixels.
+    expected = np.asarray(board.getChessboardCorners())[ids.ravel(), :2] / .02 * 16
+    expected += np.array([199.5, 79.5])
+    np.testing.assert_allclose(corners.reshape(-1, 2), expected, atol=.35)
+    assert len(markers) == len(marker_ids)
+    assert all(np.all(marker[..., 0] < 360) and np.all(marker[..., 1] < 304) for marker in markers)
+    np.testing.assert_array_equal(frame, original)
+
+
 def test_nonzero_inverse_distortion_is_not_silently_treated_as_brown():
     assert np.all(distortion({'distortion_model': 'inverse_brown_conrady', 'distortion_coeffs': [0.]*5}) == 0)
     with pytest.raises(ValueError, match='unsupported'):
         distortion({'distortion_model': 'inverse_brown_conrady', 'distortion_coeffs': [.1, 0, 0, 0, 0]})
+
+
+def test_distant_oblique_board_preserves_projected_corner_geometry():
+    settings = {'dictionary': 'DICT_4X4_100', 'squares_x': 10, 'squares_y': 13,
+                'layout_squares_y': 14, 'square_m': .02, 'marker_m': .015, 'legacy_pattern': True}
+    board, detector = make_board(settings)
+    rendered = board.generateImage((800, 1120), marginSize=0)[:1040]
+    source = np.float32([[0, 0], [799, 0], [799, 1039], [0, 1039]])
+    destination = np.float32([[281, 250], [400, 245], [488, 356], [337, 373]])
+    transform = cv.getPerspectiveTransform(source, destination)
+    frame = cv.warpPerspective(rendered, transform, (640, 480),
+                               flags=cv.INTER_AREA, borderValue=255)
+    frame = cv.imdecode(cv.imencode('.jpg', frame, [cv.IMWRITE_JPEG_QUALITY, 85])[1], 0)
+    previous_window = detector.getDetectorParameters().adaptiveThreshWinSizeMax
+    corners, ids, _, _ = detect_small_board(frame, board, detector, settings)
+    assert ids is not None and len(ids) >= 12
+    original_pixels = board.getChessboardCorners()[ids.ravel(), :2]/.02*80 - .5
+    expected = cv.perspectiveTransform(original_pixels.reshape(-1, 1, 2), transform)
+    assert np.max(np.linalg.norm(corners-expected, axis=2)) < .8
+    assert detector.getDetectorParameters().adaptiveThreshWinSizeMax == previous_window
 
 
 def test_rectification_preserves_camera_rays():
@@ -137,6 +178,48 @@ def test_stereo_transform_is_guarded_by_native_and_factory_geometry():
         depth_to_color_transform(reference, *args)
 
 
+def test_metric_depth_scale_is_guarded_and_applied_before_stereo_translation():
+    reference = {'calibrated_depth_to_color': {
+        'depth_scale_factor': 1.005, 'factory_depth_units_m': .001}}
+    assert calibrated_depth_scale({}, .001) == 1.
+    factor = calibrated_depth_scale(reference, .001)
+    registration = DepthRegistration(np.eye(3), (1, 1), [0.]*5, np.eye(3), np.eye(3),
+                                     [0, 0, .01], (1, 1), depth_scale_factor=factor)
+    np.testing.assert_allclose(registration.apply([[.6]]), [[.613]], atol=1e-7)
+    with pytest.raises(ValueError, match='factory depth units'):
+        calibrated_depth_scale(reference, .0001)
+    for invalid in [float('nan'), .5, 1.03]:
+        reference['calibrated_depth_to_color']['depth_scale_factor'] = invalid
+        with pytest.raises(ValueError, match='depth scale'):
+            calibrated_depth_scale(reference, .001)
+        with pytest.raises(ValueError, match='depth scale'):
+            DepthRegistration(np.eye(3), (1, 1), [0.]*5, np.eye(3), np.eye(3),
+                              [0, 0, 0], (1, 1), depth_scale_factor=invalid)
+
+
+def test_metric_depth_fit_excludes_reserved_views(tmp_path):
+    script = runpy.run_path(str(PROJECT/'scripts/xarm-charuco-stereo-fit'))
+    board = np.eye(4)
+    board[2, 3] = 1.
+    result = {'T_cam_tcp': np.eye(4).tolist(), 'T_base_board': board.tolist()}
+    pixels = np.array([[x, y] for y in [8, 16, 24] for x in [8, 16, 24, 32]], np.float32)
+    samples = []
+    for index in range(12):
+        held = index >= 9
+        path = tmp_path/f'{index}.png'
+        cv.imwrite(str(path), np.full((40, 40), 400 if held else 995, np.uint16))
+        samples.append({'index': index, 'held_out': held,
+                        'object': np.zeros((12, 1, 3), np.float32), 'ir': pixels.reshape(-1, 1, 2),
+                        'native': {'depth': str(path), 'depth_scale_m': .001},
+                        'meta': {'tcp_position': [0, 0, 0], 'tcp_quaternion': [0, 0, 0, 1]}})
+    fitted = script['fit_metric_depth_scale'](samples, np.eye(4), result)
+    assert fitted['factor'] == pytest.approx(1/.995)
+    assert fitted['training_samples'] == 108
+    assert [v['index'] for v in fitted['training_views']] == list(range(9))
+    with pytest.raises(ValueError, match='nine training views'):
+        script['fit_metric_depth_scale'](samples[:8] + samples[9:], np.eye(4), result)
+
+
 def test_native_capture_uses_the_matching_rgb_timestamp(tmp_path):
     import threading
 
@@ -177,8 +260,39 @@ def test_hand_eye_fit_and_held_out_geometry():
     assert not charuco.quality_ok(charuco.fit_report(fitted, fitted_board, samples))
 
 
+def test_calibration_transitions_respect_fifty_mm_limit_and_preserve_capture_poses():
+    script = calibration_script()
+    state = {'tcp_position': np.array([.23058, -.00155, .43342]),
+             'tcp_quaternion': Rotation.from_euler('x', 179.17, degrees=True).as_quat()}
+    plan = script['pose_plan'](state['tcp_position'], state['tcp_quaternion'])
+    options = {'max_translation_m': .05, 'workspace_min': [.2, -.35, .02],
+               'workspace_max': [.8, .35, .9]}
+    steps = script['motion_plan'](plan, state, options)
+    previous = state['tcp_position']
+    checked = []
+    for step in steps:
+        assert np.linalg.norm(np.asarray(step['position'])-previous) <= .04+1e-12
+        assert np.isclose(np.linalg.norm(step['quaternion']), 1.)
+        previous = np.asarray(step['position'])
+    endpoints = [s for s in steps if s['final_step'] and s['capture_index'] != 'return']
+    assert len(endpoints) == 18
+    for actual, expected in zip(endpoints, plan):
+        assert actual['capture_index'] == expected['index']
+        np.testing.assert_allclose(actual['position'], expected['position'])
+        np.testing.assert_allclose(Rotation.from_quat(actual['quaternion']).as_matrix(),
+                                   Rotation.from_quat(expected['quaternion']).as_matrix(), atol=1e-12)
+    np.testing.assert_allclose(steps[-1]['position'], state['tcp_position'])
+    np.testing.assert_allclose(Rotation.from_quat(steps[-1]['quaternion']).as_matrix(),
+                               Rotation.from_quat(state['tcp_quaternion']).as_matrix(), atol=1e-12)
+    arm = SimpleNamespace(check_tcp_limit=lambda p, q: checked.append(p.tolist()))
+    script['validate_plan'](plan, state, arm, options)
+    assert checked == [s['position'] for s in steps]
+
+
 @pytest.mark.parametrize('visible', [True, False])
-def test_preflight_never_constructs_motion_backend_arms_or_holds(tmp_path, monkeypatch, visible):
+@pytest.mark.parametrize('installed_intrinsics', [True, False])
+def test_preflight_never_constructs_motion_backend_arms_or_holds(tmp_path, monkeypatch, visible,
+                                                               installed_intrinsics):
     script = calibration_script()
     scope = script['main'].__globals__
     calls = []
@@ -194,8 +308,8 @@ def test_preflight_never_constructs_motion_backend_arms_or_holds(tmp_path, monke
         def close(self):
             calls.append('disconnect')
     class Cameras:
-        def __init__(self, *args):
-            pass
+        def __init__(self, options, *args):
+            assert all(c['calibration_raw_color'] is not installed_intrinsics for c in options['cameras'])
         def start(self):
             calls.append('camera_start')
         def close(self):
@@ -205,7 +319,10 @@ def test_preflight_never_constructs_motion_backend_arms_or_holds(tmp_path, monke
     opts = tmp_path/'options.json'
     opts.write_text(json.dumps({'cameras': [{'name': 'wrist', 'mount': 'tcp'}, {'name': 'side', 'mount': 'fixed'}]}))
     root = tmp_path/'run'
-    monkeypatch.setattr('sys.argv', ['calibrate', '--preflight', '--root', str(root), '--backend-options', str(opts)])
+    argv = ['calibrate', '--preflight', '--root', str(root), '--backend-options', str(opts)]
+    if installed_intrinsics:
+        argv.append('--use-installed-intrinsics')
+    monkeypatch.setattr('sys.argv', argv)
     monkeypatch.setitem(scope, 'XArmDriver', Arm)
     monkeypatch.setitem(scope, 'XArmBackend', forbidden)
     monkeypatch.setitem(scope, 'CameraService', Cameras)
@@ -222,5 +339,5 @@ def test_preflight_never_constructs_motion_backend_arms_or_holds(tmp_path, monke
         with pytest.raises(RuntimeError, match='visibility'):
             script['main']()
         assert json.loads((root/'result.json').read_text())['ok'] is False
-    assert calls.count('check_target') == 18
+    assert calls.count('check_target') == 19  # Eighteen capture poses plus the return pose.
     assert calls[-2:] == ['camera_close', 'disconnect']

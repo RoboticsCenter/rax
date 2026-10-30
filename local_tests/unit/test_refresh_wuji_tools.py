@@ -43,7 +43,7 @@ def test_refresh_backs_up_old_contract_and_preserves_learning(deployed):
     assert '.agents/skills/live-stream/SKILL.md' in manifest
     assert '.agents/skills/experience-memory/references/format.md' in manifest
     tools = json.loads((ws/'MCP_CONTRACT.json').read_text())['tools']
-    assert {'wuji_set_effort', 'wuji_set_impedance'} <= set(tools)
+    assert {'wuji_set_effort', 'wuji_set_impedance', 'wuji_home'} <= set(tools)
     assert 'wuji_set_effort' in (ws/'.agents/skills/hand-control/SKILL.md').read_text()
     for name in ('memory/PROGRESS.md', 'code/grasp.py', 'reference/offsets.txt', '.agents/skills/custom/SKILL.md'):
         assert (ws/name).read_text() == 'keep this'

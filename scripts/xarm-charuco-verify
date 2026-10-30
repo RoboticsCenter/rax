@@ -1,0 +1,113 @@
+#!/usr/bin/env python3
+"""Read-only RGB-D calibration checks through the normal MCP frontend."""
+import argparse
+import json
+import sys
+import time
+from pathlib import Path
+
+import cv2 as cv
+import numpy as np
+from scipy.spatial.transform import Rotation
+
+PROJECT = Path(__file__).resolve().parents[1]
+sys.path.insert(0, str(PROJECT))
+from auto_research_agent.api.runtime import Context
+from services.xarm.charuco import charuco_pose, detect_small_board, make_board
+
+
+def statistics(values):
+    if not values:
+        return None
+    return {'count': len(values), 'median_mm': float(np.median(values)),
+            'p95_mm': float(np.quantile(values, .95)), 'max_mm': float(max(values))}
+
+
+def main():
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument('--socket', required=True)
+    parser.add_argument('--session', type=Path, required=True)
+    parser.add_argument('--fit', type=Path, required=True)
+    parser.add_argument('--output', type=Path, required=True)
+    args = parser.parse_args()
+    fit = json.loads(args.fit.read_text())
+    if not fit['ok']:
+        raise ValueError('Calibration fit has not passed')
+    settings = fit['preflight']['board']
+    board, detector = make_board(settings)
+    T_base_board = np.asarray(fit['T_base_board'])
+    output = args.output
+    output.mkdir(parents=True, exist_ok=False)
+    report = {'ok': False, 'fit': str(args.fit), 'limits': {
+        'minimum_points': 12, 'camera_median_mm': 5, 'camera_p95_mm': 10,
+        'cross_camera_p95_mm': 10}, 'frames': []}
+    with Context(args.socket) as ctx:
+        report['initial_arm_status'] = ctx.value('xarm_status')
+        report['initial_hand_status'] = ctx.value('wuji_status')
+        # First observation starts lazy camera pipelines. Let auto-exposure settle
+        # before evaluating depth; startup frames can contain only invalid depth.
+        report['warmup_observation'] = ctx.value('xarm_observe', cameras=['wrist', 'side'])
+        time.sleep(8)
+        for repeat in range(3):
+            observation = ctx.value('xarm_observe', cameras=['wrist', 'side'])
+            folder = args.session/'agent-workspace'/observation['directory']
+            metadata = json.loads((folder/'meta.json').read_text())
+            frame = {'observation': observation, 'directory': str(folder), 'cameras': {}}
+            base_points = {}
+            board_poses = {}
+            for name, entry in metadata['cameras'].items():
+                gray = cv.imread(str(folder/entry['rgb']), 0)
+                corners, ids, _, _ = detect_small_board(gray, board, detector, settings)
+                if ids is None:
+                    raise RuntimeError(f'{name}: no board detected')
+                ids, pixels = ids.ravel(), corners.reshape(-1, 2)
+                responses = []
+                for start in range(0, len(pixels), 64):
+                    response = ctx.value('xarm_pixel_to_position', frame_id=observation['frame_id'],
+                                         camera=name, pixels=pixels[start:start+64].tolist(), radius=2)
+                    responses.extend(response['points'])
+                points = {int(ident): np.asarray(point['position'])
+                          for ident, point in zip(ids, responses) if 'position' in point}
+                base_points[name] = points
+                errors = [float(np.linalg.norm(position-(T_base_board @
+                          np.r_[board.getChessboardCorners()[ident], 1])[:3])*1000)
+                          for ident, position in points.items()]
+                pose, detection = charuco_pose(folder, name, board, detector,
+                                               settings=settings, overlay_dir=output)
+                if pose is not None:
+                    board_poses[name] = np.asarray(entry['T_base_cam']) @ pose
+                metrics = statistics(errors)
+                frame['cameras'][name] = {'detection': detection, 'depth_vs_base_board': metrics,
+                    'intrinsics_source': entry.get('intrinsics_source'),
+                    'depth_registration_source': entry.get('depth_registration_source'),
+                    'ids': ids.tolist(), 'points': responses,
+                    'ok': bool(metrics and metrics['count'] >= 12 and metrics['median_mm'] <= 5
+                               and metrics['p95_mm'] <= 10)}
+            shared = sorted(set(base_points['wrist']) & set(base_points['side']))
+            errors = [float(np.linalg.norm(base_points['wrist'][i]-base_points['side'][i])*1000)
+                      for i in shared]
+            cross = statistics(errors)
+            frame['common_ids'] = shared
+            frame['cross_camera'] = cross
+            if len(board_poses) == 2:
+                a, b = board_poses['wrist'], board_poses['side']
+                frame['rgb_board_pose_difference'] = {
+                    'translation_mm': float(np.linalg.norm(a[:3, 3]-b[:3, 3])*1000),
+                    'rotation_deg': float(np.degrees(Rotation.from_matrix(a[:3, :3].T @ b[:3, :3]).magnitude()))}
+            frame['ok'] = bool(cross and cross['count'] >= 12 and cross['p95_mm'] <= 10
+                               and all(c['ok'] for c in frame['cameras'].values())
+                               and observation['arm_moved_during_capture_mm'] <= .2)
+            report['frames'].append(frame)
+            (output/'verification.json').write_text(json.dumps(report, indent=2)+'\n')
+            print(json.dumps({'frame': repeat, 'ok': frame['ok'], 'cross_camera': cross,
+                  'cameras': {n: c['depth_vs_base_board'] for n, c in frame['cameras'].items()}}), flush=True)
+        report['final_arm_status'] = ctx.value('xarm_status')
+        report['final_hand_status'] = ctx.value('wuji_status')
+    report['ok'] = len(report['frames']) == 3 and all(f['ok'] for f in report['frames'])
+    (output/'verification.json').write_text(json.dumps(report, indent=2)+'\n')
+    if not report['ok']:
+        raise SystemExit('Fresh MCP geometry checks failed; do not install')
+
+
+if __name__ == '__main__':
+    main()

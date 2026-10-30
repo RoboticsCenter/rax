@@ -223,6 +223,7 @@ and parent liveness while the agent is thinking or waiting for an operator.
 | `wuji_status` | none | Measured/target positions, rad/s velocities, effort in A, diagnostics, independent stream ages, profile, limits, posture names, mode and current action. |
 | `wuji_move_joints` | `positions`: 20 finite radians; optional `duration_s` | Smooth bounded move and measured settling. Holds the final target afterward. |
 | `wuji_pose` | `name`; optional `duration_s` | Same motion path using an operator-configured posture. Unknown names refuse before dispatch. |
+| `wuji_home` | optional `duration_s` | Return to configured `home` through the custom movement controller, retaining active gains/damping and motion limits. Waits for measured settling. Requires preparation and arming. |
 | `wuji_set_effort` | `effort_a`: 20 signed amperes; optional `duration_s` | Slew-bounded feed-forward current ramp, holding the position reference and MIT gains. Current bias persists after return. Not calibrated fingertip-force control. |
 | `wuji_set_impedance` | One or more 20-element arrays: `kp`, `kd`, `current_limit_a` | Adjust active gains/current caps within the operator profile, with device readback. Requires zero feed-forward bias and a measured stationary prepared hand. |
 | `wuji_hold` | none | Retain a stationary target; brake a moving S-curve to a bounded rest target. Falls back to emergency stop when disarmed/unreliable or bounded braking is unavailable. |
@@ -294,13 +295,30 @@ operator still performs preparation/arming through the existing controls.
 The saved hand home is requested through MCP after operator arming and preparation:
 
 ```python
-ctx.value('wuji_pose', name='home')
+ctx.value('wuji_home')
 ```
 
 New sessions created from `examples/xarm-wuji.json` include this posture; existing
 session configurations are snapshots and do not reload edits to the example.
 `scripts/xarm home` continues to reset only the arm. Hand `prepare` holds the
 measured posture, so it does not automatically move to `home`.
+
+`wuji_pose(name='home')` remains equivalent. Both use the same custom movement
+controller as `wuji_move_joints`, including the configured S-curve trajectory,
+gains, damping, current caps and measured settling. Neither resets encoders or
+enables motors. Between training episodes, release/support the object and retreat
+into clear space, then run `wuji_home` followed by `xarm_move_joints(preset='home')`.
+Verify both measured results and fresh status before requesting a scene reset.
+Do not force homing after a fault, uncertain state or blocked return path.
+
+Arm joint moves, including the home preset, accept the complete target in one MCP
+call. RAX validates the full path before moving and executes longer moves as SDK
+segments bounded by `max_joint_step_rad` (1.2 rad by default), accounting for
+endpoint tolerance. The agent need not split them into separate calls. Measured
+feedback, arming and hand readiness are checked between segments; a stop, failure
+or the original overall timeout cancels the rest. Arm speed and acceleration caps
+are unchanged. This reduces agent round trips; it does not add collision planning
+or qualify an unseen path through the workspace.
 
 The home capture read the disabled hand without enabling motors. Its angles differ
 from the earlier tested `test_start` posture by up to 1.00035 rad. Saving a target

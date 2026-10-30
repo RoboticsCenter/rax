@@ -319,7 +319,8 @@ class XArmBackend:
             {'name': 'xarm_move_joints', 'description':
                 'Joint-space move with xArm set_servo_angle. positions: 6 joint angles (rad); or preset "home". '
                 'The path is sampled through the controller FK and checked against workspace/table clearance '
-                'before moving. Requires operator arming.',
+                'before moving. Longer moves execute bounded SDK segments within this call; '
+                'the caller need not subdivide joint targets. Requires operator arming.',
              'inputSchema': _schema({'positions': {'type': 'array', 'items': NUMBER, 'minItems': 6,
                                                    'maxItems': 6},
                                      'preset': {'type': 'string', 'enum': ['home']}})},
@@ -408,8 +409,8 @@ class XArmBackend:
     def _check_joint_path(self, start, goal):
         step = float(np.max(np.abs(goal - start)))
         if step > self.options['max_joint_step_rad']:
-            raise ValueError(f"joint move of {step:.2f} rad exceeds {self.options['max_joint_step_rad']} rad "
-                             'per call; split it')
+            raise ValueError(f"joint segment of {step:.2f} rad exceeds {self.options['max_joint_step_rad']} rad "
+                             'per SDK command')
         for fraction in np.linspace(0.0, 1.0, 31):
             p, _ = self.arm.forward_kinematics(start + fraction * (goal - start))
             self._check_box(p, margin=self.options['workspace_guard_margin_m'],
@@ -418,6 +419,23 @@ class XArmBackend:
                 raise ValueError(f"joint path brings the TCP to z={p[2]:.3f} m at {fraction:.0%} "
                                  f"(minimum {self.options['link_min_z']} m)")
         return step
+
+    def _joint_plan(self, start, goal):
+        """Validate the complete path before dispatching any bounded segment."""
+        limit = float(self.options['max_joint_step_rad'])
+        tolerance = float(self.options['joint_tolerance_rad'])
+        if not np.isfinite([limit, tolerance]).all() or not 0 < tolerance < limit:
+            raise ValueError('joint_tolerance_rad must be positive and smaller than max_joint_step_rad')
+        step = float(np.max(np.abs(goal - start)))
+        # Reserve the endpoint tolerance: the next SDK command is bounded from
+        # measured joints even when the preceding segment stops short of target.
+        count = 1 if step <= limit else int(np.ceil(step / (limit - tolerance)))
+        waypoints = [start + (goal - start) * (i / count) for i in range(1, count + 1)]
+        previous = start
+        for waypoint in waypoints:
+            self._check_joint_path(previous, waypoint)
+            previous = waypoint
+        return waypoints
 
     def validate(self, name, arguments):
         if self.has_hand and name.startswith('wuji_'):
@@ -447,7 +465,7 @@ class XArmBackend:
         if name == 'xarm_move_pose':
             self._pose_goal(arguments, self.arm.state())
         elif name == 'xarm_move_joints':
-            self._check_joint_path(np.asarray(self.arm.state()['joints']), self._joint_goal(arguments))
+            self._joint_plan(np.asarray(self.arm.state()['joints']), self._joint_goal(arguments))
         elif name == 'xarm_gripper':
             action = arguments['action']
             if action in ('move', 'grasp') and 'width' not in arguments:
@@ -657,24 +675,38 @@ class XArmBackend:
         arguments = {'positions': positions} if positions is not None else {'preset': preset}
         goal = self._joint_goal(arguments)
         start = np.asarray(self.arm.state()['joints'])
-        step = self._check_joint_path(start, goal)
+        waypoints = self._joint_plan(start, goal)
+        step = float(np.max(np.abs(goal - start)))
         self._require_armed()
         timeout = min(self.options['move_timeout_s'], max(2.0, step / self.options['joint_speed_radps']) + 10.0)
         started, motion_start = time.monotonic(), time.time()
         try:
-            self.arm.move_joints(goal, speed_radps=self.options['joint_speed_radps'],
-                                 acc_radps2=self.options['joint_acc_radps2'], timeout_s=timeout)
-            while True:
+            previous = start
+            for waypoint in waypoints:
                 state = self.arm.state()
                 self._guard(state)
-                error = np.abs(np.asarray(state['joints']) - goal)
-                if float(error.max()) <= self.options['joint_tolerance_rad']:
-                    break
-                if time.monotonic() - started > timeout:
-                    self.arm.hold()
-                    raise TimeoutError(f"joint target not reached in {timeout:.1f}s: largest error "
-                                       f"{float(error.max()):.3f} rad; the arm holds where it is")
-                time.sleep(self.options['poll_period_s'])
+                measured = np.asarray(state['joints'])
+                # The nominal segment was already checked. Recheck geometry only
+                # when actual feedback differs from its preflighted start.
+                if not np.array_equal(measured, previous):
+                    self._check_joint_path(measured, waypoint)
+                remaining = timeout - (time.monotonic() - started)
+                if remaining <= 0:
+                    raise TimeoutError(f'joint move exceeded its {timeout:.1f}s timeout before the next segment')
+                self.arm.move_joints(waypoint, speed_radps=self.options['joint_speed_radps'],
+                                     acc_radps2=self.options['joint_acc_radps2'], timeout_s=remaining)
+                while True:
+                    state = self.arm.state()
+                    self._guard(state)
+                    error = np.abs(np.asarray(state['joints']) - waypoint)
+                    if float(error.max()) <= self.options['joint_tolerance_rad']:
+                        break
+                    if time.monotonic() - started > timeout:
+                        self.arm.hold()
+                        raise TimeoutError(f"joint target not reached in {timeout:.1f}s: largest error "
+                                           f"{float(error.max()):.3f} rad; the arm holds where it is")
+                    time.sleep(self.options['poll_period_s'])
+                previous = waypoint
         except (MotionStopped, TimeoutError, TargetRejected, ValueError) as exc:
             self.arm.hold()
             self._schedule_motion_clip('xarm_move_joints', motion_start, time.time(), 'failed', exc)
@@ -685,7 +717,8 @@ class XArmBackend:
         state = self.arm.state()
         error = np.abs(np.asarray(state['joints']) - goal)
         result = {'seconds': round(time.monotonic() - started, 2),
-                  'max_joint_error_rad': round(float(error.max()), 4), **self._pose_report(state)}
+                  'segments': len(waypoints), 'max_joint_error_rad': round(float(error.max()), 4),
+                  **self._pose_report(state)}
         clip = self._schedule_motion_clip('xarm_move_joints', motion_start, time.time(), 'completed')
         if clip:
             result['motion_clip'] = clip
@@ -747,7 +780,7 @@ class XArmBackend:
                                      'K': entry['K'], 'width': entry['width'], 'height': entry['height'],
                                      'T_base_cam': T_base_cam.tolist(), 'timestamp_ns': entry['timestamp_ns'],
                                      **{key: entry[key] for key in ('distortion_model', 'distortion_coeffs',
-                                        'serial', 'fps', 'depth_scale_m', 'depth_alignment',
+                                        'serial', 'fps', 'depth_scale_m', 'depth_scale_factor', 'depth_alignment',
                                         'intrinsics_source', 'depth_registration_source') if key in entry}}
             image = cv.imread(entry['rgb'])
             marks = []

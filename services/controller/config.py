@@ -6,7 +6,7 @@ import json
 from pathlib import Path
 import re
 
-AGENT_EFFORTS = ('high', 'xhigh', 'max')
+AGENT_EFFORTS = ('medium', 'high', 'xhigh', 'max')
 PROVIDERS = ('claude-login', 'openrouter', 'anthropic', 'openai')
 PROFILES = ('rgbd', 'rgb-only')
 

@@ -1,130 +1,113 @@
 # xArm + Wuji camera calibration
 
-Installed and verified on 2026-10-27 with a new, correctly sized 10×13
-ChArUco print: 20 mm squares, 15 mm markers, DICT_4X4_100. The observed marker
-IDs use the legacy 14-row layout with the last row absent. `board.json` records
-that mapping; it does not add a physical row to the target.
+Camera extrinsics were refitted, installed and verified on 2026-10-29 PDT
+(2026-10-30 UTC). The wrist optical calibration from the earlier run that day
+was retained. The board is 10×13 ChArUco, with 20 mm squares, 15 mm markers and
+DICT_4X4_100. `board.json` preserves its legacy 14-row ID layout with the last
+physical row absent.
 
-`examples/xarm-wuji.json` references these files. Runtime RGB-D is 640×480 at
-6 fps; color-only calibration and preview also support 1280×720 at 6 fps.
+`examples/xarm-wuji.json` and the host runtime config reference these files.
+Runtime RGB-D is 640×480 at 6 fps; calibration RGB captures use 1280×720 at 6 fps.
 
-| Camera | Serial | Calibrated quantities |
+| Camera | Serial | Current calibration |
 | --- | --- | --- |
-| Wrist D435 | 262422074331 | RGB intrinsics/distortion, depth-to-color alignment, camera-to-TCP/flange |
-| Fixed side D435 | 348522070593 | Camera-to-base extrinsics; factory RGB/depth intrinsics retained |
+| Wrist D435 | 262422074331 | New camera-to-TCP/flange extrinsics; retained fitted RGB intrinsics, stereo alignment and depth correction |
+| Fixed side D435 | 348522070593 | New camera-to-base extrinsics; factory RGB/depth intrinsics retained |
 
-Both intrinsics JSON files retain the factory readback as a device/profile
-guard. Wrist RGB is rectified with the fitted Brown5 model. Native depth is
-projected through the fitted stereo transform into that rectified color model,
-using a nearest-surface Z buffer. Depth values represent color-camera Z.
-Factory depth units remain 0.0010000000474974513 m; no firmware calibration,
-depth-unit setting, TCP offset, or payload was changed.
+Both intrinsics files are unchanged and retain factory device/profile guards.
+Wrist RGB is rectified with the fitted Brown5 model. Native depth receives the
+software factor **1.0048860716612322** before projection through the fitted stereo
+transform and nearest-surface Z buffer. Output depth is color-camera Z. Factory
+depth units remain 0.0010000000474974513 m; firmware settings are unchanged.
 
-## Validation
+## Current validation
 
-RGB intrinsics and hand-eye fitting used 15 training poses from run06; the last
-three poses were reserved. The additional run07 supplied 12 usable paired
-infrared/RGB training views for stereo alignment. All three reserved RGB/depth
-views were checked independently, including one without enough infrared
-corners for a separate IR pose estimate. No reserved view entered either fit.
+All 18 capture poses were accepted: 15 training and three reserved poses. The
+hand held its measured posture. Three fresh candidate observations and three
+fresh installed observations passed through `xarm_observe` and
+`xarm_pixel_to_position` using the corresponding calibration files.
 
 | Check | Result |
 | --- | --- |
-| Wrist RGB training reprojection RMS | 0.260 px |
-| Wrist hand-eye maximum training residual | 1.22 mm / 0.70° |
-| Wrist hand-eye maximum reserved residual | 1.43 mm / 0.42° |
-| Fixed side-camera maximum consistency residual | 0.80 mm / 0.18° |
-| Infrared/RGB stereo reprojection RMS | 0.368 px |
-| Reserved wrist RGB-D errors, per-view median | 1.73–3.59 mm |
-| Reserved wrist RGB-D errors, worst per-view 95th percentile | 5.04 mm |
-| Installed MCP wrist board-point error, median / 95th percentile | 3.60 / 5.46 mm |
-| Installed MCP side board-point error, median / 95th percentile | 1.63 / 3.61 mm |
-| Installed MCP cross-camera difference, median / 95th percentile | 4.34 / 6.17 mm |
+| Wrist hand-eye maximum training residual | 1.52 mm / 0.63° |
+| Wrist hand-eye maximum reserved residual | 1.44 mm / 0.38° |
+| Side-camera maximum stationary-board consistency residual | 3.37 mm / 0.41° |
+| Installed wrist board-point median range / worst 95th percentile | 1.39–1.45 / 3.47 mm |
+| Installed side board-point median range / worst 95th percentile | 1.43–2.42 / 6.33 mm |
+| Installed cross-camera median range / worst 95th percentile | 2.60–2.81 / 5.36 mm |
 
-The final MCP comparison used 16 common board corners at runtime resolution.
-`xarm_status`, `wuji_status`, `xarm_observe`, `xarm_stream`, and
-`xarm_pixel_to_position` succeeded. Gates were unchanged: hand-eye ≤5 mm / 1°;
-RGB-D median ≤5 mm and 95th percentile ≤10 mm; cross-camera 95th percentile
-≤10 mm. The camera/workspace/arm/hand regression suite passed 102 tests.
+Installed checks used 15–19 common corners per frame.
+Gates remain: hand-eye ≤5 mm / 1°; RGB-D median ≤5 mm and 95th percentile ≤10 mm;
+cross-camera 95th percentile ≤10 mm; at least 12 valid points per view and
+≤0.2 mm arm translation during each capture. The 18 camera commissioning tests passed.
 
-The arm returned to [0.25310, -0.00134, 0.31412] m. Final readback showed
-controller state 4, no arm error, disarmed session, and fresh, disabled hand
-feedback with no faults.
+The first fresh verification had only 4–8 decoded side corners and failed the
+point-count gate. Small-marker detection now tries larger decoding images and
+threshold windows when needed, choosing by decoded corner count. Every result
+is mapped back to native pixel centers before geometry calculations. Acceptance
+limits were unchanged, and new fresh observations passed afterward.
+
+The arm returned to [0.2531, -0.00134, 0.31412] m. Final readback showed state 4,
+zero arm error, disarmed motion, and fresh disabled hand feedback without faults.
+
+## Retained optical calibration
+
+The earlier native collection supplied 15 training and three reserved RGB poses.
+Wrist RGB reprojection RMS was 0.227 px. Twelve views supported IR/RGB stereo
+fitting with RMS 0.168 px; 255 training measurements supplied the depth factor.
+All 18 saved RGB-D views passed the original limits. These are historical
+optical-calibration measurements, not a new fit in this extrinsics-only run.
+The complete previous report is preserved in this run's backup.
 
 ## Coordinate conventions and scope
 
-All matrices use column vectors and metres. `T_A_B` maps coordinates from B
-into A:
+Matrices use column vectors and metres; `T_A_B` maps B coordinates into A:
 
-- `wrist_T_cam_tcp.yaml`: TCP coordinates → wrist color-camera coordinates.
-- `wrist_T_cam_flange.yaml`: flange coordinates → wrist color-camera coordinates.
-- `side_T_cam_base.yaml`: arm-base coordinates → side color-camera coordinates.
-- `calibrated_depth_to_color.T_color_depth`: native depth coordinates → fitted
-  wrist color-camera coordinates.
+- `wrist_T_cam_tcp.yaml`: TCP → wrist color camera.
+- `wrist_T_cam_flange.yaml`: flange → wrist color camera.
+- `side_T_cam_base.yaml`: arm base → side color camera.
+- `calibrated_depth_to_color.T_color_depth`: corrected native depth → wrist color camera.
 
-For the wrist, `T_base_cam = T_base_tcp @ inverse(T_cam_tcp)`. For the fixed
-side camera, `T_base_cam = inverse(T_cam_base)`.
+Wrist: `T_base_cam = T_base_tcp @ inverse(T_cam_tcp)`.
+Side: `T_base_cam = inverse(T_cam_base)`.
 
-The TCP readback during collection was [0, 0, 172, 0, 0, 0] mm/rad; payload was
-0.82 kg with CoG [0, 0, 48] mm. These are existing controller settings, not
-measured Wuji palm geometry. Recompute the TCP-relative transform if that TCP
-changes. Recalibrate after moving either camera mount. Accuracy is qualified
-around the observed tabletop and bounded calibration poses; full-workspace
-accuracy and manipulation remain unqualified.
-
-The initial run06 RGB-only model passed hand-eye checks but failed wrist depth
-validation by approximately 15 mm. Raw IR/depth inspection and the paired run07
-showed that the fitted RGB model also needed its own depth-to-color alignment.
-The installed stereo model passed both reserved-frame and fresh MCP checks;
-the rejected factory-alignment candidate was never installed.
+TCP readback was [0, 0, 172, 0, 0, 0] mm/rad; payload was 0.82 kg with CoG
+[0, 0, 48] mm. These are controller settings, not measured palm geometry.
+Recompute the TCP-relative transform if TCP settings change and recalibrate
+after moving either mount. Accuracy is qualified around the observed tabletop
+and calibration poses: ±25 mm sideways, 0–50 mm upward and rotations up to 21.2°.
+Full-workspace accuracy and manipulation remain unqualified.
 
 ## Evidence and repeatability
 
-`calibration-report.json` contains residuals, validation limits, board definition,
-runtime measurements and final assembly state. Raw evidence remains local:
+Current evidence: `/home/jack-xiang/rax-runtime/camera-recalibration-20261030T041535Z/`
 
-- `.local-runtime/sessions/charuco-wuji-20261027-run06/`: 18 raw RGB poses.
-- `.local-runtime/sessions/charuco-wuji-20261027-run06-fit/`: RGB fit and reserved checks.
-- `.local-runtime/sessions/charuco-wuji-20261027-run07/`: synchronized native IR/depth/RGB.
-- `.local-runtime/sessions/charuco-wuji-20261027-run07-stereo-reproduced/`: reproducible stereo fit and depth checks.
-- `.local-runtime/sessions/camera-mcp-check-20261027-installed/`: final production MCP audit and frames.
+- `collection/`: raw images, poses, fit and reserved-pose residuals.
+- `verification-candidate-multiscale/checks/`: fresh candidate RGB-D checks.
+- `verification-installed/checks/`: fresh checks through the active config.
+- `backup/calibration/`: complete previous calibration and optical-fit report.
+- `installed-manifest.json`: active extrinsics and retained-intrinsics hashes.
 
-Stop the camera viewer before calibration or an MCP session; each owns the
-camera devices. The camera-only viewer is available at <http://localhost:8765/>.
-UFactory Studio is hosted by the arm at <http://192.168.100.16:18333/>.
+The earlier RGB/stereo/depth evidence remains under
+`/home/jack-xiang/rax-runtime/camera-recalibration-20261030T003223Z/`.
 
-For a future collection, use a new artifact directory and confirm a fixed,
-flat board and fixed mounts. Preflight is read-only:
+Stop camera viewers/frontends before collection; each owns the devices. Load
+`/home/jack-xiang/rax-runtime/environment.sh` and pass `--backend-options
+"$RAX_BACKEND_OPTIONS"`. Keep the board flat and fixed throughout.
 
-```bash
-export RAX_ARTIFACT_ROOT=/home/jerry/rax/.local-runtime
-.venv/bin/python scripts/xarm-charuco-calibrate --capture-native \
-  --preflight --root "$RAX_ARTIFACT_ROOT/sessions/new-preflight"
-```
+1. Run `scripts/xarm-charuco-calibrate --preflight --use-installed-intrinsics
+   --root NEW_PREFLIGHT_ROOT`.
+2. After operator clearance and arm readiness, collect with
+   `--use-installed-intrinsics --yes --prepare-hand --root NEW_COLLECTION_ROOT
+   --install --calibration-dir CANDIDATE_DIR`. These flags authorize real motion.
+   The hand holds its posture; no finger homing occurs.
+3. Start a disarmed RGB-D MCP frontend using candidate calibration paths. Run
+   `scripts/xarm-charuco-verify --socket SOCKET --session SESSION --fit
+   COLLECTION/result.json --output NEW_CHECK_DIRECTORY`.
+4. Install only after fresh checks pass, preserving a backup, then repeat the
+   same verification through the active runtime config.
 
-After operator clearance and arm readiness, collection uses `--capture-native
---yes --prepare-hand` and a new root. These flags authorize real robot movement.
-The hand holds its measured posture; this is not finger homing. Collections
-save raw factory-profile RGB even when a fitted model is already installed.
-
-Offline fitting uses:
-
-```bash
-.venv/bin/python scripts/xarm-charuco-fit \
-  --collection "$RAX_ARTIFACT_ROOT/sessions/new-collection" \
-  --root "$RAX_ARTIFACT_ROOT/sessions/new-rgb-fit"
-.venv/bin/python scripts/xarm-charuco-stereo-fit \
-  --collection "$RAX_ARTIFACT_ROOT/sessions/new-collection" \
-  --rgb-fit "$RAX_ARTIFACT_ROOT/sessions/new-rgb-fit" \
-  --root "$RAX_ARTIFACT_ROOT/sessions/new-stereo-fit"
-```
-
-Fitting writes candidates only. Before installation, keep the board fixed and
-verify fresh `xarm_observe` and `xarm_pixel_to_position` results through the
-[normal MCP frontend](../../docs/xarm-wuji.md#start-a-session-for-mcp-testing).
-Compare board points and common corners between cameras against the limits
-above. Passing image-fit residuals alone is insufficient for RGB-D validation.
-The one-off MCP verifier used for the recorded commissioning check is archived
-locally at `.local-runtime/calibration-session-cleanup/scripts/xarm-camera-verify`.
-The stereo fitter can use a separate collection if the board, robot base and camera mounts remain
-fixed, as in this calibration.
+For an optical refit, collect with `--capture-native`, then use
+`scripts/xarm-charuco-fit` and `scripts/xarm-charuco-stereo-fit`. The latter's
+`--fit-depth-scale` uses training measurements only. Fresh MCP checks still
+apply; image-fit residuals alone do not establish metric depth accuracy.

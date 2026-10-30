@@ -51,6 +51,19 @@ def test_unknown_and_invalid_options_rejected(args):
         validate_tool('wuji_move_joints', args, hand_config())
 
 
+@pytest.mark.parametrize('args', [{'name': 'test_pose'}, {'positions': [0]*20},
+                                 {'duration_s': None}, {'duration_s': True}, {'duration_s': .01}])
+def test_home_rejects_target_overrides_and_invalid_duration(args):
+    with pytest.raises(ValueError):
+        validate_tool('wuji_home', args, hand_config(postures={'home': [.1]*20}))
+
+
+def test_home_duration_and_configured_target_match_named_pose():
+    cfg = hand_config(postures={'home': [.1, -.1, .2, .05]*5})
+    assert validate_tool('wuji_home', {'duration_s': 3.}, cfg) == validate_tool(
+        'wuji_pose', {'name': 'home', 'duration_s': 3.}, cfg)
+
+
 @pytest.mark.parametrize('duration', [True, '1', float('nan'), -1.])
 def test_private_trajectory_path_also_rejects_invalid_duration(duration):
     with pytest.raises(ValueError):

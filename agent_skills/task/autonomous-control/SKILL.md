@@ -139,9 +139,14 @@ the real scene.
 
 {% if robot.has_hand %}
 1. Support and release any held object with a commissioned hand posture, then
-   move to a verified clear arm pose. Do not assume zero joint targets are open
-   or that the old gripper home pose clears the hand. Call `request_operator` with
-   kind `reset`, describe the desired scene, and wait for the answer.
+   retreat into clear space. Follow the [hand-control](../hand-control/SKILL.md)
+   return-home procedure: `{{ robot.hand_home }}()`, then `{{ robot.joints }}` with
+   `preset="home"`, checking measured completion and fresh status after each.
+   Do this between every training episode, including recoverable failed attempts,
+   before calling `request_operator` with kind `reset` for the next layout.
+   Wait for the answer and recheck both devices and the scene before starting.
+   A blocked or uncertain reset requires operator help; do not force home in an
+   exception/finally handler or proceed to the next episode without a verified reset.
 {% else %}
 1. Bring the robot to a neutral state (gripper open, `{{ robot.joints }}` preset
    `home`), then call `request_operator` with kind `reset` and say what you need, e.g.
@@ -155,7 +160,9 @@ the real scene.
    duration, failure step and cause.
 {% if robot.has_hand %}
    Include active hand gains/caps, current bias, posture and decisive observation or
-   motion-clip references. A clean current-ramp return is not grasp success.
+   motion-clip references, plus whether both devices returned home. Include the
+   verified return-home sequence as the final stage of a completed controller run;
+   a clean current-ramp return is not grasp success.
 {% endif %}
 
 Aim for several consecutive clean successes on varied layouts before calling it done.

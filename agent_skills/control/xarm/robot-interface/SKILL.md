@@ -56,7 +56,12 @@ physically.
 {% if robot.has_hand %}
   The hand also requests motor disable; a held object may be released.
 {% endif %}
-- Targets outside the workspace box, too far per call, outside joint limits, or refused
+- Joint targets, including `xarm_move_joints(preset="home")`, need only one call.
+  The host validates the complete path and handles longer moves in bounded SDK
+  segments. Do not split a verified-clear joint path merely to satisfy the SDK
+  segment limit. Arming and hand readiness are checked during execution; a stop
+  or failure cancels the remaining segments.
+- Targets outside the workspace box, Cartesian translations too far per call, outside joint limits, or refused
   by the xArm controller are not safe to push through. Choose a shorter move, a higher
   clearance or a different orientation within observed clearance. Use `home` only
   after establishing clearance for the whole assembly along that path.
