@@ -2,8 +2,10 @@
 import json
 from dataclasses import replace
 from pathlib import Path
+import subprocess
 import sys
 import time
+from types import SimpleNamespace
 
 import pytest
 
@@ -184,3 +186,132 @@ def test_resume_budget_excludes_usage_waits(tmp_path):
     record.write_text(json.dumps({'started_at': 100.0, 'finished_at': 400.0, 'usage_wait_seconds': 100.0,
                                   'attempts': [{'started_at': 0.0, 'finished_at': 50.0}]}))
     assert launcher.attempt_seconds(launcher.resumable_lifecycle(record)) == 250.0
+
+
+@pytest.fixture
+def exhausted_session(deployed, monkeypatch):
+    config, paths = deployed
+    source = config.root/'operator-input.json'
+    source.write_text(json.dumps(config.to_dict()))
+    record = config.root/'agent-lifecycle.json'
+    record.write_text(json.dumps({'started_at': 100., 'finished_at': 100.+config.session_seconds,
+                                  'status': 'budget-exhausted', 'returncode': 124}))
+    (config.root/'model-calls.json').write_text(json.dumps({'calls': 925}))
+    calls = []
+
+    def launch(config, deployed, **kwargs):
+        calls.append((config, kwargs))
+        return 0
+
+    monkeypatch.setattr(launcher, 'redeploy', lambda config: paths)
+    monkeypatch.setattr(launcher, 'launch', launch)
+    monkeypatch.setattr(launcher.signal, 'signal', lambda *args: None)
+    argv = ['launcher', '--config', str(source), '--resume']
+    monkeypatch.setattr(sys, 'argv', argv)
+    return SimpleNamespace(config=config, paths=paths, source=source, record=record, calls=calls, argv=argv)
+
+
+def test_exhausted_resume_explains_extension_without_launching_or_changing_limits(exhausted_session):
+    s = exhausted_session
+    before = s.record.read_text()
+    with pytest.raises(SystemExit, match='--session-hours TOTAL_HOURS'):
+        launcher.main()
+    assert not s.calls and s.record.read_text() == before
+    assert json.loads(s.source.read_text())['session_seconds'] == 4*3600
+
+
+def test_explicit_resume_limits_are_totals_and_preserve_usage_and_backend(exhausted_session):
+    s = exhausted_session
+    # Existing service settings must not be replaced by unrelated operator edits.
+    source = json.loads(s.source.read_text())
+    source['backend_options']['future_operator_setting'] = True
+    s.source.write_text(json.dumps(source))
+    s.argv.extend(['--session-hours', '5', '--max-model-calls', '2000'])
+    with pytest.raises(SystemExit) as result:
+        launcher.main()
+    assert result.value.code == 0
+    config, args = s.calls[0]
+    assert config.session_seconds == 5*3600 and args['seconds'] == 3600
+    assert config.max_model_calls == 2000
+    for path in (s.source, s.paths['configuration']):
+        saved = json.loads(path.read_text())
+        assert saved['session_seconds'] == 5*3600 and saved['max_model_calls'] == 2000
+    assert json.loads(s.paths['configuration'].read_text())['backend_options'] == s.config.backend_options
+    assert json.loads((s.config.root/'model-calls.json').read_text()) == {'calls': 925}
+    assert len(json.loads(s.record.read_text())['attempts']) == 1
+
+
+def test_runtime_override_keeps_call_allowance(exhausted_session):
+    s = exhausted_session
+    s.argv.extend(['--session-hours', '5'])
+    with pytest.raises(SystemExit) as result:
+        launcher.main()
+    assert result.value.code == 0
+    assert s.calls[0][0].max_model_calls == s.config.max_model_calls
+
+
+@pytest.mark.parametrize('options', [
+    ['--session-hours', 'nan'], ['--session-hours', 'inf'], ['--session-hours', '0'],
+    ['--session-hours', '-1'], ['--session-hours', '169'], ['--max-model-calls', '0'],
+])
+def test_invalid_runtime_overrides_do_not_change_session(exhausted_session, options):
+    s = exhausted_session
+    before = s.source.read_text(), s.record.read_text()
+    s.argv.extend(options)
+    with pytest.raises(SystemExit) as result:
+        launcher.main()
+    assert result.value.code == 2 and not s.calls
+    assert (s.source.read_text(), s.record.read_text()) == before
+
+
+def test_timeout_records_clean_budget_stop_with_actionable_message(exhausted_session, monkeypatch, capsys):
+    s = exhausted_session
+    s.argv.extend(['--session-hours', '5'])
+
+    def expire(*args, **kwargs):
+        raise launcher.SessionBudgetExpired()
+
+    monkeypatch.setattr(launcher, 'launch', expire)
+    with pytest.raises(SystemExit) as result:
+        launcher.main()
+    assert result.value.code == 124
+    saved = json.loads(s.record.read_text())
+    assert saved['status'] == 'budget-exhausted' and saved['returncode'] == 124
+    assert saved['finished_at'] >= saved['started_at'] and len(saved['attempts']) == 1
+    message = capsys.readouterr().err
+    assert '5-hour' in message and '--session-hours TOTAL_HOURS' in message and 'Traceback' not in message
+
+
+def test_other_subprocess_timeouts_remain_failures(exhausted_session, monkeypatch):
+    s = exhausted_session
+    s.argv.extend(['--session-hours', '5'])
+
+    def fail(*args, **kwargs):
+        raise subprocess.TimeoutExpired('service-startup', 120)
+
+    monkeypatch.setattr(launcher, 'launch', fail)
+    with pytest.raises(subprocess.TimeoutExpired):
+        launcher.main()
+    assert json.loads(s.record.read_text())['status'] == 'failed'
+
+
+def test_budget_timeout_cleans_up_agent_robot_and_relay_without_resetting_zero_budget(deployed, monkeypatch):
+    config, paths = deployed
+    cleaned = []
+    agent = SimpleNamespace(poll=lambda: None)
+    server = object()
+    model = SimpleNamespace(address=('127.0.0.1', 4242), limited_until=0,
+                            close=lambda: cleaned.append('relay'))
+    monkeypatch.setattr(launcher, 'start_relay', lambda *a, **kw: model)
+    monkeypatch.setattr(launcher, 'start_robot_service', lambda *a, **kw: server)
+    monkeypatch.setattr(launcher.subprocess, 'Popen', lambda *a, **kw: agent)
+    monkeypatch.setattr(launcher, 'stop', lambda process, **kw: cleaned.append(process))
+    monkeypatch.setattr(launcher.time, 'monotonic', lambda: 100.)
+    # Actual watch() must immediately expire this allowance, never replace zero
+    # with a fresh four hours or sleep with a live robot service.
+    def unexpected_sleep(*args):
+        pytest.fail('zero runtime allowance must expire immediately')
+    monkeypatch.setattr(launcher.time, 'sleep', unexpected_sleep)
+    with pytest.raises(launcher.SessionBudgetExpired):
+        launcher.launch(config, paths, prompt='continue', seconds=0)
+    assert cleaned == [agent, server, 'relay']
