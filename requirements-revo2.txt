@@ -1,0 +1,10 @@
+# Install with the same Python interpreter used by the RAX frontend.
+numpy
+scipy
+opencv-python
+pyyaml
+jinja2
+pillow
+xarm-python-sdk==1.18.4
+pyrealsense2
+bc-stark-sdk==2.0.9

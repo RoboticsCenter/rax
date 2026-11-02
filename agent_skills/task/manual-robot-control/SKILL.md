@@ -45,7 +45,7 @@ Use these skills as needed rather than loading every reference up front:
   motion strategies under matching observable conditions.
 {% if robot.has_hand %}
 - [Hand control](../hand-control/SKILL.md) for posture-dependent geometry, bounded
-  learning probes, joint-current/impedance control, and grip retention.
+  learning probes, supported native hand controls, and grip retention.
 {% endif %}
 
 {{ block("images.forwarding") }}

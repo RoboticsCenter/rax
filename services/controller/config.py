@@ -44,6 +44,9 @@ class Configuration:
         if self.robot == 'xarm':
             from services.xarm.end_effectors import kind
             kind(self.backend_options)  # Pure validation, including the Wuji profile; no SDK import.
+        elif self.robot == 'xarm_bimanual':
+            from services.xarm.bimanual_config import validate_config
+            validate_config(self.backend_options)
         if self.observation_profile not in PROFILES:
             raise ValueError(f'observation_profile must be one of {PROFILES}')
         if self.agent_provider not in PROVIDERS:

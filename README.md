@@ -1,15 +1,21 @@
-# RAX on xArm + Wuji Hand 2
+# RAX on two xArms + BrainCo Revo 2
+
+This branch adds `xarm_bimanual`: two independently addressed xArm/Revo pairs with
+explicit left/right MCP routing and native BrainCo hand controls. Start with the
+[setup and API mapping](docs/xarm-brainco-bimanual.md) and
+[example configuration](examples/xarm-brainco-bimanual.json).
+The single-arm/Wuji backend and its documentation remain available below.
 
 **[Project website](https://robot-agent-exploration.com/)** · [Paper](https://robot-agent-exploration.com/rax.pdf) · [All branches](https://github.com/robot-agent-exploration/rax)
 
-This branch ports *RAX: Scaling Online Exploration for Robot Agents* to the existing
+The original single-arm setup ports *RAX: Scaling Online Exploration for Robot Agents* to the existing
 xArm 6 with a Wuji Hand 2 and RealSense cameras. The G2 configuration remains supported.
 A Claude Code agent learns a
 manipulation task through MCP tools served by a host-owned robot service. It first
 solves the task by hand, then writes and tests its own controller, keeping notes and
 verified skills in its workspace.
 
-**For this branch, start with the [xArm + Wuji setup and MCP testing guide](docs/xarm-wuji.md).**
+**For the original single-arm embodiment, use the [xArm + Wuji setup and MCP testing guide](docs/xarm-wuji.md).**
 It covers the pinned SDK, operator preparation, hand tools, configuration, skills and
 hardware-free tests. [Initial real-hand tool results](docs/wuji-live-test-2026-10-25.md)
 are recorded; full commissioning remains pending.

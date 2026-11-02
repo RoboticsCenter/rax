@@ -23,7 +23,12 @@ uncertain; do not load the entire history. Keep learned procedures under
 - Update the matching tip when the same maneuver is refined.
 - The real scene drifts between attempts (objects are moved back by hand, lighting
   changes): record the conditions under which a tip held, not only its numbers.
-{% if robot.has_hand %}
+{% if robot.end_effector == 'brainco_revo2' %}
+- Record the selected arm, hand serial, six native motor targets and measured feedback,
+  duration/speed/current settings, motor/sensor states, and visual retention evidence.
+  Record the coordinate frame and camera calibration used for each pair. Do not label
+  normalized motor currents as amperes or infer unmeasured fingertip forces.
+{% elif robot.has_hand %}
 - Record joint targets and measured joints, current bias, active gains/caps, hand
   revision/side, mount/TCP and camera context. Label geometry as nominal, inferred
   from probes, or measured; record its uncertainty and the posture/orientation it

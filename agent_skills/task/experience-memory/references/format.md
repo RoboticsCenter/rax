@@ -47,7 +47,13 @@ description: <maneuver and when this experience applies>
 
 Do not copy tool documentation or global limits into a learned skill, and do not
 encode inferred task success or an unobserved object pose.
-{% if robot.has_hand %}
+{% if robot.end_effector == 'brainco_revo2' %}
+
+For Revo procedures, record the selected arm, six native motor targets, duration or
+speed settings, finite current commands if used, actual feedback and hand identity.
+Include coordinate frames, geometry uncertainty and before/after visual evidence.
+Distinguish command completion, obstruction, observed retention and task success.
+{% elif robot.has_hand %}
 
 For hand procedures, add the active control state (joint target, current bias,
 kp/kd and current caps), profile/revision, geometry assumptions and uncertainty,

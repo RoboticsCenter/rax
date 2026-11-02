@@ -20,7 +20,10 @@ The files are:
   `<epoch_ms>_depth.png` at the configured depth rate (uint16 millimetres, 0 = invalid).
 - `robot/<UTC minute>.jsonl`: TCP pose, arm joints and end-effector feedback at the
   configured robot logging rate (typically 10 Hz); use record timestamps for timing.
-{% if robot.has_hand %}
+{% if robot.end_effector == 'brainco_revo2' %}
+  Revo feedback uses six normalized motor positions/speeds/currents, not joint radians
+  or amperes. Bimanual records contain `arms.left` and `arms.right` in separate base frames.
+{% elif robot.has_hand %}
   `hand` contains measured/target finger joints, measured and commanded effort in A,
   active and baseline gains/current caps, diagnostics, source
   timestamps and freshness. These are sampled alongside the arm state, not exactly
@@ -55,7 +58,7 @@ Older data is deleted as time goes by; copy what you need to keep into `output/`
   still can come from a person, object motion or lighting.
 {% if robot.has_hand %}
   A stationary arm does not imply a stationary hand: inspect the finger state and
-  current commands too, including persistent feed-forward effort.
+  current commands too. Check the hand-control skill for the embodiment's units and modes.
 {% endif %}
 - **After a motion or a script run**, review the frames during it (grasp slip, a
   knocked object, the moment a stack toppled) instead of guessing from the end state.

@@ -205,17 +205,22 @@ class XArmBackend:
     mutating = frozenset({'xarm_move_pose', 'xarm_move_joints', 'xarm_gripper'})
     recovery_tools = frozenset({'xarm_hold'})
 
-    def __init__(self, config, *, arm=None, cameras=None, hand=None, camera_models=None):
+    def __init__(self, config, *, arm=None, cameras=None, hand=None, camera_models=None, arm_name=None):
         self.config = config
+        self.arm_name = arm_name
         unknown = set(config.backend_options) - set(DEFAULTS) - set(LAUNCHER_OPTIONS)
         if unknown:
             raise ValueError(f'unknown xarm backend options: {sorted(unknown)}')
         self.options = {**DEFAULTS, **config.backend_options}
         self.end_effector_kind = end_effectors.kind(self.options)
-        self.has_hand = self.end_effector_kind == 'wuji_hand2'
+        self.has_revo = self.end_effector_kind == 'brainco_revo2'
+        self.has_hand = self.end_effector_kind in ('wuji_hand2', 'brainco_revo2')
         self.hand_config = None
         if self.has_hand:
-            from services.wuji.config import validate_config, MUTATING_TOOLS
+            if self.has_revo:
+                from services.revo2.config import validate_config, MUTATING_TOOLS
+            else:
+                from services.wuji.config import validate_config, MUTATING_TOOLS
             self.hand_config = validate_config(self.options['end_effector'])
             self.mutating = frozenset({'xarm_move_pose', 'xarm_move_joints', *MUTATING_TOOLS})
         elif self.options['end_effector']:
@@ -376,13 +381,16 @@ class XArmBackend:
                             'without a probe move. Does not clear controller errors or ready the arm. Always allowed.'},
         ]
         if self.has_hand:
-            from services.wuji.config import tools
+            if self.has_revo:
+                from services.revo2.config import tools
+            else:
+                from services.wuji.config import tools
             definitions = [t for t in definitions if t['name'] != 'xarm_gripper']
             definitions.extend(tools(self.hand_config))
-            definitions[0]['description'] = ('xArm pose and joints, Wuji hand feedback, controller errors, '
+            definitions[0]['description'] = ('xArm pose and joints, dexterous hand feedback, controller errors, '
                                              'operator arming, cameras and configured workspace limits.')
             next(t for t in definitions if t['name'] == 'xarm_hold')['description'] = (
-                'Disarm, stop the arm and request Wuji emergency stop independently. Verify arm standstill '
+                'Disarm, stop the arm and request the hand stop independently. Verify arm standstill '
                 'and hand stop confirmation. Clears control_uncertain only when both are confirmed; no probe '
                 'move required. Does not clear controller errors, re-enable or prepare either device. '
                 'Always allowed; queued behind any active MCP call. Operator direct stop bypasses that queue.')
@@ -466,7 +474,19 @@ class XArmBackend:
         return waypoints
 
     def validate(self, name, arguments):
+        if self.has_revo and name.startswith('revo_'):
+            from services.revo2.config import validate_tool
+            goal = validate_tool(name, arguments, self.hand_config)
+            if name in self.mutating:
+                self._require_armed()
+                self._motion_state()
+                state = self.end_effector.require_ready()
+                if 'positions' in goal and max(abs(a-b) for a, b in zip(goal['positions'], state['positions'])) > self.hand_config['max_step']:
+                    raise ValueError('Revo position step exceeds max_step; split the move')
+            return
         if self.has_hand and name.startswith('wuji_'):
+            if self.has_revo:
+                raise ValueError('Wuji tools are unavailable with a Revo hand')
             from services.wuji.config import validate_tool, MOTION_TOOLS, MUTATING_TOOLS, effort
             from services.wuji.controller import Trajectory, EffortRamp
             goal = validate_tool(name, arguments, self.hand_config)
@@ -486,7 +506,7 @@ class XArmBackend:
                         raise ValueError('impedance changes require a measured stationary hand')
             return
         if name == 'xarm_gripper' and self.has_hand:
-            raise ValueError('xarm_gripper is unavailable with a Wuji hand')
+            raise ValueError('xarm_gripper is unavailable with a dexterous hand')
         definition = next((tool for tool in self.tools() if tool['name'] == name), None)
         if definition is None:
             raise ValueError(f'unknown tool {name}')
@@ -531,6 +551,23 @@ class XArmBackend:
             raise
 
     def _call(self, name, arguments):
+        if self.has_revo and name.startswith('revo_'):
+            self.validate(name, arguments)
+            started = time.time()
+            try:
+                result = self.end_effector.execute(name, arguments)
+            except Exception as exc:
+                if name in self.mutating:
+                    exc.robot_state = {'assembly_stop': self._stop_assembly()}
+                    exc.control_certain = False
+                    self._schedule_motion_clip(name, started, time.time(), 'failed', exc)
+                raise
+            if name in self.mutating:
+                clip = self._schedule_motion_clip(name, started, time.time(), 'completed')
+                if clip:
+                    result['motion_clip'] = clip
+                self.last_motion = {'tool': name, 'at': time.time(), **result}
+            return result, []
         if self.has_hand and name.startswith('wuji_'):
             self.validate(name, arguments)
             return self._hand_call(name, arguments)
@@ -778,6 +815,8 @@ class XArmBackend:
         start_ms, end_ms = int((start_s - padding) * 1000), int((end_s + padding) * 1000)
         metadata = {'tool': tool, 'status': status, 'motion_start_ms': int(start_s * 1000),
                     'motion_end_ms': int(end_s * 1000), 'padding_s': padding}
+        if self.arm_name:
+            metadata.update(arm=self.arm_name, coordinate_frame=self.arm_name+'_base')
         if detail:
             metadata['detail'] = str(detail)[:500]
 
@@ -947,6 +986,8 @@ class XArmBackend:
         path = self.frames_root/frame_id
         if not (path/'meta.json').is_file():
             raise ValueError(f'unknown frame_id {frame_id}')
+        if self.arm_name and json.loads((path/'meta.json').read_text()).get('arm') != self.arm_name:
+            raise ValueError('frame_id belongs to a different arm-base frame; observe with the selected arm')
         return path
 
     def _observe(self, cameras=None, project=None):
@@ -966,6 +1007,8 @@ class XArmBackend:
                 'tcp_quaternion': tcp_q.tolist(), 'joints': np.asarray(after['joints']).tolist(),
                 'arm_moved_during_capture_mm': round(moved * 1000, 2), 'depth_units': 'mm (uint16, 0 = invalid)',
                 'cameras': {}}
+        if self.arm_name:
+            meta.update(arm=self.arm_name, coordinate_frame=self.arm_name+'_base')
         if self.has_hand:
             meta['hand'] = self.end_effector.status()
         images, report = [], {}

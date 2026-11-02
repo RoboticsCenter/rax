@@ -23,6 +23,7 @@ ROBOT_FACTS = {
              'overview_camera': 'none', 'overview': 'no camera', 'cameras': ()},
 }
 CLIS = ('claude',)
+ROBOT_FACTS['xarm_bimanual'] = {**ROBOT_FACTS['xarm'], 'name': 'Two xArm 6 arms with BrainCo Revo 2 hands'}
 
 
 @dataclass(frozen=True)
@@ -45,6 +46,9 @@ class Setup:
         if self.robot == 'xarm':
             from services.xarm.end_effectors import kind
             kind(self.backend_options)
+        elif self.robot == 'xarm_bimanual':
+            from services.xarm.bimanual_config import validate_config
+            validate_config(self.backend_options)
 
     @classmethod
     def from_config(cls, config, *, gemini=True):
@@ -53,6 +57,8 @@ class Setup:
 
     @property
     def end_effector(self):
+        if self.robot == 'xarm_bimanual':
+            return 'brainco_revo2'
         if self.robot == 'xarm':
             from services.xarm.end_effectors import kind
             return kind(self.backend_options)
@@ -62,6 +68,9 @@ class Setup:
     def robot_facts(self):
         facts = dict(ROBOT_FACTS[self.robot])
         cameras = self.backend_options.get('cameras')
+        if self.robot == 'xarm_bimanual':
+            cameras = list({c['name']: c for arm in self.backend_options['arms'].values()
+                            for c in arm['cameras']}.values())
         if cameras:
             facts['cameras'] = tuple(camera['name'] for camera in cameras)
             facts['fixed_cameras'] = tuple(camera['name'] for camera in cameras if camera.get('mount') == 'fixed')
@@ -71,17 +80,26 @@ class Setup:
         else:
             facts['fixed_cameras'] = tuple(name for name in facts['cameras'] if name != 'wrist')
             facts['wrist_cameras'] = tuple(name for name in facts['cameras'] if name == 'wrist')
-        facts.update(has_hand=self.end_effector == 'wuji_hand2', end_effector=self.end_effector,
+        facts.update(has_hand=self.end_effector in ('wuji_hand2', 'brainco_revo2'),
+                     bimanual=self.robot == 'xarm_bimanual', end_effector=self.end_effector,
                      effector_name='gripper', effector_tool=facts['gripper'])
         if self.robot == 'xarm':
             from services.xarm.end_effectors import tool_names
             facts['tools'] = tuple(t for t in facts['tools'] if t != 'xarm_gripper') + tool_names(self.backend_options)
-        if facts['has_hand']:
+        if self.end_effector == 'wuji_hand2':
             side = self.backend_options['end_effector'].get('handedness', 'right')
             facts.update(effector_name=f'{side} Wuji Hand 2', effector_tool='wuji_move_joints',
                          hand_status='wuji_status', hand_pose='wuji_pose', hand_home='wuji_home',
                          hand_hold='wuji_hold')
             facts.pop('gripper')  # Accidental gripper-template references fail rendering.
+        elif self.end_effector == 'brainco_revo2':
+            from services.xarm.end_effectors import tool_names
+            if self.robot == 'xarm_bimanual':
+                hand_tools = set().union(*(tool_names(o) for o in self.backend_options['arms'].values()))
+                facts['tools'] = tuple(t for t in facts['tools'] if t != 'xarm_gripper') + tuple(sorted(hand_tools)) + ('xarm_move_bimanual',)
+            facts.update(effector_name='BrainCo Revo 2', effector_tool='revo_move', hand_status='revo_status',
+                         hand_pose='revo_pose', hand_home='revo_home', hand_hold='revo_hold')
+            facts.pop('gripper')
         return facts
 
     @property
@@ -96,7 +114,8 @@ class Setup:
 
     def axes(self):
         """Which skill layers a workspace takes: the robot it controls and how it perceives."""
-        return {'robot': self.robot, 'perception': 'depth' if self.camera_geometry else 'rgb-only',
+        control = 'xarm_revo' if self.end_effector == 'brainco_revo2' else self.robot
+        return {'robot': control, 'perception': 'depth' if self.camera_geometry else 'rgb-only',
                 'end_effector': self.end_effector}
 
     def context(self):

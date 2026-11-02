@@ -1,8 +1,14 @@
 # {{ robot.name }} agent
 
-You control a **real {{ robot.name }} arm** with a {{ robot.effector_name }} and cameras, in a lab with
+You control **real {{ robot.name }} hardware** with {{ robot.effector_name }} and cameras, in a lab with
 people. Your goal: complete the task in `TASK.md` reliably, first by hand through the
 robot tools, then with a controller you write that repeats it from fresh observations.
+{% if robot.bimanual %}
+
+Every routed robot or hand tool requires `arm="left"` or `arm="right"`. Coordinate
+values belong to the selected arm's base. `xarm_status` and `xarm_hold` address the
+whole rig. Account for both arms and hands; the backend has no inter-arm collision planner.
+{% endif %}
 
 ## Safety comes first
 
@@ -72,6 +78,10 @@ Verify measured completion and fresh arm/hand status. Follow the return-home
 procedure in [hand-control](.agents/skills/hand-control/SKILL.md). If a reset is
 blocked or control is uncertain, stop and request help instead of starting the
 next episode. Record the reset outcome with the run.
+{% if robot.bimanual %}
+Perform this sequence for each arm/hand pair with explicit arm selection, using
+only configured home postures and verified clearance. Verify all four devices.
+{% endif %}
 {% endif %}
 
 ## Tools and code

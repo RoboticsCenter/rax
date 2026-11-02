@@ -1,0 +1,75 @@
+{
+  "arms": {
+    "left": {
+      "xarm_ip": "192.168.100.14",
+      "end_effector": {
+        "type": "brainco_revo2",
+        "handedness": "left",
+        "serial": "BCXTL2204J2600021",
+        "firmware": "1.0.22.U",
+        "transport": "damiao",
+        "hand_id": 126,
+        "hand_channel": 1,
+        "hand_adapter_firmware": "dual_app v1.0.0.7",
+        "damiao_library": "/home/jack-xiang/rc-packaging/xarm-revo-teleop/hand_bridge/centeros/dist/openarm-agent/vendor/libdm_device.so",
+        "touch": true,
+        "allow_speed_control": false,
+        "allow_current_control": false,
+        "postures": {}
+      },
+      "cameras": [
+        {
+          "name": "overview",
+          "serial": "REPLACE_WITH_OVERVIEW_CAMERA_SERIAL",
+          "mount": "fixed",
+          "extrinsics": "/path/to/calibration/overview_T_cam_left_base.yaml",
+          "width": 640,
+          "height": 480
+        }
+      ],
+      "workspace_min": [0.2, -0.35, 0.1],
+      "workspace_max": [0.75, 0.35, 0.7],
+      "max_translation_m": 0.1,
+      "stream_fps": 6,
+      "stream_depth_hz": 2.0,
+      "stream_window_s": 120,
+      "stream_archive": false
+    },
+    "right": {
+      "xarm_ip": "192.168.100.16",
+      "end_effector": {
+        "type": "brainco_revo2",
+        "handedness": "right",
+        "serial": "BCXTR2362J2500015",
+        "firmware": "1.0.22.U",
+        "transport": "damiao",
+        "hand_id": 127,
+        "hand_channel": 1,
+        "hand_adapter_firmware": "dual_app v1.0.0.7",
+        "damiao_library": "/home/jack-xiang/rc-packaging/xarm-revo-teleop/hand_bridge/centeros/dist/openarm-agent/vendor/libdm_device.so",
+        "touch": true,
+        "allow_speed_control": false,
+        "allow_current_control": false,
+        "postures": {}
+      },
+      "cameras": [
+        {
+          "name": "overview",
+          "serial": "REPLACE_WITH_OVERVIEW_CAMERA_SERIAL",
+          "mount": "fixed",
+          "extrinsics": "/path/to/calibration/overview_T_cam_right_base.yaml",
+          "width": 640,
+          "height": 480
+        }
+      ],
+      "workspace_min": [0.2, -0.35, 0.1],
+      "workspace_max": [0.75, 0.35, 0.7],
+      "max_translation_m": 0.1,
+      "stream_fps": 6,
+      "stream_depth_hz": 2.0,
+      "stream_window_s": 120,
+      "stream_archive": false
+    }
+  },
+  "protected_paths": ["/home/jack-xiang/rc-packaging/xarm-revo-teleop"]
+}

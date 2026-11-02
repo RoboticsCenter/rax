@@ -19,7 +19,7 @@ composing the full `main(ctx)`.
 
 Separate reusable motion logic from scene-specific inputs: reacquire object locations
 from current observations instead of embedding one layout's positions.
-{% if robot.has_hand %}
+{% if robot.end_effector == 'wuji_hand2' %}
 
 A grasp recipe includes the joint target, commanded current bias, active kp/kd and
 current caps, geometry assumptions and evidence of retention. Read `wuji_status`
@@ -88,10 +88,13 @@ steps and full runs:
 ```python
 # code/stack/controller.py
 def main(ctx):
-    reply = ctx.value("{{ robot.observe }}")
+    reply = ctx.value("{{ robot.observe }}"{% if robot.bimanual %}, arm="left"{% endif %})
     # Your observation–decision–action loop, e.g.:
     # ctx.value("{{ robot.move }}", position=[x, y, z], quaternion=q)
-{% if robot.has_hand %}
+{% if robot.end_effector == 'brainco_revo2' %}
+    # ctx.value("revo_move", {% if robot.bimanual %}arm="left", {% endif %}positions=verified_target_normalized)
+    # Revo motors use six normalized targets, not radians. Verify measured feedback and images.
+{% elif robot.has_hand %}
     # ctx.value("wuji_move_joints", positions=verified_target_rad)
     # Read/verify command_effort_a and control_parameters as part of the grasp state.
     # Keep the accepted target/current/impedance while carrying; verify in images.
@@ -158,7 +161,11 @@ the real scene.
    it as a success.
 3. Record each run in `memory/RUNS.md`: code version, scene description, outcome,
    duration, failure step and cause.
-{% if robot.has_hand %}
+{% if robot.end_effector == 'brainco_revo2' %}
+   Include the selected arm, native motor targets/speeds/currents, measured feedback,
+   posture and decisive images. Reset each pair with explicit arm selection; use
+   only configured home postures and verified clearance between both arms.
+{% elif robot.has_hand %}
    Include active hand gains/caps, current bias, posture and decisive observation or
    motion-clip references, plus whether both devices returned home. Include the
    verified return-home sequence as the final stage of a completed controller run;
