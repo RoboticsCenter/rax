@@ -13,16 +13,45 @@ live `xarm_status.calibration_status` reports whether a session has loaded it.
 | --- | --- | ---: | ---: |
 | Left wrist | 108322071838 | 4.75 mm | 0.444° |
 | Right wrist | 752112070450 | 3.49 mm | 0.518° |
-| Side A | 263322070113 | 1.30 mm | 0.131° |
+| Side A | 263322070113 | 4.50 mm | 0.723° |
 | Side B | 262422074331 | 2.22 mm | 0.268° |
 
 These are board-pose consistency residuals, not independently measured absolute
-robot positioning accuracy. All 76 fresh checks passed the unchanged 5 mm / 1°
-limits and the 1-pixel mean reprojection limit. Maximum mean reprojection error
-was 0.772 pixels. Verification used a frozen fit, one home capture, and three
+robot positioning accuracy. The original 76 fresh checks passed the unchanged
+5 mm / 1° limits and the 1-pixel mean reprojection limit. Maximum mean reprojection
+error was 0.772 pixels. Original verification used a frozen fit, one home capture, and three
 new poses per arm with three captures per pose. All four cameras were checked
 in every capture, including the stationary wrist. Both arms returned to their
 starting poses. Finger targets were unchanged throughout calibration.
+
+## Side A update after a camera bump
+
+On 2026-11-03 at 06:40 UTC, the lower/right side view (`side_a`, serial
+`263322070113`) was refitted after the operator reported bumping it. Estimated
+camera-center displacement was 8.79 mm and orientation change was 5.65°.
+The old transform displaced the reconstructed board by about 63 mm; that was
+a board-position error, not a measurement of the camera's translation.
+
+Both arms and both hands were first commanded home through MCP. With the arms
+then stationary, 12 new four-camera observations transferred the current board
+pose from the three untouched calibrated cameras with equal camera weights.
+The board was allowed to occupy a different position than the original sweep.
+The fitted Side A transform was frozen before eight fresh observations, yielding
+24 comparisons against the three references. All passed: maximum translation
+4.498 mm, angle 0.723°, and Side A mean reprojection 0.674 pixels. These checks
+measure consistency at the current board placement, not accuracy across a new
+arm sweep or independently measured world coordinates.
+
+Only Side A's transforms from the two bases were replaced. Both wrist fits,
+Side B, all RGB models, and the inter-base transform remain unchanged. The
+original `verification-report.json` applies to the original bundle; Side A's
+current evidence is in `side_a-recalibration-report.json`. The manifest points
+to that replacement report without attributing the original Side A checks to
+the updated transform. Its historical `T_cam_board` field still refers to the
+original board frame; the report separately records the board pose used now.
+
+New captures and home-command records are under
+`/home/jerry/rax-runtime/camera-maintenance-20261103T063615Z/`.
 
 ## Files and conventions
 
@@ -41,7 +70,9 @@ starting poses. Finger targets were unchanged throughout calibration.
 - `manifest.json`: camera/arm identities, TCP offsets, models, fit residuals,
   source images and fresh-verification summary.
 - `verification-report.json`: every fresh observation, residual, source-fit hash
-  and measured return pose.
+  and measured return pose from the original sweep.
+- `side_a-recalibration-report.json`: the subsequent fixed-camera update and its
+  fresh verification against all three unchanged cameras.
 
 Left arm: `192.168.2.205`, serial `XI130510J56A06`.
 Right arm: `192.168.1.241`, serial `XI130505F56A0A`.
@@ -65,10 +96,12 @@ were included. All other distortion coefficients are zero. Hand-eye fitting
 used only the second sweep's training poses. Fresh verification followed model
 selection and did not alter the fitted parameters or discard observations.
 
-Artifacts, including unsuccessful diagnostic fits, remain under:
+The original captures and diagnostic fits were recorded under:
 `/home/jerry/rax-runtime/bimanual-extrinsics-20261103T045627Z`.
 The accepted fit is `pooled-distortion-fit/result.json`; independent verification
-is `verification-pooled/verification.json`.
+was `verification-pooled/verification.json`. Those runtime capture directories
+were subsequently deleted during the operator-requested cleanup. The exported
+bundle and original verification report remain self-contained.
 
 See [the operator workflow](../../docs/xarm-wuji-bimanual-calibration.md) for
 collection, fitting, optical-training and verification commands.

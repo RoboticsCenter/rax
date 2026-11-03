@@ -1,0 +1,231 @@
+#!/usr/bin/env python3
+"""Refit one fixed RGB camera against the other three unchanged camera mounts.
+
+Reads observations from an existing bimanual MCP backend; never commands motion.
+The board must remain flat and stationary throughout training and verification.
+Existing wrist, inter-base and optical calibrations are frozen. Fresh frames verify
+board-pose agreement; this is not independent absolute positioning metrology.
+"""
+import argparse
+from copy import deepcopy
+import hashlib
+import json
+from pathlib import Path
+import socket
+import sys
+import time
+
+PROJECT = Path(__file__).resolve().parents[1]
+sys.path.insert(0, str(PROJECT))
+
+import cv2 as cv
+import numpy as np
+from scipy.spatial.transform import Rotation
+import yaml
+
+from services.json_io import jsonable, write_private_json
+from services.xarm.charuco import detect_board, detect_small_board, invert, make_board, quality_ok
+from services.xarm_bimanual.calibration import BimanualCalibration
+
+
+def mean_pose(poses):
+    result = np.eye(4)
+    result[:3, :3] = Rotation.from_matrix(np.stack([p[:3, :3] for p in poses])).mean().as_matrix()
+    result[:3, 3] = np.mean([p[:3, 3] for p in poses], axis=0)
+    return result
+
+
+def difference(reference, measured):
+    delta = invert(reference) @ measured
+    return {'translation_error_m': float(np.linalg.norm(delta[:3, 3])),
+            'rotation_error_deg': float(np.degrees(Rotation.from_matrix(delta[:3, :3]).magnitude()))}
+
+
+def observe(session, endpoint):
+    request = {'jsonrpc': '2.0', 'id': time.time_ns(), 'method': 'tools/call',
+               'params': {'name': 'xarm_observe', 'arguments': {}}}
+    with socket.socket(socket.AF_UNIX) as connection:
+        connection.settimeout(90)
+        connection.connect(str(endpoint))
+        connection.sendall(json.dumps(request).encode() + b'\n')
+        response = json.loads(connection.makefile('rb').readline())
+    result = response.get('result', {})
+    if response.get('error') or result.get('isError'):
+        raise RuntimeError(f'observation failed: {response}')
+    value = json.loads(next(c['text'] for c in result['content'] if c['type'] == 'text'))
+    folder = (session/'agent-workspace'/value['directory']).resolve()
+    if not folder.is_relative_to(session/'agent-workspace'):
+        raise ValueError('observation directory escaped the selected session')
+    return folder
+
+
+def detect(folder, calibration, board, detector, settings, overlays):
+    meta = json.loads((folder/'meta.json').read_text())
+    if meta['calibration']['sha256'] != calibration.digest:
+        raise ValueError('running backend and calibration manifest differ; restart the backend')
+    for side in ('left', 'right'):
+        before, after = meta['arms_before'][side], meta['arms'][side]
+        turn = Rotation.from_quat(before['tcp_quaternion']).inv()*Rotation.from_quat(after['tcp_quaternion'])
+        if meta['arm_moved_during_capture_mm'][side] > .2 or np.degrees(turn.magnitude()) > .1:
+            raise ValueError('arm moved during the stationary capture')
+    poses, quality = {}, {}
+    for name, entry in meta['cameras'].items():
+        model = calibration.manifest['camera_models'][name]
+        if any(entry[k] != model[k] for k in ('serial', 'width', 'height', 'fps')):
+            raise ValueError(f'{name}: unexpected camera profile')
+        if not np.allclose(entry['K'], model['K'], atol=1e-6, rtol=0):
+            raise ValueError(f'{name}: unexpected camera intrinsics')
+        expected_d = np.zeros(5) if 'factory_profile' in model else model['distortion_coeffs']
+        if not np.allclose(entry['distortion_coeffs'], expected_d, atol=1e-9, rtol=0):
+            raise ValueError(f'{name}: unexpected RGB rectification')
+        image = cv.imread(str(folder/entry['rgb']))
+        gray = cv.cvtColor(image, cv.COLOR_BGR2GRAY)
+        candidates = [detect_board(gray, board, detector, settings),
+                      detect_small_board(gray, board, detector, settings)]
+        # Choose by decoded coverage, before any geometric fit or residual exists.
+        corners, ids, _, _ = max(candidates, key=lambda c: 0 if c[1] is None else len(c[1]))
+        if ids is None or len(ids) < 12 or board.checkCharucoCornersCollinear(ids):
+            raise ValueError(f'{name}: fewer than 12 noncollinear board corners')
+        obj, pixels = board.matchImagePoints(corners, ids)
+        K, D = np.asarray(entry['K']), np.asarray(entry['distortion_coeffs'])
+        ok, rv, tv = cv.solvePnP(obj, pixels, K, D, flags=cv.SOLVEPNP_ITERATIVE)
+        if not ok or tv[2, 0] <= 0:
+            raise ValueError(f'{name}: board pose not found in front of camera')
+        pose = np.eye(4)
+        pose[:3, :3] = Rotation.from_rotvec(rv.ravel()).as_matrix()
+        pose[:3, 3] = tv.ravel()
+        projected, _ = cv.projectPoints(obj, rv, tv, K, D)
+        errors = np.linalg.norm(projected.reshape(-1, 2)-pixels.reshape(-1, 2), axis=1)
+        quality[name] = {'corners': len(ids), 'reprojection_mean_px': float(errors.mean()),
+                         'reprojection_max_px': float(errors.max()), 'timestamp_ns': entry['timestamp_ns']}
+        if errors.mean() > 1:
+            raise ValueError(f'{name}: mean board reprojection exceeds 1 pixel: {errors.mean():.3f}')
+        poses[name] = {'T_cam_board': pose, 'T_left_base_board': np.asarray(entry['T_left_base_cam']) @ pose}
+        if overlays is not None:
+            cv.aruco.drawDetectedCornersCharuco(image, corners, ids, (0, 0, 255))
+            cv.imwrite(str(overlays/f'{folder.name}_{name}.jpg'), image)
+    return {'frame': str(folder), 'poses': poses, 'quality': quality}
+
+
+def install(result, manifest_path):
+    if not result['ok']:
+        raise ValueError('cannot install a fit that failed fresh verification')
+    raw = manifest_path.read_bytes()
+    if hashlib.sha256(raw).hexdigest() != result['source_manifest_sha256']:
+        raise ValueError('source manifest changed after collection')
+    manifest = json.loads(raw)
+    target = result['target']
+    updated = deepcopy(manifest)
+    fixed = updated['fixed'][target]
+    # Preserve the original board-pose convention for this historical fit field.
+    T = np.asarray(result['T_cam_left_base'])
+    fixed.update(T_cam_base=T.tolist(), T_cam_left_base=T.tolist(),
+                 T_cam_right_base=result['T_cam_right_base'],
+                 T_cam_board=(T @ np.asarray(manifest['wrists']['left']['T_base_board'])).tolist(),
+                 training_count=result['training_count'], held_out_count=result['verification_count'],
+                 stationary_board_residuals=result['training_residuals'],
+                 held_out_residuals=result['verification_residuals'], ok=True,
+                 recalibration={'report': f'{target}-recalibration-report.json', 'method': result['method'],
+                                'source_manifest_sha256': result['source_manifest_sha256']})
+    summary = result['summary']
+    updated['fresh_verification']['cameras'][target] = {**summary, 'report': f'{target}-recalibration-report.json'}
+    updated['fixed_camera_updates'] = [*updated.get('fixed_camera_updates', []), {
+        'camera': target, 'recorded_at': result['recorded_at'], 'report': f'{target}-recalibration-report.json',
+        'original_verification_applies_to': [n for n in manifest['camera_models'] if n != target]}]
+    bundle = manifest_path.parent
+    write_private_json(bundle/f'{target}-recalibration-report.json', result)
+    for base in ('left', 'right'):
+        path = bundle/f'{target}_T_cam_{base}_base.yaml'
+        value = {'matrix': result[f'T_cam_{base}_base'],
+                 'source': {'report': f'{target}-recalibration-report.json', 'recorded_at': result['recorded_at']}}
+        temporary = path.with_suffix('.yaml.tmp')
+        temporary.write_text(yaml.safe_dump(value, sort_keys=False))
+        temporary.replace(path)
+    # The manifest is the runtime authority and is replaced atomically last.
+    write_private_json(manifest_path, updated)
+
+
+def main():
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument('--session', required=True, type=Path)
+    parser.add_argument('--mcp-socket', required=True, type=Path)
+    parser.add_argument('--output', required=True, type=Path)
+    parser.add_argument('--target', required=True, choices=('side_a', 'side_b'))
+    parser.add_argument('--training-count', type=int, default=12)
+    parser.add_argument('--verification-count', type=int, default=8)
+    parser.add_argument('--install', action='store_true')
+    args = parser.parse_args()
+    if min(args.training_count, args.verification_count) < 6:
+        parser.error('use at least six training and six fresh verification frames')
+    cv.setNumThreads(1)
+    session = args.session.resolve()
+    options = json.loads((session/'operator-input.json').read_text())['backend_options']
+    calibration = BimanualCalibration(options)
+    settings = calibration.manifest['board']
+    if not isinstance(settings, dict):
+        settings = json.loads((calibration.path.parent/'board.json').read_text())
+    board, detector = make_board(settings)
+    args.output.mkdir(parents=True, exist_ok=False)
+    overlays = args.output/'overlays'
+    overlays.mkdir()
+    references = [n for n in calibration.models if n != args.target]
+    training, verification = [], []
+    last_timestamps = {}
+
+    def capture(phase, index):
+        sample = detect(observe(session, args.mcp_socket), calibration, board, detector, settings,
+                        overlays if index == 0 else None)
+        for name, q in sample['quality'].items():
+            if q['timestamp_ns'] <= last_timestamps.get(name, 0):
+                raise ValueError(f'{name}: capture reused a previous camera frame')
+            last_timestamps[name] = q['timestamp_ns']
+        write_private_json(args.output/f'{phase}-{index:02}.json', jsonable(sample))
+        print(phase, index+1, {n: q['corners'] for n, q in sample['quality'].items()}, flush=True)
+        return sample
+
+    for i in range(args.training_count):
+        training.append(capture('training', i))
+    board_in_base = mean_pose([sample['poses'][name]['T_left_base_board']
+                              for sample in training for name in references])
+    board_in_target = mean_pose([sample['poses'][args.target]['T_cam_board'] for sample in training])
+    T_cam_base = board_in_target @ invert(board_in_base)
+    write_private_json(args.output/'frozen-fit.json', jsonable({'T_cam_left_base': T_cam_base,
+        'T_left_base_board_current': board_in_base, 'source_manifest_sha256': calibration.digest}))
+    for i in range(args.verification_count):
+        verification.append(capture('verification', i))
+
+    def residuals(samples):
+        return [{'frame': sample['frame'], 'reference': name,
+                 **difference(sample['poses'][name]['T_left_base_board'],
+                              invert(T_cam_base) @ sample['poses'][args.target]['T_cam_board'])}
+                for sample in samples for name in references]
+
+    train_errors, errors = residuals(training), residuals(verification)
+    summary = {'max_translation_mm': max(e['translation_error_m'] for e in errors)*1000,
+               'max_rotation_deg': max(e['rotation_error_deg'] for e in errors),
+               'max_reprojection_mean_px': max(s['quality'][args.target]['reprojection_mean_px'] for s in verification),
+               'checks': len(errors), 'fresh_frames': len(verification)}
+    result = jsonable({'ok': quality_ok(train_errors) and quality_ok(errors), 'target': args.target,
+        'serial': calibration.manifest['camera_models'][args.target]['serial'],
+        'method': 'Stationary board transfer from three frozen calibrated cameras; equal camera weights.',
+        'scope': 'Fresh image board-pose consistency; not independently measured absolute positioning accuracy.',
+        'recorded_at': time.strftime('%Y-%m-%dT%H:%M:%SZ', time.gmtime()),
+        'source_manifest_sha256': calibration.digest, 'reference_cameras': references,
+        'T_cam_left_base': T_cam_base, 'T_cam_right_base': T_cam_base @ calibration.left_from_right,
+        'T_left_base_board_current': board_in_base, 'T_target_cam_board_current': board_in_target,
+        'training_count': len(training), 'verification_count': len(verification),
+        'training_residuals': train_errors, 'verification_residuals': errors, 'summary': summary,
+        'detection_quality': [{'frame': s['frame'], 'quality': s['quality']} for s in training+verification],
+        'limits': {'translation_m': .005, 'rotation_deg': 1., 'mean_reprojection_px': 1.},
+        'camera_pose_change': difference(invert(np.asarray(calibration.manifest['fixed'][args.target]['T_cam_left_base'])),
+                                         invert(T_cam_base))})
+    write_private_json(args.output/'result.json', result)
+    print(json.dumps({'ok': result['ok'], **summary}), flush=True)
+    if args.install:
+        install(result, calibration.path)
+        print('Installed', args.target, 'only.', flush=True)
+    return 0 if result['ok'] else 1
+
+
+if __name__ == '__main__':
+    raise SystemExit(main())

@@ -114,3 +114,36 @@ Successful fits write a candidate containing:
 Candidates are written only when all four camera checks pass. This script does
 not install them into the running backend or claim depth/pixel-to-base support;
 those runtime capabilities require an explicit configuration integration step.
+
+## Recalibrating one bumped fixed camera
+
+When only one fixed mount moved, preserve the other three camera transforms,
+both wrist models and the inter-base transform. The board can be in a new
+position. Place it flat and stationary with at least twelve noncollinear
+ChArUco corners visible in each camera. Use the existing board definition,
+including its legacy 14-row ID layout with the final physical row absent.
+
+With a running bimanual MCP backend and stationary arms:
+
+```bash
+.venv/bin/python scripts/xarm-bimanual-fixed-camera-calibrate \
+  --session SESSION --mcp-socket MCP_SOCKET --target side_a \
+  --output NEW_CALIBRATION_DIRECTORY --install
+```
+
+This command only calls `xarm_observe`; it does not prepare or move any robot.
+It fits the selected fixed camera from twelve captures using the three unchanged
+camera poses with equal weights. It freezes the fit before eight fresh captures
+and checks each against all three reference cameras. It retains the 5 mm / 1°
+consistency limits and 1-pixel mean reprojection limit. Detector selection uses
+decoded corner count, never geometric residual. No failed observation is silently
+discarded. Omit `--install` to retain a candidate without updating the bundle.
+
+Installation replaces only the selected fixed camera's two base-transform files
+and its manifest entries, and adds a dedicated verification report. The original
+verification report remains historical evidence for the unchanged calibration.
+Restart the backend after installation: an already running backend retains its
+previous manifest. Fresh stationary observations establish local board-pose
+consistency; they do not replace a wrist hand-eye sweep if a wrist mount or arm
+base has moved. See the [installed bundle](../calibration/xarm-wuji-bimanual/README.md)
+for the latest fixed-camera update.
