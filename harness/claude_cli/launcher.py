@@ -32,6 +32,7 @@ import os
 from pathlib import Path
 import shutil
 import signal
+import shlex
 import subprocess
 import sys
 import time
@@ -53,7 +54,7 @@ RELAY_TOKEN = 'host-relay'  # Placeholder the relay replaces; not a credential.
 # Session files only the launcher and the robot service read.
 PRIVATE_FILES = ('configuration.json', 'model-relay.json', 'state.json', 'mcp.jsonl', 'frontend.log',
                  'model-usage.jsonl', 'model-calls.json', 'agent-lifecycle.json', 'workspace-manifest.json',
-                 'operator', 'operator-input.json', 'wuji-controller.log')
+                 'operator', 'operator-input.json', 'wuji-controller.log', 'run-logs', 'progress-report')
 # This repository and credentials: the agent's tools must never read them.
 HOME = Path.home()
 PROTECTED_PATHS = (PROJECT, HOME/'.config/rax', HOME/'.claude', HOME/'.claude.json', HOME/'.codex', HOME/'.ssh',
@@ -178,6 +179,9 @@ def settings(config, workspace, socket):
                 deny.append(f'{tool}(/{path}/**)')
     timeout_ms = (config.session_seconds + 300) * 1000
     value = {
+        'hooks': {'UserPromptSubmit': [{'hooks': [{'type': 'command', 'timeout': 5,
+            'command': shlex.join([sys.executable, str(PROJECT/'scripts/log_operator_prompt.py'),
+                                   '--session', str(config.root)])}]}]},
         'permissions': {'defaultMode': 'dontAsk', 'allow': allow, 'deny': deny},
         'sandbox': {
             'enabled': True, 'failIfUnavailable': True, 'autoAllowBashIfSandboxed': True,
@@ -404,6 +408,10 @@ def launch(config, deployed, *, prompt, interactive=True, seconds=None, max_mode
     relay_credential(deployed)  # Fail before starting anything.
     started_at = time.time()
     server = model = agent = None
+    from services.run_logs import TranscriptRecorder
+    from services.operator_audit import record
+    retention = TranscriptRecorder(config.root)
+    retention.start()
     with (config.root/'frontend.log').open('ab') as log:
         try:
             model = start_relay(config, deployed, max_model_calls=max_model_calls or config.max_model_calls)
@@ -414,6 +422,8 @@ def launch(config, deployed, *, prompt, interactive=True, seconds=None, max_mode
             def run(prompt, remaining):
                 nonlocal agent
                 command = [str(deployed['claude']), *claude_arguments(deployed, prompt=prompt, interactive=interactive)]
+                record(config.root, 'agent_launch_prompt', source='launcher', text=prompt,
+                       actor='launcher', interactive=interactive, resume_session=deployed.get('resume_session'))
                 agent = subprocess.Popen(command, cwd=deployed['workspace'], env=environment)
                 watch(agent, model, remaining, stop_on_limit=not interactive)
                 return agent.returncode
@@ -424,6 +434,12 @@ def launch(config, deployed, *, prompt, interactive=True, seconds=None, max_mode
             stop(server, grace=30)
             if model:
                 model.close()
+            retention.close()
+            try:
+                from services.controller.operator import snapshot_learning
+                snapshot_learning(config.root, 'agent-launch-finished')
+            except Exception as exc:
+                record(config.root, 'learning_snapshot_error', source='launcher', error=str(exc))
 
 
 def attempt_seconds(attempts):
@@ -500,6 +516,10 @@ def main():
         elif record.exists():
             raise FileExistsError('This session was already launched; use --resume or a fresh configuration')
         write_private_json(record, lifecycle)
+        from services.operator_audit import record as audit_event
+        audit_event(config.root, 'session_launch_requested', source='operator_launcher',
+                    resume=args.resume, prepare_only=args.prepare_only,
+                    interactive=not (args.non_interactive or args.exec_prompt))
         try:
             if config.agent_provider == 'claude-login' and not args.key_file:
                 from harness.claude_cli import experiment_login
@@ -510,6 +530,8 @@ def main():
                 deployed = redeploy(config)
             else:
                 deployed = deploy(config, key_file=args.key_file, gemini_key_file=gemini_key)
+            from services.context_archive import publish_context
+            publish_context(config.root)
             if overrides:
                 # Only the explicit budget options change the deployed service's
                 # configuration; preserve its commissioned backend settings.
@@ -548,6 +570,7 @@ def main():
             raise SystemExit(124) from None
         except KeyboardInterrupt:
             lifecycle['status'] = 'stopped'
+            audit_event(config.root, 'launcher_interrupted', source='launcher_signal')
             raise SystemExit(130)
         except Exception as exc:
             lifecycle.update(status='failed', error_type=type(exc).__name__)
@@ -555,6 +578,14 @@ def main():
         finally:
             lifecycle['finished_at'] = time.time()
             write_private_json(record, lifecycle)
+            audit_event(config.root, 'session_launch_finished', source='launcher',
+                        status=lifecycle['status'], returncode=lifecycle.get('returncode'))
+            if not args.prepare_only:
+                try:
+                    from services.session_report import export_report
+                    export_report(config.root, config.root/'progress-report')
+                except Exception as exc:
+                    audit_event(config.root, 'report_export_error', source='launcher', error=str(exc))
 
 
 if __name__ == '__main__':

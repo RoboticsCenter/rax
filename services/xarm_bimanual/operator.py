@@ -15,6 +15,7 @@ from services.xarm.sdk import XArmDriver
 from services.wuji.client import operation, request, socket_path, recorded_status
 from services.wuji.preparation import preparation_action, recover_cleared_stall, recover_cooled_thermal
 from services.wuji.partial import control_enabled
+from services.operator_audit import action
 from .config import SIDES, validate_options, arm_options
 
 PROJECT = Path(__file__).resolve().parents[2]
@@ -27,6 +28,7 @@ def ready_hand(state):
             and not state.get('fault') and not state.get('faults'))
 
 
+@action('assembly_stop', 'operator_control')
 def stop(root, options, *, driver_factory=XArmDriver):
     """Every transport gets its own stop attempt, even if another transport blocks."""
     root = Path(root) if root is not None else None
@@ -97,6 +99,7 @@ def status(root, options, *, driver_factory=XArmDriver):
         return {'arms': dict(zip(SIDES, pool.map(read, SIDES))), 'bimanual': True}
 
 
+@action('assembly_prepare', 'operator_control')
 def prepare(root, options, *, minutes, confirmed=False):
     """Pin readiness to both configured arms; prepare each existing hand owner once."""
     root = Path(root)

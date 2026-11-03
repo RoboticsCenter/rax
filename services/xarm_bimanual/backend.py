@@ -26,7 +26,6 @@ from services.wuji.config import MUTATING_TOOLS, TOOL_NAMES
 from .config import SIDES, PAIRED_TOOLS, validate_options, arm_options
 from .calibration import BimanualCalibration
 from services.xarm.calibration import project as project_to_pixel
-from services.xarm.charuco import mat_from_pose
 
 
 class _NoCameras:
@@ -381,6 +380,9 @@ class XArmBimanualBackend(XArmBackend):
                 'calibration': self.calibration.summary() if self.calibration else None,
                 'arms_before': before['arms'], 'arms': after['arms'],
                 'depth_units': 'mm (uint16, 0 = invalid); camera coordinates only', 'cameras': {}}
+        meta['arm_moved_during_capture_mm'] = {side: float(np.linalg.norm(
+            np.asarray(after['arms'][side]['tcp_position'])-before['arms'][side]['tcp_position'])*1000)
+            for side in SIDES if 'tcp_position' in before['arms'][side] and 'tcp_position' in after['arms'][side]}
         images, report = [], {}
         for name in names:
             entry, spec = captured[name], self.models[name]

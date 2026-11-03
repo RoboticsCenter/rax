@@ -1,9 +1,13 @@
 # Verified bimanual RGB extrinsics
 
 Captured and verified 2026-11-02 Pacific time (2026-11-03 UTC).
-Status: **verified candidate; not yet loaded by the bimanual backend**.
-Depth scale, RGB-depth registration and runtime pixel-to-base integration remain
-separate work. The backend still reports calibration pending.
+Status: **verified RGB bundle, integrated into the bimanual backend**.
+`examples/xarm-wuji-bimanual.json` selects this manifest. Live MCP observations
+have verified all four camera profiles, wrist rectification, both arm identities
+and equal image projections for equivalent points in the left/right bases.
+Depth scale and RGB-depth registration remain separate work; there is no depth
+pixel-to-position endpoint. The historical manifest records its export state;
+live `xarm_status.calibration_status` reports whether a session has loaded it.
 
 | Role | Serial | Fresh maximum position residual | Fresh maximum angle residual |
 | --- | --- | ---: | ---: |

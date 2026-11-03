@@ -15,6 +15,7 @@ import re
 import shutil
 import time
 import uuid
+from services.operator_audit import record
 
 KINDS = ('help', 'reset')
 REQUEST_ID = re.compile(r'[0-9a-f]{12}')
@@ -101,11 +102,13 @@ def validate_request(kind, message):
 
 def open_request(session_root, kind, message, *, source=None):
     validate_request(kind, message)
-    request = {'id': uuid.uuid4().hex[:12], 'kind': kind, 'message': message.strip(), 'created': time.time(),
+    request = {'id': uuid.uuid4().hex[:12], 'kind': kind, 'message': message, 'created': time.time(),
                'status': 'pending'}
     if source is not None:
         request['source'] = source
     _write(directory(session_root)/f"{request['id']}.json", request)
+    record(session_root, 'operator_request', source='robot_service', text=message,
+           request_id=request['id'], kind=kind, actor='agent', request_source=source)
     return request
 
 
@@ -127,8 +130,11 @@ def reply(session_root, request_id, text='', *, done=True, by=None):
         raise ValueError(f'unknown request {request_id}')
     if request.get('status') != 'pending':
         raise ValueError(f"request {request_id} is {request.get('status')}, not pending")
-    answer = {'reply': str(text)[:4000], 'done': bool(done), 'by': by or os.environ.get('USER'), 'time': time.time()}
+    answer = {'reply': str(text), 'done': bool(done), 'by': by or os.environ.get('USER'), 'time': time.time()}
     _write(directory(session_root)/f'{request_id}.reply.json', answer)
+    record(session_root, 'operator_reply', source=by or 'operator_tool', text=answer['reply'],
+           request_id=request_id, kind=request['kind'], request_text=request['message'],
+           done=answer['done'], actor=answer['by'])
     try:
         snapshot = snapshot_learning(session_root, f"{request.get('kind', 'request')}_{request_id}",
                                      request=request, reply=answer['reply'])

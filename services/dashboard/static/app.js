@@ -3,6 +3,7 @@
 
 const $ = (id) => document.getElementById(id);
 const state = { sessions: [], selected: localStorage.getItem('selected') || null, tab: 'transcript', frameId: null };
+const interventionDrafts = new Map();
 
 function el(tag, attrs = {}, ...children) {
   const node = document.createElement(tag);
@@ -89,9 +90,15 @@ function renderSessions(value) {
 function renderDetail() {
   const s = state.sessions.find((x) => x.id === state.selected);
   const detail = $('detail');
-  for (const id of ['safety', 'cameras-section', 'activity-section']) $(id).hidden = !s;
+  for (const id of ['safety', 'cameras-section', 'activity-section', 'interventions-section']) $(id).hidden = !s;
   if (!s) { detail.replaceChildren(el('h2', {}, 'Session'), el('p', { class: 'muted' }, 'Select a session.')); return; }
   const anyRunning = state.sessions.some((x) => x.running);
+  const note = $('intervention-text');
+  if (note.dataset.session !== s.id) {
+    if (note.dataset.session) interventionDrafts.set(note.dataset.session, note.value);
+    note.dataset.session = s.id;
+    note.value = interventionDrafts.get(s.id) || '';
+  }
   const launched = !['configured'].includes(s.status);
   const u = s.usage;
   detail.replaceChildren(
@@ -132,6 +139,17 @@ async function act(action) {
   } catch (error) { toast(`${action} failed: ${error.message}`, true); }
   refresh();
 }
+
+$('save-intervention').addEventListener('click', async () => {
+  if (!state.selected) return;
+  const session = state.selected, input = $('intervention-text'), text = input.value;
+  try {
+    await api(`/api/session/${session}/note`, { text });
+    interventionDrafts.delete(session);
+    if (state.selected === session && input.value === text) input.value = '';
+    toast('Intervention note saved verbatim. It was not sent to the agent.');
+  } catch (error) { toast(error.message, true); }
+});
 
 function renderRobot(value) {
   if (value.bimanual) {

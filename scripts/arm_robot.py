@@ -15,6 +15,7 @@ import sys
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from services.xarm import arming  # noqa: E402
+from services.operator_audit import record  # noqa: E402
 
 
 def session_root(path):
@@ -39,6 +40,9 @@ def main():
         arming.write(root, True, minutes=args.minutes)
     elif args.action == 'disarm':
         arming.write(root, False, reason='disarmed by the operator')
+    if args.action != 'status':
+        record(root, 'motion_'+args.action, source='operator_cli', parameters={'minutes': args.minutes},
+               state=arming.read(root))
     print(json.dumps(arming.read(root), indent=1))
 
 

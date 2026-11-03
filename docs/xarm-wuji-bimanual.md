@@ -42,13 +42,18 @@ recording settings are shared. Do not place single-arm settings at the top level
 Both hands need distinct serials, addresses and matching handedness.
 
 The example preserves the right hand's existing control profile and encoder-warning
-allowance. The replacement left hand's profile is **uncommissioned**, keeps its
-own limits and has no saved postures. At the operator's explicit request, its
-profile enables the existing encoder-warning policy and sets
-`allow_init_current_calib_failed: {"middle_S1": "2.13.1"}`. This permits the exact
+allowance. Its left profile now includes the physically tested partial-hand patch:
+18 controlled joints, `thumb_S3` and `middle_S1` isolated, 200 Hz commands, and the
+left hand's own saved home. Both normalized profiles match the ones used for the
+successful physical movement and calibration sessions.
+
+The earlier diagnostic configuration used
+`allow_init_current_calib_failed: {"middle_S1": "2.13.1"}`. That optional policy permits the exact
 `0x3208 / InitCurrentCalibFailed / Fatal / NonClearable` diagnostic only on that
 joint and firmware. The operator reported vendor advice that this can be a false
 alarm; the exception itself does not establish that the hardware is healthy.
+The current left example instead uses the two-joint isolation policy below and
+leaves `allow_init_current_calib_failed` empty.
 
 Native codes and states remain intact, with the permitted fatal diagnostic under
 `diagnostic_exceptions` and `diagnostic_exception_history`, separate from encoder
@@ -66,12 +71,13 @@ measurement. Verify them and both swept volumes at commissioning.
 
 The optional `disabled_joints` profile field selects joints that must remain
 unpowered. It is empty by default. `examples/wuji-left-partial-profile.patch.json`
-is the physically tested profile fragment for unloaded movements on the current left serial:
-merge it into `arms.left.end_effector` in a separate operator configuration, not
-into the right profile or the top-level backend options. It excludes `thumb_S3`
+is the physically tested profile fragment for unloaded movements on the current left serial.
+It is included in the current example under `arms.left.end_effector`; apply it
+there when upgrading an older operator configuration, never to the right hand
+or the top-level backend options. It excludes `thumb_S3`
 and `middle_S1`, leaving eighteen active joints. It uses the original branch's
 Kp 8 / Kd 0.15 / 1.5 A active control values with reduced trajectory limits.
-It is not installed in a bimanual session automatically.
+Existing sessions retain their original profiles until explicitly refreshed.
 Physical MCP commands on 2026-11-02 demonstrated movement on all eighteen active
 joints with the two excluded joints continuously Stopped. Seventeen completed an
 outward-and-return position test; ring S1 moved but missed the position tolerance.
@@ -181,18 +187,28 @@ One shared camera process owns all four RealSense streams; both arm controllers
 use it. Stop the standalone camera dashboard before starting a session that opens
 the same cameras. A second process cannot capture cameras already owned by it.
 
-RGB observations and rolling history work without extrinsics. An `rgbd` session
-may additionally save camera depth, but no camera-to-base or inter-arm transform
-is supplied. Old intrinsics/extrinsics files are refused for this uncalibrated
-setup. `xarm_pixel_to_position` and observe `project` are intentionally absent.
-Each arm's pose remains in its own base frame until calibrated transforms are
-integrated. The [bimanual extrinsics workflow](xarm-wuji-bimanual-calibration.md)
+The example's `calibration_manifest` loads the verified four-camera bundle at
+1280×720 @ 6 FPS. The existing xArm camera pipeline rectifies wrist RGB with its
+matching fitted models and checks factory profiles against the connected cameras.
+Startup checks arm serials and TCP offsets. Legacy per-camera calibration files
+are refused; the manifest keeps identities, RGB models and transforms together.
+
+`xarm_observe(arm="left" | "right", project=[[x,y,z], ...])` saves camera poses in
+both bases and projects points in the selected base (default left). Saved image
+coordinates and `K` are native pixels; `preview_scale` describes returned previews.
+Status supplies `T_left_base_right_base`. Arm motion targets still use their own
+arm's base. An uncalibrated configuration can omit `calibration_manifest` and
+continues providing raw observations without transforms or projection.
+
+Depth scale/registration remain unqualified and `xarm_pixel_to_position` is not
+exposed. Use `rgb-only` for the first calibrated run. The
+[bimanual extrinsics workflow](xarm-wuji-bimanual-calibration.md)
 collects both wrist sweeps and derives fixed-camera and inter-base transforms
 from one stationary ChArUco board, following the original single-arm script.
 The [verified 2026-11-02 RGB calibration](../calibration/xarm-wuji-bimanual/README.md)
 contains transforms for all four cameras and between the bases, plus matching
-RGB models and fresh physical verification. Loading those files into the
-bimanual backend and validating depth remain pending.
+RGB models and fresh physical verification. The bundle is integrated in the
+backend; depth validation remains pending.
 
 ## Start and prepare
 
@@ -239,6 +255,12 @@ disarm paths cover both arms/hands. Existing workspaces contain copied skills:
 create a fresh bimanual session, or refresh a stopped bimanual session with
 `scripts/refresh_wuji_tools.py --session SESSION` before resuming it.
 
+New launcher sessions retain exact operator prompts/replies, intervention notes,
+raw Claude transcripts and imported demonstration files. See
+[run logging and progress reports](run-logging.md) for importing a video and
+exporting a timeline aligned with the existing motion clips. Motion recording
+remains unchanged; the operator starts the Claude Code session manually.
+
 ## MCP contract
 
 | Tool | Arguments / result |
@@ -250,7 +272,7 @@ create a fresh bimanual session, or refresh a stopped bimanual session with
 | `xarm_move_joints_both` | `left` and `right`: ordinary joint payloads |
 | `wuji_move_both` | `left` and `right`: ordinary hand move payloads, including optional contact completion |
 | `xarm_hold` | Disarm, stop and verify all four devices; reports each independently |
-| `xarm_observe`, `xarm_stream` | Shared camera names; observe metadata includes both arm states and wrist ownership |
+| `xarm_observe`, `xarm_stream` | Shared camera names; calibrated observe accepts `arm` and `project`, and supplies both base transforms |
 
 There is no implicit side or `both` selector on single-device tools. Paired calls
 validate both targets and readiness before either starts, then run within one

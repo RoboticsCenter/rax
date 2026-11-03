@@ -17,9 +17,11 @@ import hmac
 import json
 from pathlib import Path
 import secrets
+import time
 import urllib.parse
 
 from services.dashboard.sessions import Sessions
+from services.operator_audit import record
 
 STATIC = Path(__file__).resolve().parent/'static'
 ASSETS = {'/': ('index.html', 'text/html; charset=utf-8'),
@@ -39,6 +41,7 @@ class Handler(BaseHTTPRequestHandler):
 
     # ----- plumbing -----------------------------------------------------------------------
     def _send(self, status, data, content_type, extra=()):
+        self._last_response_status = int(status)
         self.send_response(status)
         self.send_header('Content-Type', content_type)
         self.send_header('Content-Length', str(len(data)))
@@ -150,15 +153,20 @@ class Handler(BaseHTTPRequestHandler):
         path, _ = self._route()
         parts = path.strip('/').split('/')
         sessions = self.sessions
+        audit = {'started_ns': time.time_ns(), 'roots': []}
+        self._last_response_status = None
 
         def handle():
             body = self._body()
             if path == '/api/configure':
                 self._json(HTTPStatus.OK, sessions.configure(body))
             elif path == '/api/disarm-all':
+                audit.update(roots=sessions.roots(), action='disarm-all', parameters={})
                 self._json(HTTPStatus.OK, sessions.disarm_all())
             elif len(parts) == 4 and parts[:2] == ['api', 'session']:
                 session_id, action = parts[2], parts[3]
+                audit.update(roots=[sessions.root(session_id)], action=action,
+                             parameters={k: body[k] for k in ('text', 'request_id', 'done', 'minutes', 'estop_confirmed') if k in body})
                 if action == 'launch':
                     self._json(HTTPStatus.OK, sessions.launch(session_id))
                 elif action == 'resume':
@@ -175,11 +183,30 @@ class Handler(BaseHTTPRequestHandler):
                                                              str(body.get('text', '')), done=body.get('done', True),
                                                              prepare=action == 'prepare-reply',
                                                              confirmed=body.get('estop_confirmed')))
+                elif action == 'note':
+                    text = body.get('text')
+                    if not isinstance(text, str) or not text.strip():
+                        raise ValueError('enter a note describing the intervention')
+                    note = record(sessions.root(session_id), 'operator_note', source='dashboard', text=text,
+                                  actor='operator', at_ns=audit['started_ns'])
+                    if note is None:
+                        raise RuntimeError('note could not be saved')
+                    self._json(HTTPStatus.OK, {'saved': True, 'event_id': note['id']})
                 else:
                     self._error(HTTPStatus.NOT_FOUND, 'not found')
             else:
                 self._error(HTTPStatus.NOT_FOUND, 'not found')
-        self._guarded(handle)
+        try:
+            self._guarded(handle)
+        finally:
+            for root in audit['roots']:
+                parameters = audit.get('parameters', {})
+                record(root, 'dashboard_action', source='dashboard', at_ns=audit['started_ns'],
+                       action=audit.get('action'),
+                       text=parameters.get('text') if isinstance(parameters.get('text'), str) else None,
+                       parameters=parameters,
+                       http_status=self._last_response_status,
+                       outcome='completed' if self._last_response_status and 200 <= self._last_response_status < 300 else 'failed')
 
 
 def make_server(host, port, sessions=None, token=None):

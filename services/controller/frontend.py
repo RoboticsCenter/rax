@@ -177,7 +177,7 @@ class Frontend:
                     value.setdefault('control_uncertain', True)
                 result = {'content': [{'type': 'text', 'text': json.dumps(value, allow_nan=False)}, *images]}
                 self.s.audit({'event': 'mcp_result', 'call_id': call_id, 'tool': name,
-                              'result': result['content'][0]['text'][:65536], 'images': len(images)})
+                              'result': result['content'][0]['text'], 'images': len(images)})
                 return result
             except Exception as exc:
                 needs_operator = getattr(exc, 'operator_required', False) is True
