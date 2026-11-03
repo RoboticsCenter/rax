@@ -1,22 +1,59 @@
 # Verified bimanual RGB extrinsics
 
 Full calibration captured and verified on November 3, 2026, after both side
-camera mounts were adjusted. This bundle replaces all four camera extrinsics,
-both wrist RGB models, and the alignment between the two arm bases.
+camera mounts were adjusted. That full pass established all four camera extrinsics,
+both wrist RGB models, and the alignment between the two arm bases. Both side
+views were subsequently refitted on November 3 at 16:54 UTC; Side A was secured and refitted at 16:58 UTC;
+both wrist calibrations, all RGB models and the inter-base alignment were preserved.
 `examples/xarm-wuji-bimanual.json` selects it with every camera verified.
 
 | Role | Serial | Fresh maximum position residual | Fresh maximum angle residual |
 | --- | --- | ---: | ---: |
 | Left wrist | 108322071838 | 4.06 mm | 0.402° |
 | Right wrist | 752112070450 | 4.48 mm | 0.430° |
-| Side A | 263322070113 | 1.81 mm | 0.432° |
-| Side B | 262422074331 | 0.62 mm | 0.153° |
+| Side A | 263322070113 | 3.99 mm | 0.504° |
+| Side B | 262422074331 | 3.26 mm | 0.451° |
 
-All 76 fresh checks passed the existing 5 mm / 1° pose-consistency limits and
+The original full sweep's 76 fresh checks passed the existing 5 mm / 1° pose-consistency limits and
 1-pixel mean reprojection limit. The largest mean reprojection error was
 0.743 pixels. These are board-pose consistency residuals, not independently
 measured absolute robot positioning accuracy. Depth scale and RGB-depth
 registration remain unqualified; no depth pixel-to-position endpoint is exposed.
+
+## Latest side-camera update
+
+The operator first requested Side B alone. A fit using Side A and both wrists
+failed because Side A disagreed with the wrists by 21–24 mm. Matching fixed
+background features also found about 24 pixels of Side A image displacement
+since the verified full sweep. The operator then requested both side views be
+recalibrated while preserving the wrists.
+
+Both hands were commanded home, followed by sequential arm home commands.
+The right hand reached its saved pose; the partial left hand completed its
+reference with an accepted 0.01783-rad shortfall. All four stops were confirmed.
+Calibration then used stationary arms and the unchanged wrist cameras as the
+two equally weighted references. Neither side camera was used as an anchor.
+
+Twelve four-camera captures fitted the fixed transforms. The fit was frozen
+before eight fresh captures, yielding sixteen reference comparisons per side
+camera. All 32 fresh comparisons passed the unchanged 5 mm / 1° limits.
+Side A shifted again by about 50 pixels before the post-reload check, which
+rejected its new geometry. Side B passed. After the operator secured Side A
+and its cable, a separate twelve-capture fit used verified Side B and both
+unchanged wrists. Eight fresh frames supplied 24 passing comparisons. Only
+Side A was replaced in this final step; Side B was preserved byte-for-byte.
+The side-camera table entries describe these latest passing fits; wrist entries
+retain their full-sweep results. Stationary checks establish local board-pose
+consistency, not a new wrist sweep or independent world-coordinate accuracy.
+
+Current reports are `side_a-recalibration-report.json` and
+`side_b-recalibration-report.json`. Captures, the failed first fit, successful
+candidates, home records and prior bundle are preserved under
+`/home/jerry/rax-runtime/sessions/20261103T073444Z_unscrew_bottle_b1d812/operator/side-b-recalibration-20261103T164953Z`.
+After the final reload, fresh MCP observations in both base frames passed all
+eight side-to-wrist comparisons (maximum 3.47 mm / 0.581°). All four views
+reported verified geometry, and equivalent points projected to the same pixels
+from either base. Evidence is in `final-runtime-verification.json` there.
 
 ## Collection and verification
 
@@ -40,7 +77,7 @@ rectifies their images and supplies the corresponding K and zero distortion
 for those saved images. Side cameras retain their factory RGB models. Use each
 observation's saved metadata rather than substituting factory wrist intrinsics.
 
-After installation, fresh MCP observations in both arm base frames passed all
+After the full calibration's installation, fresh MCP observations in both arm base frames passed all
 eight camera checks with the normal runtime image pipeline. Equivalent points
 projected to the same reported pixels from either base. All four views reported
 `rgb_extrinsics_verified`; the resumed session has no unverified-camera overrides.
@@ -78,9 +115,10 @@ The accepted fit is `full-intrinsic-diagnostic/result.json`; verification is
 `verification-full-optics/verification.json`. The frozen fit SHA-256 is
 `b4099e8d08dbe4ef43029088bbb425562bc3594f6e3c2b2e305e45fbd92041df`.
 
-The prior bundle and README are preserved under `bundle-before/` and
-`README-before.md` in that directory. Repository `side_a-recalibration-report*.json`
-and `side_b-recalibration-report.json` are historical evidence for earlier
-side-only adjustments; they do not describe this new full calibration.
+The prior full-calibration bundle and README are preserved under `bundle-before/`
+and `README-before.md` in that directory. Suffixed repository
+`side_*-recalibration-report-*.json` files preserve earlier fixed-camera reports;
+the unsuffixed reports describe the latest update above. The original full-sweep
+`verification-report.json` remains unchanged as evidence for the preserved wrists.
 
 See [the operator workflow](../../docs/xarm-wuji-bimanual-calibration.md).
