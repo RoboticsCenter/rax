@@ -166,7 +166,7 @@ violations, exact fault policies, native masks, zero-parameter readback and full
 stops. They do not establish safe operation with this hand's recurring hardware
 faults; physical qualification remains separate.
 
-## Four cameras; calibration later
+## Four cameras and extrinsics collection
 
 | Role | Serial |
 | --- | --- |
@@ -185,7 +185,14 @@ RGB observations and rolling history work without extrinsics. An `rgbd` session
 may additionally save camera depth, but no camera-to-base or inter-arm transform
 is supplied. Old intrinsics/extrinsics files are refused for this uncalibrated
 setup. `xarm_pixel_to_position` and observe `project` are intentionally absent.
-Each arm's pose remains in its own base frame. Camera calibration is a later task.
+Each arm's pose remains in its own base frame until calibrated transforms are
+integrated. The [bimanual extrinsics workflow](xarm-wuji-bimanual-calibration.md)
+collects both wrist sweeps and derives fixed-camera and inter-base transforms
+from one stationary ChArUco board, following the original single-arm script.
+The [verified 2026-11-02 RGB calibration](../calibration/xarm-wuji-bimanual/README.md)
+contains transforms for all four cameras and between the bases, plus matching
+RGB models and fresh physical verification. Loading those files into the
+bimanual backend and validating depth remain pending.
 
 ## Start and prepare
 

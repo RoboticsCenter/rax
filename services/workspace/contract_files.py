@@ -5,10 +5,15 @@ from pathlib import Path
 
 def describe(setup) -> str:
     if setup.robot == 'xarm_bimanual':
-        geometry = ('Four camera views and both assemblies’ state are supplied. Camera-to-arm and inter-arm '
-                    'calibration are pending; optional depth stays in camera coordinates. '
+        calibrated = bool(setup.backend_options.get('calibration_manifest'))
+        geometry = ('Four camera views and both assemblies’ state are supplied. '
+                    + ('Verified RGB models, camera poses in both bases and the inter-base transform are loaded. '
+                       'xarm_observe arm selects the observation/projection base (default left); project marks '
+                       'points in that base. Native image coordinates and preview_scale are reported. '
+                       if calibrated else 'Camera-to-arm and inter-arm calibration are pending. ')
+                    + 'Depth metric validation is pending; no depth pixel-to-base tool is exposed. '
                     'Arm tools require arm=left|right, hand tools require hand=left|right. '
-                    'Each arm uses its own base frame; no pixel-to-base tool is exposed.')
+                    'Each arm motion target still uses its own base frame.')
     elif setup.camera_geometry:
         geometry = 'RGB images, depth and camera calibration are supplied.'
     else:

@@ -1,0 +1,99 @@
+matrix:
+- - -0.8275487345809269
+  - 0.5613322696715343
+  - -0.008317146079615067
+  - 0.41644295163889633
+- - 0.45786836888559046
+  - 0.6662956020107453
+  - -0.5885632740115432
+  - 0.02386835255175137
+- - -0.3248378805920803
+  - -0.4908729507383166
+  - -0.8084083730181812
+  - 0.768936965282389
+- - 0.0
+  - 0.0
+  - 0.0
+  - 1.0
+source:
+  result: /home/jerry/rax-runtime/bimanual-extrinsics-20261103T045627Z/pooled-distortion-fit/result.json
+  board:
+    dictionary: DICT_4X4_100
+    dimension_source: Operator supplied a new accurately printed 10 x 13 board on
+      2026-10-27, confirming the intended 20 mm squares and 15 mm markers.
+    layout_note: Physical board has 13 rows. Live marker positions match the legacy
+      14-row layout with the final row absent; preserve its ID coordinates and exclude
+      missing-row corners.
+    layout_source: .local-runtime/camera-new-board-20261027/layout-check.json
+    layout_squares_y: 14
+    legacy_pattern: true
+    marker_dimension_source: New print at intended dimensions; operator confirmation,
+      replacing the prior undersized print.
+    marker_m: 0.015
+    nominal_design_marker_m: 0.015
+    nominal_design_square_m: 0.02
+    square_m: 0.02
+    squares_x: 10
+    squares_y: 13
+  camera_specs:
+  - calibration_raw_color: true
+    height: 720
+    mount: fixed
+    name: side_a
+    serial: '263322070113'
+    width: 1280
+  - calibration_raw_color: true
+    height: 720
+    mount: fixed
+    name: side_b
+    serial: '262422074331'
+    width: 1280
+  - arm: left
+    calibration_raw_color: true
+    height: 720
+    mount: tcp
+    name: wrist_left
+    serial: '108322071838'
+    width: 1280
+  - arm: right
+    calibration_raw_color: true
+    height: 720
+    mount: tcp
+    name: wrist_right
+    serial: '752112070450'
+    width: 1280
+  arm_identity:
+    left:
+      ip: 192.168.2.205
+      serial: XI130510J56A06
+      tcp_load:
+      - 0.82
+      - - 0.0
+        - 0.0
+        - 48.0
+      tcp_offset_mm_rad:
+      - 0.0
+      - 0.0
+      - 172.0
+      - 0.0
+      - 0.0
+      - 0.0
+    right:
+      ip: 192.168.1.241
+      serial: XI130505F56A0A
+      tcp_load:
+      - 0.82
+      - - 0.0
+        - 0.0
+        - 48.0
+      tcp_offset_mm_rad:
+      - 0.0
+      - 0.0
+      - 172.0
+      - 0.0
+      - 0.0
+      - 0.0
+  method: Coverage-guided 18-pose sweep inside original envelope; original hand-eye
+    fit; three reserved views per arm; stationary shared board; training-only radial
+    distortion refinement with factory K fixed
+  quality_check_passed: true

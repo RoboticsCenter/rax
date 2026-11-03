@@ -1,0 +1,182 @@
+#!/usr/bin/env python3
+"""Verify a frozen bimanual fit on fresh real images and six new MCP poses."""
+import argparse
+from copy import deepcopy
+import hashlib
+import importlib.machinery
+import importlib.util
+import json
+from pathlib import Path
+import signal
+import subprocess
+import sys
+import time
+
+loader = importlib.machinery.SourceFileLoader('bimanual_charuco', str(Path(__file__).with_name('xarm-bimanual-charuco-calibrate')))
+spec = importlib.util.spec_from_loader(loader.name, loader)
+c = importlib.util.module_from_spec(spec)
+loader.exec_module(c)
+cv, np, Rotation = c.cv, c.np, c.Rotation
+
+
+def observed_pose(folder, name, model, board, detector, settings):
+    entry = json.loads((folder/'meta.json').read_text())['cameras'][name]
+    factory = model.get('factory_profile', model)
+    for key in ('serial', 'width', 'height', 'fps', 'K', 'distortion_coeffs', 'distortion_model'):
+        if entry[key] != factory[key]:
+            raise ValueError(f'{name}: live {key} differs from the frozen model')
+    gray = cv.imread(str(folder/entry['rgb']), cv.IMREAD_GRAYSCALE)
+    found = c.detect_board(gray, board, detector, settings)
+    if found[1] is None or len(found[1]) < 12:
+        enlarged = c.detect_small_board(gray, board, detector, settings)
+        if enlarged[1] is not None and (found[1] is None or len(enlarged[1]) > len(found[1])):
+            found = enlarged
+    corners, ids = found[:2]
+    if ids is None or len(ids) < 12 or board.checkCharucoCornersCollinear(ids):
+        return None, {'ok': False, 'reason': 'insufficient noncollinear board corners'}
+    obj, img = board.matchImagePoints(corners, ids)
+    K, D = np.asarray(model['K']), np.asarray(model['distortion_coeffs'])
+    ok, rvec, tvec = cv.solvePnP(obj, img, K, D)
+    if not ok:
+        return None, {'ok': False, 'reason': 'PnP failed'}
+    projected, _ = cv.projectPoints(obj, rvec, tvec, K, D)
+    error = np.linalg.norm(projected.reshape(-1, 2)-img.reshape(-1, 2), axis=1)
+    return c.mat_from_pose(tvec.ravel(), Rotation.from_rotvec(rvec.ravel()).as_quat()), {
+        'corners': len(ids), 'reprojection_mean_px': float(error.mean())}
+
+
+def main():
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument('--fit', type=Path, required=True, help='frozen result.json, not modified by verification')
+    parser.add_argument('--planning-collection', type=Path, required=True)
+    parser.add_argument('--session', type=Path, required=True)
+    parser.add_argument('--mcp-socket', type=Path, required=True)
+    parser.add_argument('--root', type=Path, required=True)
+    parser.add_argument('--yes', action='store_true')
+    args = parser.parse_args()
+    if not args.yes:
+        parser.error('--yes authorizes the six sequential verification poses')
+    root = args.root.resolve()
+    if not root.is_relative_to(c.artifact_root()):
+        parser.error('root must be inside RAX_ARTIFACT_ROOT')
+    fit_bytes = args.fit.read_bytes()
+    fit = json.loads(fit_bytes)
+    if not fit['ok']:
+        raise ValueError('verification requires a fit that passed its collection checks')
+    root.mkdir(parents=True, exist_ok=False)
+    config = c.Configuration.load(args.session/'operator-input.json')
+    options = deepcopy(config.backend_options)
+    specs = fit['camera_specs']
+    expected = {x['name']: (x['serial'], x['mount'], x.get('arm')) for x in specs}
+    live = {x['name']: (x['serial'], x['mount'], x.get('arm')) for x in options['cameras']}
+    if live != expected:
+        raise ValueError('session camera identity/mount differs from fit')
+    options.update(cameras=specs, stream_fps=6, stream_archive=False, stream_depth_hz=0, stream_window_s=30)
+    service = c.CameraService({**c.DEFAULTS, **options}, root/'frames', root/'camera-server.log', 'NONE', stream=root/'stream')
+    board, detector = c.make_board(fit['board'])
+    workflow = c.original_workflow()
+    drivers, preview, moving = {}, None, False
+    report = {'ok': False, 'fit': str(args.fit.resolve()), 'fit_sha256': hashlib.sha256(fit_bytes).hexdigest(),
+              'method': 'Frozen fit; six newly seeded poses; three fresh frames per pose; all four cameras checked',
+              'checks': []}
+    def interrupted(*_):
+        raise SystemExit('verification interrupted')
+    signal.signal(signal.SIGTERM, interrupted)
+    try:
+        for side in c.SIDES:
+            drivers[side] = c.XArmDriver({**c.DEFAULTS, **options['arms'][side]})
+        start = c.arm_poses(drivers)
+        plans = {s: c.coverage_plan(s, start[s], options['arms'][s], args.planning_collection,
+                                   workflow, seed=29333+i)[-3:] for i, s in enumerate(c.SIDES)}
+        for side in c.SIDES:
+            workflow.validate_plan(plans[side], start[side], drivers[side], {**c.DEFAULTS, **options['arms'][side]})
+        service.start()
+        with (root/'preview.log').open('ab') as log:
+            preview = subprocess.Popen([sys.executable, str(c.PROJECT/'scripts/xarm-camera-viewer'),
+                '--stream', str(root/'stream'), '--cameras', ','.join(expected), '--rgb-only', '--port', '8765'],
+                stdout=log, stderr=subprocess.STDOUT)
+        time.sleep(3)
+        identity = {s: c.arm_identity(drivers[s], options['arms'][s]) for s in c.SIDES}
+        if identity != fit['arm_identity']:
+            raise ValueError('arm identities or TCP configuration changed')
+        c.save(root/'plan.json', {'start': start, 'poses': plans, 'fit_sha256': report['fit_sha256'],
+                                 'arm_identity': identity, 'planning_collection': str(args.planning_collection.resolve())})
+
+        def check(side, index):
+            folder, meta = c.capture(service, root, specs, drivers)
+            checks = {}
+            for camera in specs:
+                name = camera['name']
+                pose, detection = observed_pose(folder, name, fit['camera_models'][name], board, detector, fit['board'])
+                if pose is None:
+                    checks[name] = detection
+                    continue
+                if camera['mount'] == 'tcp':
+                    owner = camera['arm']
+                    arm = meta['arms'][owner]
+                    A = c.mat_from_pose(arm['tcp_position'], arm['tcp_quaternion'])
+                    wrist = fit['wrists'][owner]
+                    delta = c.invert(np.asarray(wrist['T_base_board']))@A@c.invert(np.asarray(wrist['T_cam_tcp']))@pose
+                else:
+                    delta = c.invert(np.asarray(fit['fixed'][name]['T_cam_board']))@pose
+                residual = {'translation_error_m': float(np.linalg.norm(delta[:3, 3])),
+                            'rotation_error_deg': float(np.degrees(Rotation.from_matrix(delta[:3, :3]).magnitude()))}
+                checks[name] = {**detection, **residual,
+                                'ok': c.quality_ok([residual]) and detection['reprojection_mean_px'] < 1}
+            report['checks'].append({'moving_arm': side, 'index': index, 'frame_dir': str(folder), 'cameras': checks})
+            c.save(root/'verification.json', report)
+            print(json.dumps({'arm': side, 'pose': index, 'checks': checks}), flush=True)
+            return all(v['ok'] for v in checks.values())
+
+        if not check(None, 'home'):
+            raise ValueError('fresh home observations failed the frozen-model verification')
+        state = c.mcp(args.mcp_socket, 'xarm_status', {}, root/'mcp.jsonl')
+        if not state['motion']['armed']:
+            raise ValueError('session is not armed')
+
+        def move(side, goal):
+            nonlocal moving
+            before = drivers[side].state()
+            for step in workflow.bounded_transitions(before['tcp_position'], before['tcp_quaternion'], goal,
+                    options['arms'][side].get('max_translation_m', c.DEFAULTS['max_translation_m'])):
+                moving = True
+                c.mcp(args.mcp_socket, 'xarm_move_pose', {'arm': side, **step, 'speed_mps': .015,
+                      'tolerance_mm': 1, 'timeout_s': 20}, root/'mcp.jsonl')
+        for side in c.SIDES:
+            peer = 'right' if side == 'left' else 'left'
+            for goal in plans[side]:
+                move(side, goal)
+                time.sleep(.8)
+                if not c.quality_ok([c.pose_change(start[peer], drivers[peer].state())]):
+                    raise ValueError('uncommanded arm moved')
+                for _ in range(3):
+                    check(side, goal['index'])
+                    time.sleep(.2)
+            move(side, {'position': start[side]['tcp_position'], 'quaternion': start[side]['tcp_quaternion']})
+        report['ok'] = all(v['ok'] for item in report['checks'] for v in item['cameras'].values())
+        report['complete'] = True
+        report['return_poses'] = c.arm_poses(drivers)
+        c.save(root/'verification.json', report)
+        print(json.dumps({'verification_ok': report['ok'], 'root': str(root)}), flush=True)
+        return 0 if report['ok'] else 1
+    except BaseException as exc:
+        report['failure'] = str(exc)
+        c.save(root/'verification.json', report)
+        if moving:
+            c.arming.write(args.session, False, reason='calibration verification aborted')
+            c.mcp(args.mcp_socket, 'xarm_hold', {}, root/'mcp.jsonl')
+        raise
+    finally:
+        if preview:
+            preview.terminate()
+            try:
+                preview.wait(timeout=5)
+            except subprocess.TimeoutExpired:
+                preview.kill(); preview.wait()
+        service.close()
+        for driver in drivers.values():
+            driver.close()
+
+
+if __name__ == '__main__':
+    raise SystemExit(main())

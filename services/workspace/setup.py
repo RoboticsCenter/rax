@@ -77,6 +77,7 @@ class Setup:
     def robot_facts(self):
         facts = dict(ROBOT_FACTS[self.robot])
         facts['bimanual'] = self.robot == 'xarm_bimanual'
+        facts['rgb_calibrated'] = bool(self.backend_options.get('calibration_manifest')) if facts['bimanual'] else True
         cameras = self.backend_options.get('cameras')
         if cameras:
             facts['cameras'] = tuple(camera['name'] for camera in cameras)

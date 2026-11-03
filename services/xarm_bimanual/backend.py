@@ -15,6 +15,7 @@ import time
 import uuid
 
 import cv2 as cv
+import numpy as np
 
 from services.xarm import arming
 from services.xarm.backend import XArmBackend, CameraService, DEFAULTS, _schema, _validate_arguments
@@ -23,6 +24,9 @@ from services.xarm.sdk import XArmDriver
 from services.wuji.client import WujiClient
 from services.wuji.config import MUTATING_TOOLS, TOOL_NAMES
 from .config import SIDES, PAIRED_TOOLS, validate_options, arm_options
+from .calibration import BimanualCalibration
+from services.xarm.calibration import project as project_to_pixel
+from services.xarm.charuco import mat_from_pose
 
 
 class _NoCameras:
@@ -62,7 +66,10 @@ class XArmBimanualBackend(XArmBackend):
         self.has_hand = True
         self.last_motion = None
         self.motion_clip_threads = []
-        self.models = {c['name']: c for c in configured['cameras']}  # Identities only, not camera transforms.
+        self.models = {c['name']: c for c in configured['cameras']}
+        self.calibration = BimanualCalibration(configured) if configured.get('calibration_manifest') else None
+        if self.calibration:
+            self.options['cameras'] = self.calibration.camera_specs(configured, config.root/'operator'/'calibration')
         self.workspace = config.root/'agent-workspace'
         self.frames_root = self.workspace/'runtime'/'frames'
         self.depth = config.observation_profile == 'rgbd'
@@ -87,6 +94,8 @@ class XArmBimanualBackend(XArmBackend):
                     if close:
                         close()
                     raise
+            if self.calibration:
+                self.calibration.validate_arms(self.arms)
             if self.cameras is None:
                 self.cameras = CameraService(self.options, self.frames_root, config.root/'camera-server.log',
                     self.options['camera_depth_mode'] if self.depth else 'NONE', stream=self.stream)
@@ -156,6 +165,11 @@ class XArmBimanualBackend(XArmBackend):
                 'inputSchema': _schema({side: deepcopy(singles[side][single]['inputSchema']) for side in SIDES}, SIDES)})
         camera_list = {'type': 'array', 'items': {'type': 'string', 'enum': list(self.models)}, 'minItems': 1,
                        'maxItems': 4}
+        observe_properties = {'cameras': camera_list}
+        if self.calibration:
+            observe_properties.update(arm={'type': 'string', 'enum': list(SIDES), 'default': 'left'},
+                project={'type': 'array', 'maxItems': 16, 'items': {'type': 'array', 'minItems': 3,
+                        'maxItems': 3, 'items': {'type': 'number'}}})
         definitions += [
             {'name': 'xarm_status', 'inputSchema': _schema(), 'description':
                 'Both arms and both hands, identities, per-arm base frames and limits, shared arming and four cameras.'},
@@ -163,10 +177,14 @@ class XArmBimanualBackend(XArmBackend):
                 'Disarm and independently stop both arms and both hands. Verify each stop; clear uncertainty '
                 'only if all four are confirmed. Does not enable or clear faults. MCP calls are serialized; '
                 'operator direct disarm/stop bypasses the MCP queue.'},
-            {'name': 'xarm_observe', 'inputSchema': _schema({'cameras': camera_list}), 'description':
+            {'name': 'xarm_observe', 'inputSchema': _schema(observe_properties), 'description':
                 'Capture the two side and two wrist RealSense views, plus state of both assemblies. '
                 'Saves RGB, optional camera depth, and metadata with camera identities and wrist owners. '
-                'Calibration is pending: no camera-to-arm transforms, projected points or base-frame localization.'},
+                + ('RGB calibration supplies camera transforms in both arm bases. arm selects the observation '
+                   'and projection base (default left); project marks up to 16 points in that base, in metres. '
+                   'Saved images and K use native pixels; preview_scale maps them into displayed previews. '
+                   'Depth metric validation is pending; no depth pixel-to-position tool is exposed.'
+                   if self.calibration else 'Calibration is pending: no camera-to-arm transforms or projected points.')},
         ]
         stream = deepcopy(next(t for t in self.arms['left'].tools() if t['name'] == 'xarm_stream'))
         stream['inputSchema']['properties']['cameras'] = camera_list
@@ -315,7 +333,9 @@ class XArmBimanualBackend(XArmBackend):
                                  'xarm_ip': arm.options['xarm_ip']}
         return {'robot': 'xarm6_wuji_bimanual', 'motion': arming.read(self.config.root), 'arms': reports,
                 'cameras': deepcopy(self.options['cameras']), 'depth': self.depth,
-                'calibration_status': 'pending', 'shared_base_frame': False,
+                'calibration_status': 'rgb_extrinsics_verified' if self.calibration else 'pending',
+                'shared_base_frame': bool(self.calibration),
+                'calibration': self.calibration.summary() if self.calibration else None,
                 'control_uncertain': self.control_uncertain, 'last_controller_fault': self._last_control_fault,
                 'robot_log_error': self._robot_log_error,
                 'last_motion': self.last_motion, 'stream': None if self.stream is None else {
@@ -345,7 +365,7 @@ class XArmBimanualBackend(XArmBackend):
                     # Recording failure must not terminate controller supervision.
                     self._robot_log_error = str(exc)
 
-    def _observe(self, cameras=None):
+    def _observe(self, cameras=None, arm='left', project=None):
         names = cameras or list(self.models)
         frame_id = time.strftime('%Y%m%d%H%M%S') + uuid.uuid4().hex[:6]
         out_dir = self.frames_root/frame_id
@@ -353,7 +373,12 @@ class XArmBimanualBackend(XArmBackend):
         captured = self.cameras.request({'op': 'grab', 'cameras': names, 'depth': self.depth,
                                         'out_dir': str(out_dir)})['cameras']
         after = self.status()
-        meta = {'frame_id': frame_id, 'time': time.time(), 'calibration_status': 'pending',
+        if self.calibration:
+            self.calibration.validate_offsets(self.arms)
+        calibration_status = 'rgb_extrinsics_verified' if self.calibration else 'pending'
+        meta = {'frame_id': frame_id, 'time': time.time(), 'calibration_status': calibration_status,
+                'base_frame': f'{arm}_base',
+                'calibration': self.calibration.summary() if self.calibration else None,
                 'arms_before': before['arms'], 'arms': after['arms'],
                 'depth_units': 'mm (uint16, 0 = invalid); camera coordinates only', 'cameras': {}}
         images, report = [], {}
@@ -362,10 +387,20 @@ class XArmBimanualBackend(XArmBackend):
             meta['cameras'][name] = {**entry, 'rgb': Path(entry['rgb']).name,
                 'depth': Path(entry['depth']).name if entry.get('depth') else None,
                 'serial': spec['serial'], 'mount': spec['mount'], 'arm': spec.get('arm'),
-                'calibration_status': 'pending'}
+                'calibration_status': calibration_status}
+            transforms = self.calibration.poses(spec, after['arms']) if self.calibration else None
+            if transforms:
+                meta['cameras'][name].update(base_frame=f'{arm}_base', T_base_cam=transforms[arm].tolist(),
+                    T_left_base_cam=transforms['left'].tolist(), T_right_base_cam=transforms['right'].tolist())
             image = cv.imread(entry['rgb'])
             if image is None:
                 raise RuntimeError(f'{name}: captured RGB could not be read')
+            marks = []
+            for point in project or []:
+                uv = project_to_pixel(point, transforms[arm], entry['K'])
+                marks.append(None if uv is None else [round(uv[0], 2), round(uv[1], 2)])
+                if uv is not None and np.isfinite(uv).all() and 0 <= uv[0] < image.shape[1] and 0 <= uv[1] < image.shape[0]:
+                    cv.drawMarker(image, (int(round(uv[0])), int(round(uv[1]))), (0, 0, 255), cv.MARKER_CROSS, 24, 2)
             scale = min(1., self.options['agent_image_width']/image.shape[1])
             small = cv.resize(image, None, fx=scale, fy=scale, interpolation=cv.INTER_AREA) if scale < 1 else image
             ok, jpeg = cv.imencode('.jpg', small, [cv.IMWRITE_JPEG_QUALITY, 85])
@@ -374,10 +409,13 @@ class XArmBimanualBackend(XArmBackend):
             images.append({'type': 'image', 'mimeType': 'image/jpeg', 'data': base64.b64encode(jpeg).decode()})
             report[name] = {'preview_scale': scale, 'width': entry['width'], 'height': entry['height'],
                             'serial': spec['serial'], 'mount': spec['mount'], 'arm': spec.get('arm'),
-                            'captured_ms': entry['timestamp_ns']//1_000_000}
+                            'captured_ms': entry['timestamp_ns']//1_000_000,
+                            **({'base_frame': f'{arm}_base', 'T_base_cam': transforms[arm].tolist()} if transforms else {}),
+                            **({'projected_pixels': marks} if project else {})}
         (out_dir/'meta.json').write_text(json.dumps(meta, indent=2))
         return {'frame_id': frame_id, 'directory': f'runtime/frames/{frame_id}', 'images_in_order': names,
-                'cameras': report, 'arms': after['arms'], 'calibration_status': 'pending'}, images
+                'cameras': report, 'arms': after['arms'], 'calibration_status': calibration_status,
+                'base_frame': f'{arm}_base'}, images
 
     def close(self):
         if self._closed:

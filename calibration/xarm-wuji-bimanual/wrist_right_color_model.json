@@ -1,0 +1,95 @@
+{
+  "K": [
+    [
+      925.86962890625,
+      0.0,
+      646.4573974609375
+    ],
+    [
+      0.0,
+      925.8562622070312,
+      350.99139404296875
+    ],
+    [
+      0.0,
+      0.0,
+      1.0
+    ]
+  ],
+  "distortion_coeffs": [
+    0.06563573390881684,
+    -0.1000933890082247,
+    0.0,
+    0.0,
+    0.0
+  ],
+  "distortion_model": "brown_conrady",
+  "factory_profile": {
+    "K": [
+      [
+        925.86962890625,
+        0.0,
+        646.4573974609375
+      ],
+      [
+        0.0,
+        925.8562622070312,
+        350.99139404296875
+      ],
+      [
+        0.0,
+        0.0,
+        1.0
+      ]
+    ],
+    "distortion_coeffs": [
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0
+    ],
+    "distortion_model": "inverse_brown_conrady",
+    "fps": 6,
+    "height": 720,
+    "serial": "752112070450",
+    "width": 1280
+  },
+  "fps": 6,
+  "height": 720,
+  "method": "Training-only radial k1/k2 refinement with factory focal lengths/principal point fixed; depth calibration pending",
+  "serial": "752112070450",
+  "training_frames": [
+    "/home/jerry/rax-runtime/bimanual-extrinsics-20261103T045627Z/coverage-collection/frames/1793683069864115467",
+    "/home/jerry/rax-runtime/bimanual-extrinsics-20261103T045627Z/coverage-collection/frames/1793683081900980649",
+    "/home/jerry/rax-runtime/bimanual-extrinsics-20261103T045627Z/coverage-collection/frames/1793683088616742868",
+    "/home/jerry/rax-runtime/bimanual-extrinsics-20261103T045627Z/coverage-collection/frames/1793683101170621925",
+    "/home/jerry/rax-runtime/bimanual-extrinsics-20261103T045627Z/coverage-collection/frames/1793683107239964151",
+    "/home/jerry/rax-runtime/bimanual-extrinsics-20261103T045627Z/coverage-collection/frames/1793683115407583299",
+    "/home/jerry/rax-runtime/bimanual-extrinsics-20261103T045627Z/coverage-collection/frames/1793683125455714931",
+    "/home/jerry/rax-runtime/bimanual-extrinsics-20261103T045627Z/coverage-collection/frames/1793683139694536002",
+    "/home/jerry/rax-runtime/bimanual-extrinsics-20261103T045627Z/coverage-collection/frames/1793683147617856037",
+    "/home/jerry/rax-runtime/bimanual-extrinsics-20261103T045627Z/coverage-collection/frames/1793683153153265592",
+    "/home/jerry/rax-runtime/bimanual-extrinsics-20261103T045627Z/coverage-collection/frames/1793683158937358696",
+    "/home/jerry/rax-runtime/bimanual-extrinsics-20261103T045627Z/coverage-collection/frames/1793683164206821085",
+    "/home/jerry/rax-runtime/bimanual-extrinsics-20261103T045627Z/coverage-collection/frames/1793683176062383022",
+    "/home/jerry/rax-runtime/bimanual-extrinsics-20261103T045627Z/coverage-collection/frames/1793683182894574688",
+    "/home/jerry/rax-runtime/bimanual-extrinsics-20261103T045627Z/coverage-collection/frames/1793683192382879364",
+    "/home/jerry/rax-runtime/bimanual-extrinsics-20261103T045627Z/collection/frames/1793682484574894426",
+    "/home/jerry/rax-runtime/bimanual-extrinsics-20261103T045627Z/collection/frames/1793682491943286134",
+    "/home/jerry/rax-runtime/bimanual-extrinsics-20261103T045627Z/collection/frames/1793682504994518502",
+    "/home/jerry/rax-runtime/bimanual-extrinsics-20261103T045627Z/collection/frames/1793682514620215942",
+    "/home/jerry/rax-runtime/bimanual-extrinsics-20261103T045627Z/collection/frames/1793682527570964002",
+    "/home/jerry/rax-runtime/bimanual-extrinsics-20261103T045627Z/collection/frames/1793682538589553469",
+    "/home/jerry/rax-runtime/bimanual-extrinsics-20261103T045627Z/collection/frames/1793682555370099734",
+    "/home/jerry/rax-runtime/bimanual-extrinsics-20261103T045627Z/collection/frames/1793682569118002682",
+    "/home/jerry/rax-runtime/bimanual-extrinsics-20261103T045627Z/collection/frames/1793682601666036123",
+    "/home/jerry/rax-runtime/bimanual-extrinsics-20261103T045627Z/collection/frames/1793682616274101170",
+    "/home/jerry/rax-runtime/bimanual-extrinsics-20261103T045627Z/collection/frames/1793682623023585228",
+    "/home/jerry/rax-runtime/bimanual-extrinsics-20261103T045627Z/collection/frames/1793682640474485763",
+    "/home/jerry/rax-runtime/bimanual-extrinsics-20261103T045627Z/collection/frames/1793682653853089672",
+    "/home/jerry/rax-runtime/bimanual-extrinsics-20261103T045627Z/collection/frames/1793682668999865915"
+  ],
+  "training_rms_px": 0.4616466220142308,
+  "width": 1280
+}

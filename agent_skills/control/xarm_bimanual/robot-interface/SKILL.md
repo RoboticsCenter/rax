@@ -18,8 +18,10 @@ shared arming state. Cameras are `{{ robot.cameras | join('`, `') }}`.
   `wuji_status`, `wuji_hold` and `wuji_home`. Read [hand-control](../hand-control/SKILL.md).
 - Metres, radians and quaternions `[x,y,z,w]`. Each arm uses its **own base frame**:
   x forward, y left, z up. `relative=true` adds a displacement in that arm's base
-  axes, not the wrist axes. The arms do not yet have a calibrated shared frame.
-  Do not copy an absolute pose from one arm to the other or infer a mirror transform.
+  axes, not the wrist axes. {% if robot.rgb_calibrated %}Observations include the
+  measured `T_left_base_right_base`; use it to convert points between bases.
+  {% else %}The arms do not yet have a calibrated shared frame.
+  {% endif %}Do not copy an absolute pose from one arm to the other or infer a mirror transform.
 - The controller TCP is not a fingertip position. Both hands' posture, palm,
   fingers and wrist-mounted cameras contribute to their swept volume.
 
@@ -73,10 +75,16 @@ stop/disarm bypasses the MCP queue; another MCP hold waits behind the active cal
 `wuji_hold(hand=...)` retains that hand's healthy commanded posture and current
 bias; it is not an assembly emergency stop. Read its result and current health.
 
-## Four views, calibration pending
+## Four views and coordinate frames
 
-`xarm_observe(cameras=[...])` saves raw observations and both assemblies' state.
+`xarm_observe(cameras=[...])` saves observations and both assemblies' state.
 `xarm_stream` reviews the rolling history. Wrist camera metadata identifies its
-owning arm. Factory intrinsics and optional depth do not provide a camera-to-arm
+owning arm. {% if robot.rgb_calibrated %}RGB models and transforms are loaded.
+`xarm_observe(arm="left" | "right", project=[[x,y,z], ...])` projects points in
+the selected base. Saved metadata supplies camera poses in both bases; arm
+motion tools still require targets in their own base. Depth calibration remains
+pending and no depth pixel-to-position tool is exposed.
+{% else %}Factory intrinsics and optional depth do not provide a camera-to-arm
 transform. Pixel-to-base lookup and projected base-frame points are unavailable.
+{% endif %}
 Use [object-localization](../object-localization/SKILL.md) for the current limits.

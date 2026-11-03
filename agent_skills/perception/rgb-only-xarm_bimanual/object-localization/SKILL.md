@@ -1,15 +1,40 @@
 ---
 name: object-localization
-description: Inspect two side and two wrist RealSense views while bimanual camera calibration is pending. Distinguish image evidence and camera depth from unavailable robot-base coordinates.
+description: Locate objects using two side and two wrist RealSense views, with explicit left/right base frames and the session's RGB calibration. Use before choosing bimanual approach, grasp or placement targets.
 ---
 
-# Bimanual perception before calibration
+# Bimanual RGB perception
 
 The views are `{{ robot.cameras | join('`, `') }}`. `xarm_observe` returns images in
 `images_in_order` and saves `runtime/frames/<frame_id>/meta.json`. Each camera entry
 has its serial, mount, image dimensions and capture timestamp; a wrist entry also
 identifies its `arm`. Both arms' capture-adjacent states are recorded separately.
 
+{% if robot.rgb_calibrated %}
+Verified RGB extrinsics and matching color models are loaded. Wrist images are
+rectified; their saved `K` describes the saved image. Metadata contains
+`T_left_base_cam` and `T_right_base_cam` for every view, and `T_base_cam` in the
+selected observation base (`xarm_observe(arm="left" | "right")`, default left).
+Each wrist transform uses its owning arm's measured pose at capture time.
+`calibration.T_left_base_right_base` maps right-base points into the left base.
+Arm motion commands always take coordinates in the selected arm's own base.
+
+Triangulate the same visible object point across two views using their saved
+intrinsics and transforms in the same base. Alternatively intersect a camera
+ray with a known support plane. The supplied `reference_board_planes` describe
+the original calibration board; confirm that the current support surface matches
+before using them. A bottle's cap is elevated above its supporting surface.
+
+Check estimates with fresh `xarm_observe(arm=..., project=[[x,y,z], ...])` views;
+compare the red crosses against the object in all useful cameras. Coordinates
+in `projected_pixels` and saved images are native pixels. Divide displayed
+preview coordinates by that view's `preview_scale` before using saved `K`.
+Avoid triangulating mismatched features or nearly parallel rays. The calibration
+has millimetre-scale residuals; do not treat an estimated surface as exact contact.
+
+Depth scale and RGB-depth alignment have not been qualified. The backend does
+not expose `xarm_pixel_to_position`; use RGB geometry for this session.
+{% else %}
 Calibration is pending. No `T_base_cam`, inter-arm transform or calibrated table
 plane is supplied. `xarm_pixel_to_position` and the observe `project` parameter are
 not exposed. Do not reuse single-arm calibration files or assume an identity or
@@ -22,6 +47,14 @@ retention, release and clearance. Do not convert a pixel into a metric arm targe
 without a measured transform. A clearer image alone does not establish that
 transform. If the next action requires metric localization unavailable here,
 request calibration or a specific operator-provided measurement.
+{% endif %}
+
+The operator workflow is `scripts/xarm-bimanual-charuco-calibrate`, documented in
+`docs/xarm-wuji-bimanual-calibration.md`. It captures sequential wrist sweeps
+against one fixed board and reserves views for validation. A saved candidate
+does not enable runtime localization by itself: `xarm_status` must report that
+the backend loaded its transforms and matching RGB models. Refined wrist RGB
+intrinsics also require separate depth-alignment validation for metric RGB-D use.
 
 Keep object/hand observations separate by side and serial in memory. Moving one
 wrist invalidates that view's previous pose relationship; a different camera or

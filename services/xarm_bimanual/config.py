@@ -16,6 +16,7 @@ SHARED_OPTIONS = frozenset({
     'stream_window_s', 'stream_depth_hz', 'stream_jpeg_quality', 'stream_archive',
     'robot_log_hz', 'motion_archive_enabled', 'motion_archive_padding_s',
     'motion_archive_codec', 'agent_image_width', 'agent_python', 'protected_paths',
+    'calibration_manifest',
 })
 
 
@@ -86,15 +87,16 @@ def validate_options(options):
             fixed += 1
         else:
             raise ValueError('camera mount must be fixed, or tcp with an explicit left/right arm')
-        # These files belong to the previous single-arm installation. Do not silently
-        # apply its rectification or transforms to the replacement cameras/mounts.
         if camera.get('extrinsics') or camera.get('intrinsics'):
-            raise ValueError('bimanual camera calibration is pending; omit intrinsics/extrinsics files')
+            raise ValueError('use calibration_manifest for a verified bimanual bundle, not per-camera legacy files')
         for key in ('width', 'height'):
             if type(camera.get(key, 640 if key == 'width' else 480)) is not int or camera.get(key, 1) <= 0:
                 raise ValueError(f'camera {key} must be a positive integer')
     if fixed != 2 or sorted(wrists) != list(SIDES):
         raise ValueError('need two fixed cameras and exactly one wrist camera per arm')
+    if options.get('calibration_manifest'):
+        from .calibration import BimanualCalibration
+        BimanualCalibration(options)
     return deepcopy(options)
 
 

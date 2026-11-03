@@ -1,0 +1,736 @@
+{
+  "checks": [
+    {
+      "cameras": {
+        "side_a": {
+          "corners": 72,
+          "ok": true,
+          "reprojection_mean_px": 0.7387699484825134,
+          "rotation_error_deg": 0.060400011960266835,
+          "translation_error_m": 0.0012211911673346014
+        },
+        "side_b": {
+          "corners": 38,
+          "ok": true,
+          "reprojection_mean_px": 0.3358086049556732,
+          "rotation_error_deg": 0.16252762528858009,
+          "translation_error_m": 0.0005953103027859526
+        },
+        "wrist_left": {
+          "corners": 64,
+          "ok": true,
+          "reprojection_mean_px": 0.5331627130508423,
+          "rotation_error_deg": 0.3522517086544663,
+          "translation_error_m": 0.004754622297094266
+        },
+        "wrist_right": {
+          "corners": 106,
+          "ok": true,
+          "reprojection_mean_px": 0.5735316276550293,
+          "rotation_error_deg": 0.47522349362955757,
+          "translation_error_m": 0.0023238930256942346
+        }
+      },
+      "frame_dir": "/home/jerry/rax-runtime/bimanual-extrinsics-20261103T045627Z/verification-pooled/frames/1793683720698289566",
+      "index": "home",
+      "moving_arm": null
+    },
+    {
+      "cameras": {
+        "side_a": {
+          "corners": 72,
+          "ok": true,
+          "reprojection_mean_px": 0.7412717342376709,
+          "rotation_error_deg": 0.058170274927916564,
+          "translation_error_m": 0.0012185887170946695
+        },
+        "side_b": {
+          "corners": 51,
+          "ok": true,
+          "reprojection_mean_px": 0.38827696442604065,
+          "rotation_error_deg": 0.11479809621512665,
+          "translation_error_m": 0.001278702490750054
+        },
+        "wrist_left": {
+          "corners": 88,
+          "ok": true,
+          "reprojection_mean_px": 0.398072749376297,
+          "rotation_error_deg": 0.44406569935479473,
+          "translation_error_m": 0.0016106685152727442
+        },
+        "wrist_right": {
+          "corners": 106,
+          "ok": true,
+          "reprojection_mean_px": 0.5643739104270935,
+          "rotation_error_deg": 0.453423955467664,
+          "translation_error_m": 0.002341418863187791
+        }
+      },
+      "frame_dir": "/home/jerry/rax-runtime/bimanual-extrinsics-20261103T045627Z/verification-pooled/frames/1793683730188032146",
+      "index": 15,
+      "moving_arm": "left"
+    },
+    {
+      "cameras": {
+        "side_a": {
+          "corners": 74,
+          "ok": true,
+          "reprojection_mean_px": 0.7284464240074158,
+          "rotation_error_deg": 0.07482541211980115,
+          "translation_error_m": 0.0012281260514404166
+        },
+        "side_b": {
+          "corners": 71,
+          "ok": true,
+          "reprojection_mean_px": 0.39463770389556885,
+          "rotation_error_deg": 0.12253272822197676,
+          "translation_error_m": 0.001411053589805341
+        },
+        "wrist_left": {
+          "corners": 96,
+          "ok": true,
+          "reprojection_mean_px": 0.39935556054115295,
+          "rotation_error_deg": 0.4265977145211834,
+          "translation_error_m": 0.0016513459650217526
+        },
+        "wrist_right": {
+          "corners": 106,
+          "ok": true,
+          "reprojection_mean_px": 0.56642746925354,
+          "rotation_error_deg": 0.4627800577464216,
+          "translation_error_m": 0.0023213578967897514
+        }
+      },
+      "frame_dir": "/home/jerry/rax-runtime/bimanual-extrinsics-20261103T045627Z/verification-pooled/frames/1793683731011734644",
+      "index": 15,
+      "moving_arm": "left"
+    },
+    {
+      "cameras": {
+        "side_a": {
+          "corners": 76,
+          "ok": true,
+          "reprojection_mean_px": 0.7334656715393066,
+          "rotation_error_deg": 0.04257858903477522,
+          "translation_error_m": 0.0011737000598952235
+        },
+        "side_b": {
+          "corners": 52,
+          "ok": true,
+          "reprojection_mean_px": 0.3804236948490143,
+          "rotation_error_deg": 0.10286960712426439,
+          "translation_error_m": 0.0013917843766432423
+        },
+        "wrist_left": {
+          "corners": 91,
+          "ok": true,
+          "reprojection_mean_px": 0.3956280052661896,
+          "rotation_error_deg": 0.39217750962250403,
+          "translation_error_m": 0.0016880157801650478
+        },
+        "wrist_right": {
+          "corners": 106,
+          "ok": true,
+          "reprojection_mean_px": 0.5646371841430664,
+          "rotation_error_deg": 0.4646571301325428,
+          "translation_error_m": 0.0022925806232725545
+        }
+      },
+      "frame_dir": "/home/jerry/rax-runtime/bimanual-extrinsics-20261103T045627Z/verification-pooled/frames/1793683731827962594",
+      "index": 15,
+      "moving_arm": "left"
+    },
+    {
+      "cameras": {
+        "side_a": {
+          "corners": 72,
+          "ok": true,
+          "reprojection_mean_px": 0.7479686737060547,
+          "rotation_error_deg": 0.06845539677022523,
+          "translation_error_m": 0.0012100675675215525
+        },
+        "side_b": {
+          "corners": 45,
+          "ok": true,
+          "reprojection_mean_px": 0.37301474809646606,
+          "rotation_error_deg": 0.06792822214381243,
+          "translation_error_m": 0.001303839031531837
+        },
+        "wrist_left": {
+          "corners": 92,
+          "ok": true,
+          "reprojection_mean_px": 0.42191454768180847,
+          "rotation_error_deg": 0.31333105410133794,
+          "translation_error_m": 0.0007933829312496861
+        },
+        "wrist_right": {
+          "corners": 106,
+          "ok": true,
+          "reprojection_mean_px": 0.5620554685592651,
+          "rotation_error_deg": 0.45641503786899834,
+          "translation_error_m": 0.002329034157502676
+        }
+      },
+      "frame_dir": "/home/jerry/rax-runtime/bimanual-extrinsics-20261103T045627Z/verification-pooled/frames/1793683742053594818",
+      "index": 16,
+      "moving_arm": "left"
+    },
+    {
+      "cameras": {
+        "side_a": {
+          "corners": 73,
+          "ok": true,
+          "reprojection_mean_px": 0.7434308528900146,
+          "rotation_error_deg": 0.04355615246325808,
+          "translation_error_m": 0.0011728031133683042
+        },
+        "side_b": {
+          "corners": 53,
+          "ok": true,
+          "reprojection_mean_px": 0.356914758682251,
+          "rotation_error_deg": 0.1491914278251016,
+          "translation_error_m": 0.0022152591626366184
+        },
+        "wrist_left": {
+          "corners": 101,
+          "ok": true,
+          "reprojection_mean_px": 0.4082833230495453,
+          "rotation_error_deg": 0.24781399560101866,
+          "translation_error_m": 0.0005860581048016553
+        },
+        "wrist_right": {
+          "corners": 106,
+          "ok": true,
+          "reprojection_mean_px": 0.5635472536087036,
+          "rotation_error_deg": 0.45190069985523,
+          "translation_error_m": 0.0023185156426479246
+        }
+      },
+      "frame_dir": "/home/jerry/rax-runtime/bimanual-extrinsics-20261103T045627Z/verification-pooled/frames/1793683742867028120",
+      "index": 16,
+      "moving_arm": "left"
+    },
+    {
+      "cameras": {
+        "side_a": {
+          "corners": 72,
+          "ok": true,
+          "reprojection_mean_px": 0.7458949685096741,
+          "rotation_error_deg": 0.06467120127912244,
+          "translation_error_m": 0.001200663287787392
+        },
+        "side_b": {
+          "corners": 54,
+          "ok": true,
+          "reprojection_mean_px": 0.32957491278648376,
+          "rotation_error_deg": 0.22316577140142446,
+          "translation_error_m": 0.0020399970958676285
+        },
+        "wrist_left": {
+          "corners": 94,
+          "ok": true,
+          "reprojection_mean_px": 0.40646544098854065,
+          "rotation_error_deg": 0.22933170417435558,
+          "translation_error_m": 0.0006005583981028623
+        },
+        "wrist_right": {
+          "corners": 106,
+          "ok": true,
+          "reprojection_mean_px": 0.5624330043792725,
+          "rotation_error_deg": 0.4592724556499007,
+          "translation_error_m": 0.002330053317259421
+        }
+      },
+      "frame_dir": "/home/jerry/rax-runtime/bimanual-extrinsics-20261103T045627Z/verification-pooled/frames/1793683743766626835",
+      "index": 16,
+      "moving_arm": "left"
+    },
+    {
+      "cameras": {
+        "side_a": {
+          "corners": 74,
+          "ok": true,
+          "reprojection_mean_px": 0.7485507130622864,
+          "rotation_error_deg": 0.05613903104196118,
+          "translation_error_m": 0.001221649029752101
+        },
+        "side_b": {
+          "corners": 56,
+          "ok": true,
+          "reprojection_mean_px": 0.36371156573295593,
+          "rotation_error_deg": 0.1059313003168935,
+          "translation_error_m": 0.001081771890754047
+        },
+        "wrist_left": {
+          "corners": 94,
+          "ok": true,
+          "reprojection_mean_px": 0.3448627293109894,
+          "rotation_error_deg": 0.42140624241428704,
+          "translation_error_m": 0.004265059661686778
+        },
+        "wrist_right": {
+          "corners": 106,
+          "ok": true,
+          "reprojection_mean_px": 0.5639463663101196,
+          "rotation_error_deg": 0.4558325115465671,
+          "translation_error_m": 0.0023458465390228684
+        }
+      },
+      "frame_dir": "/home/jerry/rax-runtime/bimanual-extrinsics-20261103T045627Z/verification-pooled/frames/1793683747962886305",
+      "index": 17,
+      "moving_arm": "left"
+    },
+    {
+      "cameras": {
+        "side_a": {
+          "corners": 75,
+          "ok": true,
+          "reprojection_mean_px": 0.732937216758728,
+          "rotation_error_deg": 0.06606896079303792,
+          "translation_error_m": 0.0012421566870733562
+        },
+        "side_b": {
+          "corners": 54,
+          "ok": true,
+          "reprojection_mean_px": 0.3683687746524811,
+          "rotation_error_deg": 0.1440764300902402,
+          "translation_error_m": 0.0010464034008182152
+        },
+        "wrist_left": {
+          "corners": 99,
+          "ok": true,
+          "reprojection_mean_px": 0.3624473810195923,
+          "rotation_error_deg": 0.4134936290083664,
+          "translation_error_m": 0.004294894841664097
+        },
+        "wrist_right": {
+          "corners": 106,
+          "ok": true,
+          "reprojection_mean_px": 0.5634689331054688,
+          "rotation_error_deg": 0.4612820704905622,
+          "translation_error_m": 0.0023474325471977394
+        }
+      },
+      "frame_dir": "/home/jerry/rax-runtime/bimanual-extrinsics-20261103T045627Z/verification-pooled/frames/1793683748810662434",
+      "index": 17,
+      "moving_arm": "left"
+    },
+    {
+      "cameras": {
+        "side_a": {
+          "corners": 74,
+          "ok": true,
+          "reprojection_mean_px": 0.7219361066818237,
+          "rotation_error_deg": 0.07433272095387657,
+          "translation_error_m": 0.0012323648521755095
+        },
+        "side_b": {
+          "corners": 44,
+          "ok": true,
+          "reprojection_mean_px": 0.35029664635658264,
+          "rotation_error_deg": 0.10408410440320308,
+          "translation_error_m": 0.0011718641917583363
+        },
+        "wrist_left": {
+          "corners": 98,
+          "ok": true,
+          "reprojection_mean_px": 0.36488744616508484,
+          "rotation_error_deg": 0.4286541858035399,
+          "translation_error_m": 0.004230729048294056
+        },
+        "wrist_right": {
+          "corners": 105,
+          "ok": true,
+          "reprojection_mean_px": 0.5651935935020447,
+          "rotation_error_deg": 0.45424585937564943,
+          "translation_error_m": 0.002351347291793314
+        }
+      },
+      "frame_dir": "/home/jerry/rax-runtime/bimanual-extrinsics-20261103T045627Z/verification-pooled/frames/1793683749698824258",
+      "index": 17,
+      "moving_arm": "left"
+    },
+    {
+      "cameras": {
+        "side_a": {
+          "corners": 71,
+          "ok": true,
+          "reprojection_mean_px": 0.7715826630592346,
+          "rotation_error_deg": 0.06904639903246775,
+          "translation_error_m": 0.0012629300033486258
+        },
+        "side_b": {
+          "corners": 60,
+          "ok": true,
+          "reprojection_mean_px": 0.3779347240924835,
+          "rotation_error_deg": 0.1428361590644802,
+          "translation_error_m": 0.0011616500165071984
+        },
+        "wrist_left": {
+          "corners": 61,
+          "ok": true,
+          "reprojection_mean_px": 0.5884211659431458,
+          "rotation_error_deg": 0.32031860479328483,
+          "translation_error_m": 0.004725910636507917
+        },
+        "wrist_right": {
+          "corners": 101,
+          "ok": true,
+          "reprojection_mean_px": 0.366529643535614,
+          "rotation_error_deg": 0.18943457892422572,
+          "translation_error_m": 0.001115587233401782
+        }
+      },
+      "frame_dir": "/home/jerry/rax-runtime/bimanual-extrinsics-20261103T045627Z/verification-pooled/frames/1793683757935668862",
+      "index": 15,
+      "moving_arm": "right"
+    },
+    {
+      "cameras": {
+        "side_a": {
+          "corners": 71,
+          "ok": true,
+          "reprojection_mean_px": 0.7055145502090454,
+          "rotation_error_deg": 0.06282527733647356,
+          "translation_error_m": 0.0012489266939355614
+        },
+        "side_b": {
+          "corners": 57,
+          "ok": true,
+          "reprojection_mean_px": 0.37759560346603394,
+          "rotation_error_deg": 0.2589713867856195,
+          "translation_error_m": 0.0013282456829680899
+        },
+        "wrist_left": {
+          "corners": 65,
+          "ok": true,
+          "reprojection_mean_px": 0.5491765141487122,
+          "rotation_error_deg": 0.35688931248755174,
+          "translation_error_m": 0.004642997387939789
+        },
+        "wrist_right": {
+          "corners": 99,
+          "ok": true,
+          "reprojection_mean_px": 0.3712190091609955,
+          "rotation_error_deg": 0.2098832776399693,
+          "translation_error_m": 0.0011211514164017767
+        }
+      },
+      "frame_dir": "/home/jerry/rax-runtime/bimanual-extrinsics-20261103T045627Z/verification-pooled/frames/1793683758765766094",
+      "index": 15,
+      "moving_arm": "right"
+    },
+    {
+      "cameras": {
+        "side_a": {
+          "corners": 69,
+          "ok": true,
+          "reprojection_mean_px": 0.7671350240707397,
+          "rotation_error_deg": 0.04666445377134064,
+          "translation_error_m": 0.0012221479100867972
+        },
+        "side_b": {
+          "corners": 65,
+          "ok": true,
+          "reprojection_mean_px": 0.36327672004699707,
+          "rotation_error_deg": 0.26821366259167495,
+          "translation_error_m": 0.0015870137203561287
+        },
+        "wrist_left": {
+          "corners": 64,
+          "ok": true,
+          "reprojection_mean_px": 0.5530509352684021,
+          "rotation_error_deg": 0.32066543186513174,
+          "translation_error_m": 0.004669059664740831
+        },
+        "wrist_right": {
+          "corners": 97,
+          "ok": true,
+          "reprojection_mean_px": 0.3739338219165802,
+          "rotation_error_deg": 0.18341564445374156,
+          "translation_error_m": 0.0012076709579481848
+        }
+      },
+      "frame_dir": "/home/jerry/rax-runtime/bimanual-extrinsics-20261103T045627Z/verification-pooled/frames/1793683759640875829",
+      "index": 15,
+      "moving_arm": "right"
+    },
+    {
+      "cameras": {
+        "side_a": {
+          "corners": 65,
+          "ok": true,
+          "reprojection_mean_px": 0.7026420831680298,
+          "rotation_error_deg": 0.10577067578439735,
+          "translation_error_m": 0.0010267868416265803
+        },
+        "side_b": {
+          "corners": 55,
+          "ok": true,
+          "reprojection_mean_px": 0.33916863799095154,
+          "rotation_error_deg": 0.22519557773842774,
+          "translation_error_m": 0.0012183382624561465
+        },
+        "wrist_left": {
+          "corners": 65,
+          "ok": true,
+          "reprojection_mean_px": 0.5446251630783081,
+          "rotation_error_deg": 0.32053110628173664,
+          "translation_error_m": 0.004633186138070733
+        },
+        "wrist_right": {
+          "corners": 108,
+          "ok": true,
+          "reprojection_mean_px": 0.4310348927974701,
+          "rotation_error_deg": 0.5168142841944708,
+          "translation_error_m": 0.0034797567990580494
+        }
+      },
+      "frame_dir": "/home/jerry/rax-runtime/bimanual-extrinsics-20261103T045627Z/verification-pooled/frames/1793683766261334949",
+      "index": 16,
+      "moving_arm": "right"
+    },
+    {
+      "cameras": {
+        "side_a": {
+          "corners": 61,
+          "ok": true,
+          "reprojection_mean_px": 0.7267788052558899,
+          "rotation_error_deg": 0.1308807660926263,
+          "translation_error_m": 0.0010740162531936402
+        },
+        "side_b": {
+          "corners": 49,
+          "ok": true,
+          "reprojection_mean_px": 0.3550454378128052,
+          "rotation_error_deg": 0.19794646484788114,
+          "translation_error_m": 0.0011066650467907921
+        },
+        "wrist_left": {
+          "corners": 65,
+          "ok": true,
+          "reprojection_mean_px": 0.5521348714828491,
+          "rotation_error_deg": 0.30110797346454427,
+          "translation_error_m": 0.00467833871389108
+        },
+        "wrist_right": {
+          "corners": 102,
+          "ok": true,
+          "reprojection_mean_px": 0.43680885434150696,
+          "rotation_error_deg": 0.5183245291941881,
+          "translation_error_m": 0.0034850876759583522
+        }
+      },
+      "frame_dir": "/home/jerry/rax-runtime/bimanual-extrinsics-20261103T045627Z/verification-pooled/frames/1793683767007489597",
+      "index": 16,
+      "moving_arm": "right"
+    },
+    {
+      "cameras": {
+        "side_a": {
+          "corners": 65,
+          "ok": true,
+          "reprojection_mean_px": 0.7113556265830994,
+          "rotation_error_deg": 0.09846725555521539,
+          "translation_error_m": 0.0010286610407393261
+        },
+        "side_b": {
+          "corners": 60,
+          "ok": true,
+          "reprojection_mean_px": 0.3789196014404297,
+          "rotation_error_deg": 0.21257842228450796,
+          "translation_error_m": 0.0014336419029661277
+        },
+        "wrist_left": {
+          "corners": 65,
+          "ok": true,
+          "reprojection_mean_px": 0.5749573707580566,
+          "rotation_error_deg": 0.3155919190801874,
+          "translation_error_m": 0.0046667098328965215
+        },
+        "wrist_right": {
+          "corners": 108,
+          "ok": true,
+          "reprojection_mean_px": 0.4345906972885132,
+          "rotation_error_deg": 0.5074756519869308,
+          "translation_error_m": 0.0034672106976724017
+        }
+      },
+      "frame_dir": "/home/jerry/rax-runtime/bimanual-extrinsics-20261103T045627Z/verification-pooled/frames/1793683767803312608",
+      "index": 16,
+      "moving_arm": "right"
+    },
+    {
+      "cameras": {
+        "side_a": {
+          "corners": 75,
+          "ok": true,
+          "reprojection_mean_px": 0.7695093750953674,
+          "rotation_error_deg": 0.06378890120089684,
+          "translation_error_m": 0.0012927217871174794
+        },
+        "side_b": {
+          "corners": 49,
+          "ok": true,
+          "reprojection_mean_px": 0.37550419569015503,
+          "rotation_error_deg": 0.24779897736387702,
+          "translation_error_m": 0.0021424759630811166
+        },
+        "wrist_left": {
+          "corners": 65,
+          "ok": true,
+          "reprojection_mean_px": 0.5407943725585938,
+          "rotation_error_deg": 0.33950681022393236,
+          "translation_error_m": 0.004611711931525371
+        },
+        "wrist_right": {
+          "corners": 102,
+          "ok": true,
+          "reprojection_mean_px": 0.3921622931957245,
+          "rotation_error_deg": 0.43753788361019347,
+          "translation_error_m": 0.002987610844603818
+        }
+      },
+      "frame_dir": "/home/jerry/rax-runtime/bimanual-extrinsics-20261103T045627Z/verification-pooled/frames/1793683777235602418",
+      "index": 17,
+      "moving_arm": "right"
+    },
+    {
+      "cameras": {
+        "side_a": {
+          "corners": 71,
+          "ok": true,
+          "reprojection_mean_px": 0.7349122762680054,
+          "rotation_error_deg": 0.07753600224576641,
+          "translation_error_m": 0.001302460610344197
+        },
+        "side_b": {
+          "corners": 49,
+          "ok": true,
+          "reprojection_mean_px": 0.3210794925689697,
+          "rotation_error_deg": 0.242565420134633,
+          "translation_error_m": 0.0019070901385897572
+        },
+        "wrist_left": {
+          "corners": 65,
+          "ok": true,
+          "reprojection_mean_px": 0.5570510625839233,
+          "rotation_error_deg": 0.3440939505918005,
+          "translation_error_m": 0.004606198652604342
+        },
+        "wrist_right": {
+          "corners": 105,
+          "ok": true,
+          "reprojection_mean_px": 0.3754705488681793,
+          "rotation_error_deg": 0.3949786115222817,
+          "translation_error_m": 0.003019697175369338
+        }
+      },
+      "frame_dir": "/home/jerry/rax-runtime/bimanual-extrinsics-20261103T045627Z/verification-pooled/frames/1793683778051251598",
+      "index": 17,
+      "moving_arm": "right"
+    },
+    {
+      "cameras": {
+        "side_a": {
+          "corners": 72,
+          "ok": true,
+          "reprojection_mean_px": 0.7424293160438538,
+          "rotation_error_deg": 0.0682298313427971,
+          "translation_error_m": 0.0012759936588193248
+        },
+        "side_b": {
+          "corners": 54,
+          "ok": true,
+          "reprojection_mean_px": 0.34482303261756897,
+          "rotation_error_deg": 0.09091346273211452,
+          "translation_error_m": 0.0012514736033564086
+        },
+        "wrist_left": {
+          "corners": 65,
+          "ok": true,
+          "reprojection_mean_px": 0.5487711429595947,
+          "rotation_error_deg": 0.32395336186627827,
+          "translation_error_m": 0.004683952288841324
+        },
+        "wrist_right": {
+          "corners": 105,
+          "ok": true,
+          "reprojection_mean_px": 0.3807927668094635,
+          "rotation_error_deg": 0.399815549884587,
+          "translation_error_m": 0.003017423824698928
+        }
+      },
+      "frame_dir": "/home/jerry/rax-runtime/bimanual-extrinsics-20261103T045627Z/verification-pooled/frames/1793683778837110145",
+      "index": 17,
+      "moving_arm": "right"
+    }
+  ],
+  "complete": true,
+  "fit": "/home/jerry/rax-runtime/bimanual-extrinsics-20261103T045627Z/pooled-distortion-fit/result.json",
+  "fit_sha256": "e86336d2a9904e530ebc915629992bd3e92cb66dc25f5df81e86a879ad0cf6f1",
+  "method": "Frozen fit; six newly seeded poses; three fresh frames per pose; all four cameras checked",
+  "ok": true,
+  "return_poses": {
+    "left": {
+      "error_code": 0,
+      "joints": [
+        0.0,
+        -0.699999,
+        -1.200001,
+        -0.0,
+        1.900001,
+        1e-06
+      ],
+      "mode": 0,
+      "state": 2,
+      "tcp_position": [
+        0.230983215,
+        -0.0013681119999999999,
+        0.43356189
+      ],
+      "tcp_quaternion": [
+        0.9999709816553779,
+        0.000983684701701006,
+        4.5432282969992586e-05,
+        0.007554213889958804
+      ],
+      "tcp_rpy_rad": [
+        3.126484,
+        -7.6e-05,
+        0.001968
+      ],
+      "warn_code": 0
+    },
+    "right": {
+      "error_code": 0,
+      "joints": [
+        -1e-06,
+        -0.7,
+        -1.2,
+        1e-06,
+        1.9,
+        -1e-06
+      ],
+      "mode": 0,
+      "state": 2,
+      "tcp_position": [
+        0.23099362199999998,
+        -0.002130939,
+        0.434254761
+      ],
+      "tcp_quaternion": [
+        0.999894299835823,
+        0.0013881317639603985,
+        0.000139103942287646,
+        0.0144721420711766
+      ],
+      "tcp_rpy_rad": [
+        3.112647,
+        -0.000238,
+        0.00278
+      ],
+      "warn_code": 0
+    }
+  }
+}

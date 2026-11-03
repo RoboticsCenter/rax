@@ -16,7 +16,7 @@
         "serial": "WH2JA01260811007",
         "handedness": "left",
         "address": "192.168.1.110:50001",
-        "profile_revision": "left-hand2-uncommissioned-20261102-middle-s1-exception",
+        "profile_revision": "left-hand2-partial-v13-home-20261103",
         "lower_rad": [
           -1.186824,
           -1.48353,
@@ -61,94 +61,66 @@
           2.094395,
           1.570796
         ],
-        "current_limit_a": [
-          1.5,
-          1.5,
-          1.5,
-          1.5,
-          1.5,
-          1.5,
-          1.5,
-          1.5,
-          1.5,
-          1.5,
-          1.5,
-          1.5,
-          1.5,
-          1.5,
-          1.5,
-          1.5,
-          1.5,
-          1.5,
-          1.5,
-          1.5
-        ],
-        "kp": [
-          8.0,
-          8.0,
-          8.0,
-          8.0,
-          8.0,
-          8.0,
-          8.0,
-          8.0,
-          8.0,
-          8.0,
-          8.0,
-          8.0,
-          8.0,
-          8.0,
-          8.0,
-          8.0,
-          8.0,
-          8.0,
-          8.0,
-          8.0
-        ],
-        "kd": [
-          0.15,
-          0.15,
-          0.15,
-          0.15,
-          0.15,
-          0.15,
-          0.15,
-          0.15,
-          0.15,
-          0.15,
-          0.15,
-          0.15,
-          0.15,
-          0.15,
-          0.15,
-          0.15,
-          0.15,
-          0.15,
-          0.15,
-          0.15
-        ],
-        "command_hz": 1000,
-        "max_velocity_rad_s": 0.6,
-        "max_acceleration_rad_s2": 3.0,
-        "max_step_rad": 2.1,
-        "max_tracking_error_rad": 0.35,
+        "current_limit_a": 1.5,
+        "kp": 8.0,
+        "kd": 0.15,
+        "command_hz": 200,
+        "max_velocity_rad_s": 0.15,
+        "max_acceleration_rad_s2": 0.5,
+        "max_step_rad": 0.2,
+        "max_tracking_error_rad": 0.1,
         "max_feedback_age_s": 0.25,
-        "postures": {},
+        "postures": {
+          "home": [
+            0.3606764078140259,
+            0.27606630325317383,
+            0.036200761795043945,
+            0.7730783820152283,
+            0.043669700622558594,
+            0.03382068872451782,
+            0.11069929599761963,
+            0.5976263284683228,
+            0.004843354225158691,
+            0.0732385516166687,
+            0.2575678825378418,
+            0.33387523889541626,
+            -0.20919442176818848,
+            0.16458666324615479,
+            0.38646650314331055,
+            0.21907389163970947,
+            -0.1821182370185852,
+            0.12032538652420044,
+            0.08240795135498047,
+            0.794166088104248
+          ]
+        },
         "lock_paths": [],
-        "tolerance_rad": 0.06,
+        "tolerance_rad": 0.015,
         "motion_mode": "scurve",
-        "max_jerk_rad_s3": 2.0,
+        "max_jerk_rad_s3": 0.5,
         "feedback_transition_s": 1.0,
         "feedback_slow_error_rad": 0.06,
         "feedback_pause_error_rad": 0.1,
         "settle_s": 0.4,
         "settle_position_range_rad": 0.004,
-        "settle_timeout_s": 8.0,
+        "settle_timeout_s": 1.0,
         "max_scheduler_gap_s": 0.05,
         "max_temperature_c": 65.0,
         "allow_encoder_warning": true,
-        "allow_init_current_calib_failed": {
-          "middle_S1": "2.13.1"
+        "allow_init_current_calib_failed": {},
+        "disabled_joints": [
+          "thumb_S3",
+          "middle_S1"
+        ],
+        "isolated_joint_faults": {
+          "thumb_S3": {
+            "code": 8456,
+            "firmware": "2.13.1"
+          },
+          "middle_S1": {
+            "code": 12808,
+            "firmware": "2.13.1"
+          }
         }
       },
       "xarm_ip": "192.168.2.205"
@@ -356,31 +328,31 @@
       "name": "side_a",
       "serial": "263322070113",
       "mount": "fixed",
-      "width": 640,
-      "height": 480
+      "width": 1280,
+      "height": 720
     },
     {
       "name": "side_b",
       "serial": "262422074331",
       "mount": "fixed",
-      "width": 640,
-      "height": 480
+      "width": 1280,
+      "height": 720
     },
     {
       "name": "wrist_left",
       "serial": "108322071838",
       "mount": "tcp",
       "arm": "left",
-      "width": 640,
-      "height": 480
+      "width": 1280,
+      "height": 720
     },
     {
       "name": "wrist_right",
       "serial": "752112070450",
       "mount": "tcp",
       "arm": "right",
-      "width": 640,
-      "height": 480
+      "width": 1280,
+      "height": 720
     }
   ],
   "camera_cpus": "0-15",
@@ -389,5 +361,6 @@
   "stream_window_s": 120,
   "stream_archive": false,
   "motion_archive_enabled": true,
-  "protected_paths": []
+  "protected_paths": [],
+  "calibration_manifest": "calibration/xarm-wuji-bimanual/manifest.json"
 }

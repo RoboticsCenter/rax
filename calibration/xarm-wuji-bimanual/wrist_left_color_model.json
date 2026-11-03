@@ -1,0 +1,92 @@
+{
+  "K": [
+    [
+      905.4855346679688,
+      0.0,
+      634.0691528320312
+    ],
+    [
+      0.0,
+      905.2677001953125,
+      354.7956237792969
+    ],
+    [
+      0.0,
+      0.0,
+      1.0
+    ]
+  ],
+  "distortion_coeffs": [
+    0.01307073427141763,
+    -0.046301867018765284,
+    0.0,
+    0.0,
+    0.0
+  ],
+  "distortion_model": "brown_conrady",
+  "factory_profile": {
+    "K": [
+      [
+        905.4855346679688,
+        0.0,
+        634.0691528320312
+      ],
+      [
+        0.0,
+        905.2677001953125,
+        354.7956237792969
+      ],
+      [
+        0.0,
+        0.0,
+        1.0
+      ]
+    ],
+    "distortion_coeffs": [
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0
+    ],
+    "distortion_model": "inverse_brown_conrady",
+    "fps": 6,
+    "height": 720,
+    "serial": "108322071838",
+    "width": 1280
+  },
+  "fps": 6,
+  "height": 720,
+  "method": "Training-only radial k1/k2 refinement with factory focal lengths/principal point fixed; depth calibration pending",
+  "serial": "108322071838",
+  "training_frames": [
+    "/home/jerry/rax-runtime/bimanual-extrinsics-20261103T045627Z/coverage-collection/frames/1793682925067489387",
+    "/home/jerry/rax-runtime/bimanual-extrinsics-20261103T045627Z/coverage-collection/frames/1793682931125976355",
+    "/home/jerry/rax-runtime/bimanual-extrinsics-20261103T045627Z/coverage-collection/frames/1793682937894306463",
+    "/home/jerry/rax-runtime/bimanual-extrinsics-20261103T045627Z/coverage-collection/frames/1793682950827804609",
+    "/home/jerry/rax-runtime/bimanual-extrinsics-20261103T045627Z/coverage-collection/frames/1793682956494318809",
+    "/home/jerry/rax-runtime/bimanual-extrinsics-20261103T045627Z/coverage-collection/frames/1793682970274857067",
+    "/home/jerry/rax-runtime/bimanual-extrinsics-20261103T045627Z/coverage-collection/frames/1793682979565607696",
+    "/home/jerry/rax-runtime/bimanual-extrinsics-20261103T045627Z/coverage-collection/frames/1793682989198654014",
+    "/home/jerry/rax-runtime/bimanual-extrinsics-20261103T045627Z/coverage-collection/frames/1793682996099278182",
+    "/home/jerry/rax-runtime/bimanual-extrinsics-20261103T045627Z/coverage-collection/frames/1793683003667312093",
+    "/home/jerry/rax-runtime/bimanual-extrinsics-20261103T045627Z/coverage-collection/frames/1793683009196210378",
+    "/home/jerry/rax-runtime/bimanual-extrinsics-20261103T045627Z/coverage-collection/frames/1793683013999558140",
+    "/home/jerry/rax-runtime/bimanual-extrinsics-20261103T045627Z/coverage-collection/frames/1793683020360871384",
+    "/home/jerry/rax-runtime/bimanual-extrinsics-20261103T045627Z/coverage-collection/frames/1793683028933878014",
+    "/home/jerry/rax-runtime/bimanual-extrinsics-20261103T045627Z/coverage-collection/frames/1793683035147094052",
+    "/home/jerry/rax-runtime/bimanual-extrinsics-20261103T045627Z/collection/frames/1793682244648740159",
+    "/home/jerry/rax-runtime/bimanual-extrinsics-20261103T045627Z/collection/frames/1793682270444973146",
+    "/home/jerry/rax-runtime/bimanual-extrinsics-20261103T045627Z/collection/frames/1793682280055961982",
+    "/home/jerry/rax-runtime/bimanual-extrinsics-20261103T045627Z/collection/frames/1793682293094561192",
+    "/home/jerry/rax-runtime/bimanual-extrinsics-20261103T045627Z/collection/frames/1793682304081541325",
+    "/home/jerry/rax-runtime/bimanual-extrinsics-20261103T045627Z/collection/frames/1793682320652618936",
+    "/home/jerry/rax-runtime/bimanual-extrinsics-20261103T045627Z/collection/frames/1793682334455019570",
+    "/home/jerry/rax-runtime/bimanual-extrinsics-20261103T045627Z/collection/frames/1793682348990634772",
+    "/home/jerry/rax-runtime/bimanual-extrinsics-20261103T045627Z/collection/frames/1793682381787351451",
+    "/home/jerry/rax-runtime/bimanual-extrinsics-20261103T045627Z/collection/frames/1793682388575452143",
+    "/home/jerry/rax-runtime/bimanual-extrinsics-20261103T045627Z/collection/frames/1793682443214633535"
+  ],
+  "training_rms_px": 0.4810036216283479,
+  "width": 1280
+}
