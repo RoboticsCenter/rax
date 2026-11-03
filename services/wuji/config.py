@@ -174,7 +174,7 @@ def completion_mode(value):
     return value
 
 
-def validate_tool(name, args, cfg):
+def validate_tool(name, args, cfg, *, reference=None):
     if not isinstance(args, dict) or name not in TOOL_NAMES:
         raise ValueError('unknown Wuji tool or invalid arguments')
     allowed = {'wuji_move_joints': {'positions', 'duration_s', 'completion'}, 'wuji_pose': {'name', 'duration_s'},
@@ -184,8 +184,8 @@ def validate_tool(name, args, cfg):
     if set(args) - allowed:
         raise ValueError(f'unknown arguments for {name}: {sorted(set(args)-allowed)}')
     if cfg['disabled_joints']:
-        if name not in ('wuji_status', 'wuji_move_joints', 'wuji_hold'):
-            raise ValueError('partial-hand mode supports status, explicit joint moves and hold only')
+        if name not in ('wuji_status', 'wuji_move_joints', 'wuji_pose', 'wuji_home', 'wuji_hold'):
+            raise ValueError('partial-hand mode supports status, position moves and hold only')
         if args.get('completion', 'position') != 'position':
             raise ValueError('partial-hand mode requires position completion on active joints')
     if name == 'wuji_set_impedance':
@@ -200,7 +200,12 @@ def validate_tool(name, args, cfg):
                 raise ValueError('home posture is not configured; ask the operator')
             if not isinstance(pose, str) or pose not in cfg['postures']:
                 raise ValueError(f'unknown posture; commissioned names: {sorted(cfg["postures"])}')
-            q = cfg['postures'][pose]
+            q = list(cfg['postures'][pose])
+            if cfg['disabled_joints'] and reference is not None:
+                from .partial import disabled_indices
+                retained = target(reference, cfg)
+                for i in disabled_indices(cfg):
+                    q[i] = retained[i]
         else:
             q = target(args.get('positions'), cfg)
         duration = args.get('duration_s')
@@ -244,11 +249,13 @@ def tools(cfg):
                              'description': 'Use contact only for an intentional object-contact closure. '
                                             'Stable shortfall is not proof of contact or retention.'}}, ['positions']),
         tool('wuji_pose', 'Move to an operator-configured posture using the same bounds as wuji_move_joints. '
+             'Partial hands move active joints only; disabled entries retain their current reference. '
              f'Available names: {", ".join(sorted(cfg["postures"])) or "none commissioned"}.',
              {'name': {'type': 'string'}, 'duration_s': duration}, ['name']),
         tool('wuji_home', 'Return the hand to its operator-configured home posture through the same custom '
              'motion controller as wuji_move_joints. Uses the configured motion mode, including S-curve '
-             'jerk limits, and preserves active gains, damping and current limits. Waits for measured '
+             'jerk limits. Partial hands return active joints only and retain disabled joint references. '
+             'Preserves active gains, damping and current limits. Waits for measured '
              'settling and holds home afterward. Requires operator preparation and arming. Refuses if '
              'home is not configured. This is a posture move, not encoder homing. First support/release '
              'any object and clear the full finger sweep; no collision planning or arm movement.',

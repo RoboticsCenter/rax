@@ -7,9 +7,9 @@ description: Shape, grasp and release with the twenty-joint Wuji Hand 2 through 
 
 {% if robot.bimanual %}
 Every single-hand tool requires `hand="left"` or `hand="right"`. Read each hand's
-status separately. Examples below apply to the explicitly selected hand; targets,
-joint signs/limits, home postures, current bias, impedance and encoder-warning
-policy are independent and must not be mirrored or copied across sides.
+status separately. Examples below apply to the explicitly selected hand. Use each
+side's loaded targets, limits, home, current bias, impedance and warning policy;
+do not infer a posture by mirroring or copying the other hand.
 `wuji_move_both(left={...}, right={...})` takes the usual move payload for each
 hand, validates both, then starts them concurrently. It does not guarantee exact
 synchronization or mutual collision clearance. An execution fault stops all four
@@ -49,7 +49,8 @@ Do not reflexively call `xarm_hold` or increase the target after this outcome,
 because that would respectively release the hold or add unverified closing effort.
 
 Omit `completion` (or use `"position"`) for ordinary positioning and release.
-`wuji_home` and named `wuji_pose` postures always require position accuracy.
+`wuji_home` and named `wuji_pose` postures use position completion; partial hands
+report a completed reference's position shortfall without disabling control.
 Contact completion does not relax the tracking-error guard, joint limits,
 freshness, encoder/fault checks, current caps, or speed/acceleration/jerk limits.
 Unstable feedback or an unfinished trajectory still cannot complete as a contact hold.
@@ -72,8 +73,9 @@ position/velocity references. Omit `duration_s` to let the controller choose the
 duration. Missing home configuration is an error; do not substitute zeros.
 This moves to a saved posture; it does not recalibrate encoders or enable the hand.
 
-All three motion tools wait for measured settling and keep the final target afterward;
-only explicit contact completion permits a stable target shortfall.
+All three motion tools wait for measured settling and keep the final target afterward.
+Full-hand mode accepts stable shortfalls only with explicit contact completion;
+partial-hand mode also reports completed position-reference shortfalls without stopping.
 They do not certify self-collision clearance or a successful grasp.
 
 `effort_a`, motor current and current limits are **amperes**, not calibrated contact
@@ -247,7 +249,7 @@ control. Require `active_enabled: true`, fresh feedback and `mode: holding`; nat
 must remain Ready/Stopped with zero configured gains and current limits. Their
 faults remain visible and do not establish that the hand is healthy.
 
-Partial mode supports `wuji_move_joints`, status and hold. Copy `target_positions`
+Partial mode supports `wuji_move_joints`, saved poses/home, status and hold. Copy `target_positions`
 before changing active entries; leave excluded entries exactly unchanged even if
 their measured positions drift. They are passive and are not held at those entries.
 Movement completion and tracking apply only to active joints.
@@ -257,8 +259,10 @@ disable the hand or require another preparation. Inspect fresh holding status an
 the measured result, then continue the authorized finger sequence; do not invent
 a mandatory precision sweep or stop solely because `reached` is false. A real
 fault, incomplete reference, loss of feedback or isolation violation still stops.
-Saved poses/home, contact completion, current/impedance tools and arm moves are refused. A disabled
-joint changes the finger geometry; do not infer usable grasping or retention from
+Saved hand poses/home apply only to active joints; the backend keeps excluded
+references unchanged. Contact completion and current/impedance tools are refused.
+Arm movement uses the original xArm controller checks; partial-hand mode alone
+does not block it. A disabled joint changes the finger geometry; do not infer usable grasping or retention from
 an active-joint motion result. Stop on any new fault or isolation violation. Agent
 tools cannot change the exclusion mask, isolated-fault policy or enable motors.
 

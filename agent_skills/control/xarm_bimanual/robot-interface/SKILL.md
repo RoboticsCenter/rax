@@ -29,6 +29,9 @@ Single-arm motion retains the original xArm Cartesian/joint planner, workspace/F
 checks, speed caps, controller error checks, progress detection and measured
 settling. Read each side's live limits. Cartesian `speed_mps` selects a lower speed
 for that call; `timeout_s` is a maximum wait, not a required duration.
+An explicitly configured partial hand does not by itself prohibit arm movement.
+Its excluded joints remain passive; use `active_enabled` and the loaded isolation
+policy when interpreting hand readiness.
 
 Paired calls accept separate `left` and `right` objects with the ordinary payload:
 
@@ -53,7 +56,8 @@ Use paired tools for concurrency; separate MCP requests are serialized.
 
 Both assemblies must have fresh, healthy readiness before a mutating call. Each
 hand retains its own limits, gains, current bias, warning policy and postures.
-Do not reuse the right hand's posture or encoder-warning policy on the left.
+Use each hand's loaded profile. The operator may explicitly share tested gains
+and the exact encoder-warning allowance; saved postures remain hand-specific.
 
 Either controller fault or loss of owned hand control disarms the session and
 requests stops across both arms and both hands. A paired execution failure can

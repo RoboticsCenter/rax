@@ -307,8 +307,7 @@ def test_excluded_target_and_other_control_modes_are_rejected():
     q = list(engine.target); q[2] = .02
     with pytest.raises(ValueError, match='disabled'):
         Trajectory(engine.target, q, engine.cfg)
-    for name, args in [('wuji_pose', {'name': 'test_pose'}), ('wuji_home', {}),
-                       ('wuji_set_effort', {'effort_a': [0.]*20}),
+    for name, args in [('wuji_set_effort', {'effort_a': [0.]*20}),
                        ('wuji_set_impedance', {'kp': [.1]*20}),
                        ('wuji_move_joints', {'positions': [0.]*20, 'completion': 'contact'})]:
         with pytest.raises(ValueError, match='partial-hand'):

@@ -1,7 +1,7 @@
 {
   "serial": "WH2JA01260811007",
-  "profile_revision": "left-hand2-partial-original-controls-20261103",
-  "allow_encoder_warning": false,
+  "profile_revision": "left-hand2-partial-v13-home-20261103",
+  "allow_encoder_warning": true,
   "allow_init_current_calib_failed": {},
   "disabled_joints": ["thumb_S3", "middle_S1"],
   "isolated_joint_faults": {
@@ -15,8 +15,17 @@
   "max_velocity_rad_s": 0.15,
   "max_acceleration_rad_s2": 0.5,
   "max_jerk_rad_s3": 0.5,
-  "max_step_rad": 0.05,
+  "max_step_rad": 0.2,
   "max_tracking_error_rad": 0.1,
   "tolerance_rad": 0.015,
-  "settle_timeout_s": 1.0
+  "settle_timeout_s": 1.0,
+  "postures": {
+    "home": [
+      0.3606764078140259, 0.27606630325317383, 0.036200761795043945, 0.7730783820152283,
+      0.043669700622558594, 0.03382068872451782, 0.11069929599761963, 0.5976263284683228,
+      0.004843354225158691, 0.0732385516166687, 0.2575678825378418, 0.33387523889541626,
+      -0.20919442176818848, 0.16458666324615479, 0.38646650314331055, 0.21907389163970947,
+      -0.1821182370185852, 0.12032538652420044, 0.08240795135498047, 0.794166088104248
+    ]
+  }
 }

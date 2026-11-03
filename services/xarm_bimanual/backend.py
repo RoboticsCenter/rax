@@ -192,9 +192,6 @@ class XArmBimanualBackend(XArmBackend):
                                       state={'arm': side}) from exc
 
     def validate(self, name, arguments):
-        if (name in ('xarm_move_pose', 'xarm_move_joints', 'xarm_move_both', 'xarm_move_joints_both')
-                and any(a.hand_config['disabled_joints'] for a in self.arms.values())):
-            raise ValueError('arm movement is unavailable in partial-hand diagnostic mode')
         definition = next((t for t in self.tools() if t['name'] == name), None)
         if definition is None:
             raise ValueError(f'unknown tool {name}')

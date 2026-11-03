@@ -4,6 +4,11 @@ Use backend `xarm_bimanual` on branch `real/xarmwujibimanual`. It composes the e
 `XArmBackend`, `XArmDriver` and Wuji controller rather than replacing their motion,
 S-curve, current, impedance, encoder-warning or feedback logic. Backend `xarm`
 still supports existing single-arm sessions with their original tool arguments.
+The xArm motion implementation matches `real/xarmwuji` at `899f0c6`; its Wuji
+adapter additionally preserves excluded references for partial-hand saved poses.
+The added blanket arm-motion ban for partial hands has been removed from both
+single-arm and bimanual routing. Disabled hand joints alone do not prevent arm
+movement; the original controller, readiness and path checks still apply.
 
 ## Upstream references
 
@@ -61,7 +66,7 @@ measurement. Verify them and both swept volumes at commissioning.
 
 The optional `disabled_joints` profile field selects joints that must remain
 unpowered. It is empty by default. `examples/wuji-left-partial-profile.patch.json`
-is a profile fragment for small unloaded movements on the current left serial:
+is the physically tested profile fragment for unloaded movements on the current left serial:
 merge it into `arms.left.end_effector` in a separate operator configuration, not
 into the right profile or the top-level backend options. It excludes `thumb_S3`
 and `middle_S1`, leaving eighteen active joints. It uses the original branch's
@@ -100,9 +105,11 @@ still requires fresh disabled states and measured standstill for all twenty.
 Use `wuji_move_joints` with twenty entries copied from `target_positions`, changing
 only active entries. Any change to an excluded entry is rejected. Its retained
 reference is a wire-format placeholder, not a promise to hold the passive joint.
-Results identify `completion_scope: active_joints`. Partial mode rejects named
-poses/home, contact completion, effort/impedance changes and arm movement. Status
-and hold remain available, and existing operator stop/disarm still stop everything.
+Results identify `completion_scope: active_joints`. Named hand poses/home move
+active joints and preserve excluded references. Partial mode rejects contact
+completion and effort/impedance changes. Arm movement,
+status and hold remain available through their existing readiness checks, and
+operator stop/disarm still stop everything.
 The ordinary full-hand profile and MCP joint ordering are unchanged.
 
 In partial mode, a completed trajectory that misses the position tolerance returns
@@ -133,6 +140,26 @@ then completed three arbitrary-pose/home cycles with the original branch's
 gains, damping and 1.5 A cap, without new native faults. Home was captured from
 the left hand's current pose at the operator's request. These were bounded
 offsets up to 0.16 rad from that home, not the earlier full-range right-hand sweep.
+The later [extreme-pose tests](wuji-left-extreme-home-2026-11-02.md) exercised
+opposing fingers and both alternating five-finger configurations, returning to
+that saved home. The profile now also preserves the original branch's exact
+`Enc1BitRate (0x0003 / Warning / AutoClear)` allowance. That warning recurred
+during the successful repeat and remained visible without stopping movement.
+The tested per-call step cap is 0.2 rad; the physical sequence staged moves at
+no more than 0.18 rad per active joint.
+
+The left fragment now includes the operator-selected measured `home`, and
+`wuji_home`/`wuji_pose` preserve disabled references during both admission and
+dispatch. On November 2, the shared bimanual backend was reloaded and physically
+completed `wuji_home(hand="left")`, `wuji_home(hand="right")`, then
+`xarm_move_joints(arm="left", preset="home")` and the matching right call,
+sequentially. Left home reported a nonfatal 0.01784-rad shortfall and kept holding;
+right home returned `reached`. Both arm readbacks settled at
+`[0, -0.7, -1.2, 0, 1.9, 0]`, raising their TCPs about 0.119 m. Both hands stayed
+fresh and holding without blocking faults; the excluded joints stayed Stopped
+with zero gains/current limits. This supersedes the earlier detached-left runtime
+state. Raw calls and final readbacks are saved under the bimanual session's
+`operator/four-device-home-result.json` and `operator/four-device-home-final-state.json`.
 
 The included fake-hardware tests cover all three trajectory modes, isolation
 violations, exact fault policies, native masks, zero-parameter readback and full-hand

@@ -466,9 +466,6 @@ class XArmBackend:
         return waypoints
 
     def validate(self, name, arguments):
-        if (self.has_hand and self.hand_config['disabled_joints']
-                and name in ('xarm_move_pose', 'xarm_move_joints')):
-            raise ValueError('arm movement is unavailable in partial-hand diagnostic mode')
         if self.has_hand and name.startswith('wuji_'):
             from services.wuji.config import validate_tool, MOTION_TOOLS, MUTATING_TOOLS, effort
             from services.wuji.controller import Trajectory, EffortRamp
@@ -478,6 +475,7 @@ class XArmBackend:
                 self._motion_state()
                 state = self.end_effector.require_ready()
                 if name in MOTION_TOOLS:
+                    goal = validate_tool(name, arguments, self.hand_config, reference=state['target_positions'])
                     Trajectory(state['target_positions'], goal['positions'], self.hand_config, goal['duration_s'])
                 elif name == 'wuji_set_effort':
                     effort(goal['effort_a'], state['control_parameters']['current_limit_a'])
@@ -534,9 +532,6 @@ class XArmBackend:
             raise
 
     def _call(self, name, arguments):
-        if (self.has_hand and self.hand_config['disabled_joints']
-                and name in ('xarm_move_pose', 'xarm_move_joints')):
-            self.validate(name, arguments)
         if self.has_hand and name.startswith('wuji_'):
             self.validate(name, arguments)
             return self._hand_call(name, arguments)
@@ -635,6 +630,9 @@ class XArmBackend:
         from services.wuji.config import validate_tool
         goal = validate_tool(name, arguments, self.hand_config)
         self._require_armed()
+        if self.hand_config['disabled_joints'] and name in ('wuji_pose', 'wuji_home'):
+            state = self.end_effector.require_ready()
+            goal = validate_tool(name, arguments, self.hand_config, reference=state['target_positions'])
         started = time.time()
         try:
             method = {'wuji_set_effort': 'set_effort', 'wuji_set_impedance': 'set_impedance'}.get(name, 'move')

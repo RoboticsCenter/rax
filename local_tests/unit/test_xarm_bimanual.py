@@ -97,18 +97,6 @@ def test_selectors_are_required_and_never_default_to_an_arm(rig):
     assert all(not h.moves for h in hands.values())
 
 
-def test_partial_hand_blocks_both_arm_motion_routes_before_dispatch(rig):
-    backend, arms, hands, _ = rig
-    backend.arms['left'].hand_config['disabled_joints'] = ['thumb_S3', 'middle_S1']
-    arming.write(backend.config.root, True)
-    for name, args in [('xarm_move_joints', {'arm': 'right', 'preset': 'home'}),
-                       ('xarm_move_joints_both', {'left': {'preset': 'home'}, 'right': {'preset': 'home'}}),
-                       ('xarm_move_both', {'left': {'position': [.4, 0, .4]}, 'right': {'position': [.4, 0, .4]}})]:
-        with pytest.raises(ValueError, match='partial-hand'):
-            backend.call(name, args)
-    assert all(a.commands == 0 for a in arms.values())
-
-
 def test_each_side_routes_to_its_existing_arm_and_hand_controller(rig):
     backend, arms, hands, _ = rig
     arming.write(backend.config.root, True)
