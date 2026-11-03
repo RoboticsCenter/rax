@@ -25,12 +25,18 @@ Ask for the same named, distinctive point on the target in each camera view.
 {% if camera_geometry %}
 Accept the answers only when `{{ robot.pixel }}` places them at the same base-frame
 point (small spread between views and in the local depth).
+{% elif robot.rgb_calibrated %}
+Triangulate matching points with the saved RGB intrinsics and transforms in one
+base frame, then compare reprojections across views as described in
+[object-localization](../object-localization/SKILL.md). Correct for preview scaling
+before using native intrinsics. Image coordinates are not arm targets.
 {% else %}
 Accept the answers only when every view marks the same physical feature, and
-confirm with measured motion as in [object-localization](../object-localization/SKILL.md).
-Keep a non-Gemini fallback.
+follow the calibration limits in [object-localization](../object-localization/SKILL.md).
+Matching image points alone does not supply a metric transform.
 
 {% endif %}
+Keep a non-Gemini fallback.
 ## MCP usage
 
 The tool follows OpenRouter's **chat-completions** format, not the Google SDK's

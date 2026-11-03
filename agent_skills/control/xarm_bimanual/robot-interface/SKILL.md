@@ -47,6 +47,8 @@ This illustrates the schema, not a scene-qualified movement. `xarm_move_joints_b
 accepts each side's joint payload; `wuji_move_both` accepts each hand's twenty-joint
 target, optional duration and contact-completion policy. Both targets are validated
 before either starts. Results are under `results.left` and `results.right`.
+Each hand still follows its own completion policy: a partial hand requires
+position completion even when the full-control hand uses contact completion.
 
 The controllers start concurrently but are not hardware synchronized. A common
 arrival time, coupled trajectory, mutual collision check, or object-force balance
@@ -56,10 +58,18 @@ Use paired tools for concurrency; separate MCP requests are serialized.
 
 ## Readiness, faults and stop
 
-Both assemblies must have fresh, healthy readiness before a mutating call. Each
+Both assemblies must have fresh readiness under their loaded profiles before a mutating call. Each
 hand retains its own limits, gains, current bias, warning policy and postures.
 Use each hand's loaded profile. The operator may explicitly share tested gains
 and the exact encoder-warning allowance; saved postures remain hand-specific.
+Configured passive joints and isolated diagnostic codes do not by themselves
+block supported control; a partial hand uses `active_enabled` for readiness.
+
+An operator reply and preparation are separate state changes. The dashboard's
+**Ready & send reply** prepares/reuses both assemblies and renews arming before
+replying; **Send reply only** does not. Recheck status and fresh observations after
+either reply. Preparing a disabled hand seeds measured angles, restores its
+profile parameters and zeros current bias; renewing a healthy hold preserves it.
 
 Either controller fault or loss of owned hand control disarms the session and
 requests stops across both arms and both hands. A paired execution failure can

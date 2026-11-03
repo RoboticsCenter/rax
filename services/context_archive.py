@@ -63,6 +63,7 @@ def publish_context(root):
     journal = root/'operator'/'events.jsonl'
     if not journal.exists():
         return
+    supplied = {}
     for line in journal.read_text().split('\n'):
         try:
             event = json.loads(line)
@@ -70,6 +71,7 @@ def publish_context(root):
             continue
         if event.get('event') != 'context_staged':
             continue
+        supplied[event['workspace_path']] = event['sha256']
         destination = workspace/event['workspace_path']
         if not destination.resolve().is_relative_to(workspace.resolve()):
             raise ValueError('context destination must stay inside the agent workspace')
@@ -77,6 +79,23 @@ def publish_context(root):
             continue
         destination.parent.mkdir(parents=True, exist_ok=True)
         shutil.copyfile(root/event['archive_path'], destination)
+    if supplied:
+        # Attach a separate file inventory to Claude Code's workspace context.
+        # The operator's task text and the inherited model/API route stay unchanged.
+        index = workspace/'context'/'INDEX.md'
+        claude = workspace/'CLAUDE.md'
+        for path in (index, claude):
+            if not path.resolve().is_relative_to(workspace.resolve()):
+                raise ValueError('context instructions must stay inside the agent workspace')
+        index.write_text('# Supplied context files\n\n' + '\n'.join(
+            f'- File: `{path}`\n  SHA-256: `{digest}`' for path, digest in supplied.items()) + '\n')
+        directive = '@context/INDEX.md'
+        if claude.is_file() and directive not in claude.read_text().splitlines():
+            with claude.open('a') as stream:
+                stream.write('\n'+directive+'\n')
+        record(root, 'context_published', source='context_import',
+               context_files=[{'workspace_path': path, 'sha256': digest} for path, digest in supplied.items()],
+               evidence='file inventory included in workspace context; does not prove video inspection')
 
 
 def import_context(root, source):

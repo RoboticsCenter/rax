@@ -8,6 +8,9 @@ description: Run and debug Python robot control, then turn what worked by hand i
 Follow the workflow in AGENTS.md. Robot control{% if gemini %} and Gemini{% endif %} run as external services,
 reachable only through MCP. The deliverable is a controller that completes the task
 from a fresh scene **without you in the loop**.
+Apply this training workflow within `TASK.md` and the operator's current scope.
+A single-episode task ends after that episode and its report; it does not require
+additional physical tests before reporting completion.
 
 ## Start from your successful manual run
 
@@ -23,9 +26,11 @@ from current observations instead of embedding one layout's positions.
 
 A grasp recipe includes the joint target, commanded current bias, active kp/kd and
 current caps, geometry assumptions and evidence of retention. Read `wuji_status`
-before resuming a step: disable/reprepare may have changed all of these. Restore
-tested settings through the supported tools in their required order; current bias
-must be zero and the measured hand stationary before impedance changes. Observe
+before resuming a step{% if robot.bimanual %}, with the explicit `hand` selector{% endif %}: disable/reprepare may have changed all of these. Restore
+tested settings through the supported tools in their required order. Partial
+hands keep their commissioned parameters and do not accept effort/impedance
+commands; for a full-control hand, current bias must be zero and the measured
+hand stationary before impedance changes. Observe
 the result rather than assuming a restored command recreates the prior contact.
 {% endif %}
 
@@ -52,7 +57,8 @@ current scene before the end-to-end test runs below.
 
 ## Pressure-test across layouts
 
-Do not stop at one success. The operator can reset the scene to new layouts on
+When repeated training episodes are in scope, do not claim robustness from one
+success. The operator can reset the scene to new layouts on
 request; reacquire objects and adapt approach poses instead of reusing layout-specific
 coordinates. Refresh observations after anything moved. Record each tested layout,
 outcome, failure and fix in memory; you stepping in is debugging, not an autonomous
@@ -90,15 +96,15 @@ steps and full runs:
 def main(ctx):
     reply = ctx.value("{{ robot.observe }}")
     # Your observation–decision–action loop, e.g.:
-    # ctx.value("{{ robot.move }}", position=[x, y, z], quaternion=q)
+    # ctx.value("{{ robot.move }}", {% if robot.bimanual %}arm="left", {% endif %}position=[x, y, z], quaternion=q)
 {% if robot.has_hand %}
-    # ctx.value("wuji_move_joints", positions=verified_target_rad)
+    # ctx.value("wuji_move_joints", {% if robot.bimanual %}hand="left", {% endif %}positions=verified_target_rad)
     # Read/verify command_effort_a and control_parameters as part of the grasp state.
     # Keep the accepted target/current/impedance while carrying; verify in images.
 {% else %}
     # ctx.value("{{ robot.gripper }}", action="grasp", width=0.0, force=30)
 {% endif %}
-    return {"ok": True}
+    return {"ok": False, "reason": "Observation-only example; implement and verify the task steps."}
 
 
 if __name__ == "__main__":
@@ -124,8 +130,10 @@ observation before continuing.
 ## MCP and files
 
 `ctx.call(tool_name, **arguments)` uses the live tool schemas and returns MCP content
-blocks; `ctx.value(...)` decodes the JSON text block. Images remain image blocks.
-Inspect current tool schemas (`MCP_SESSION.md`) instead of inventing arguments. Calls
+blocks; `ctx.value(...)` returns only the decoded JSON text block. Use `ctx.call`
+when you also need image blocks. `MCP_SESSION.md` lists enabled tools; discover
+their argument schemas through `ctx.request("tools/list", {})` or the direct MCP
+tool definitions instead of inventing arguments. Calls
 reporting an MCP error raise `RuntimeError` with the error JSON (stage, reason,
 `robot_state` where the arm stopped); handle refusals in code rather than blindly
 retrying the same motion. Observations save full-resolution frames under
@@ -134,8 +142,8 @@ retrying the same motion. Observations save full-resolution frames under
 
 ## End-to-end test runs
 
-There is no formal evaluation: you judge the controller by running it end to end on
-the real scene.
+There is no formal evaluation: when training runs are requested, judge the controller
+by running it end to end on the real scene within the authorized episode scope.
 
 {% if robot.has_hand %}
 {% if robot.bimanual %}
@@ -175,6 +183,8 @@ the real scene.
    a clean current-ramp return is not grasp success.
 {% endif %}
 
-Aim for several consecutive clean successes on varied layouts before calling it done.
+For a repeated-training task, aim for several consecutive clean successes on varied
+layouts before claiming reliability. A scoped one-episode result is only evidence
+for that episode.
 Use `request_operator` kind `help` when you are blocked by something outside your
 control (an object out of reach, a robot fault, unclear task wording).

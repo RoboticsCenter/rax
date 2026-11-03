@@ -98,6 +98,14 @@ class Setup:
             facts.update(effector_name=f'{side} Wuji Hand 2', effector_tool='wuji_move_joints',
                          hand_status='wuji_status', hand_pose='wuji_pose', hand_home='wuji_home',
                          hand_hold='wuji_hold')
+            profiles = ({side: arm['end_effector'] for side, arm in self.backend_options['arms'].items()}
+                        if facts['bimanual'] else {side: self.backend_options['end_effector']})
+            facts['hand_profiles'] = {
+                side: {'profile_revision': profile.get('profile_revision', 'read live status'),
+                       'active_joint_count': 20-len(profile.get('disabled_joints', [])),
+                       'disabled_joints': tuple(profile.get('disabled_joints', [])),
+                       'postures': tuple(sorted(profile.get('postures', {})))}
+                for side, profile in profiles.items()}
             facts.pop('gripper')  # Accidental gripper-template references fail rendering.
         return facts
 

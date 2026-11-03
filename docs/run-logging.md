@@ -45,7 +45,10 @@ Use "context/<sha256>/bottle demonstration.mp4" as the demonstration for opening
 
 The importer works before or during a run. Before launch it only stages the file;
 the launcher publishes it after creating the workspace. During a run it publishes
-immediately. It does not send an instruction on your behalf. The archive retains
+immediately. A separate `context/INDEX.md` inventory is imported by `CLAUDE.md`,
+making the supplied files discoverable without adding wording to the task prompt.
+The index contains file paths and hashes; the agent still needs to inspect the
+actual video or extracted frames. It does not send an instruction on your behalf. The archive retains
 original bytes, filename, size and checksum. Subsequent prompt references link the
 file to the submitted wording and timestamp. Reusing a filename with changed
 contents produces a separate content version.

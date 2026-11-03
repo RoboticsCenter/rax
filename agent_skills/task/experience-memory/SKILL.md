@@ -33,6 +33,21 @@ uncertain; do not load the entire history. Keep learned procedures under
   Keep observations and task-specific learning even when tool guidance is refreshed.
 {% endif %}
 
+## Record interventions and demonstration use
+
+In `memory/RUNS.md`, give each attempt a UTC timestamp, controller version, outcome
+and decisive frame/motion-clip references. Include operator replies or steering
+that changed the attempt, preserving original wording as a quote when available
+and keeping your interpretation separate. Record physical resets as observations
+or operator reports, not inferred facts. Identify assisted runs explicitly.
+
+For a supplied demonstration, record its workspace path/hash and the source
+timestamps actually inspected, with links to derived frames and the decisions
+they informed. The host's operator journal and attachment archive retain originals
+outside the workspace; your notes explain how those inputs affected the run.
+Do not fabricate missing wording/timestamps or claim that a file was inspected
+merely because it was supplied. Existing motion clips do not cover all idle time.
+
 ## Distill
 
 Promote a tip to `{{ vocab.memory }}/skills/<slug>/SKILL.md` plus `evidence.json` when

@@ -161,11 +161,17 @@ function renderRobot(value) {
       rows.push([`${side} xArm`, arm.xarm_ip || 'unavailable']);
       if (arm.ok) {
         rows.push([`${side} TCP (m)`, arm.tcp_position.map(v => v.toFixed(4)).join(', ')]);
+        rows.push([`${side} TCP quat`, arm.tcp_quaternion.map(v => v.toFixed(3)).join(', ')]);
         rows.push([`${side} joints`, arm.joints.map(v => v.toFixed(3)).join(', ')]);
         rows.push([`${side} controller`, `state ${arm.state} · mode ${arm.mode} · error ${arm.error_code}`]);
       } else rows.push([`${side} arm error`, arm.error]);
       rows.push([`${side} Wuji`, `${hand.serial || ''} · ${hand.mode} · ${hand.fresh ? 'fresh' : 'STALE'}`]);
       rows.push([`${side} hand profile`, hand.profile_revision || 'unavailable']);
+      if (hand.positions) {
+        for (const [i, name] of ['thumb', 'index', 'middle', 'ring', 'pinky'].entries()) {
+          rows.push([`${side} ${name} (rad)`, hand.positions.slice(i * 4, i * 4 + 4).map(v => v.toFixed(3)).join(', ')]);
+        }
+      }
       if (hand.partial_hand) {
         partial = true;
         rows.push([`${side} partial hand`, `${hand.active_joints?.length || 0}/20 controlled · ${hand.active_enabled ? 'active joints enabled' : 'not enabled'}`]);

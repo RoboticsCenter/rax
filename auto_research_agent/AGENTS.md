@@ -34,6 +34,11 @@ Read `TASK.md`, then any existing `memory/PROGRESS.md` and `memory/INDEX.md`, an
 `status` for the budgets and the live robot. Do not redo finished work merely because
 the conversation resumed.
 
+The task and the operator's latest instructions set the run's scope. If this run
+requests one physical episode, finish it, leave the requested stable end state,
+record the result and report. The general automation/training workflow below does
+not authorize extra episodes or scene rearrangements beyond that scope.
+
 The skill links below are entry points. Read the skill for your current step and follow
 its references when needed rather than reading the entire workspace first.
 {% if subagent_cap %}
@@ -102,6 +107,14 @@ tools, and there is no GPU in the shell. Keep
 saved frames under `{{ vocab.frames }}`, scratch output under `output/`, and code under
 `code/`. Inspect selected images and logs as needed; do not load whole recordings into
 context.
+
+Operator-imported demonstrations are published under `context/`. Use them when
+referenced by the operator; see the demonstration workflow in
+[manual-robot-control](.agents/skills/manual-robot-control/SKILL.md). Preserve source
+files and keep derived frames/analysis under `output/`. The host retains submitted
+instructions, replies and imported originals separately; these logs are outside
+your writable workspace. Your notes should link the demonstration segments,
+operator steering, robot observations and outcomes used in each attempt.
 
 ## Notes and compaction
 

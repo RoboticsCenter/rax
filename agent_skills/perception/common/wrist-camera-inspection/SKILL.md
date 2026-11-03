@@ -11,17 +11,24 @@ adjusting the viewing angle can reveal details that are unclear in
 
 - Do this with an empty end effector. Do not release a held object just to obtain a view.
 - Use the exterior cameras to choose a clear approach and keep the end effector well clear
-  of the table and objects; move in small steps and stop if clearance is uncertain.
+  of the table and objects. Use a complete supported move through verified clear
+  space; use smaller steps to resolve uncertain geometry near objects.
 - Inspect the fresh `{{ robot.wrist_cameras | join('` or `') }}` image after each move. Adjust distance and angle until the
   relevant detail is clear, avoiding end-effector occlusion.
 {% if robot.bimanual %}
 - Select `arm="left"` or `arm="right"` explicitly, and inspect that arm's wrist
   camera. Check the other arm, hand, attached camera and any object spanning the
-  hands before repositioning. The four cameras' extrinsics are still uncalibrated.
+  hands before repositioning.
+{% if robot.rgb_calibrated %}
+  The four-camera RGB calibration is loaded; each wrist uses its owning arm's
+  measured pose. Obtain a fresh observation after repositioning.
+{% else %}
+  Extrinsics are pending; a clearer view alone does not establish metric geometry.
 {% endif %}
-{% if camera_geometry %}
+{% endif %}
+{% if camera_geometry or robot.rgb_calibrated %}
 - Use [object-localization](../object-localization/SKILL.md) on the new observation.
-  Use the new frame's pixels and capture-time `T_base_cam`. Moving the arm changes
+  Use the new frame's pixels and capture-adjacent `T_base_cam`. Moving the arm changes
   the camera's base-frame pose, not its fixed mount calibration. Intrinsics and
   rigid mounting extrinsics remain applicable while the physical mounts and robot
   base are unchanged.

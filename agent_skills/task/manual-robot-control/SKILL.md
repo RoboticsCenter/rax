@@ -13,7 +13,7 @@ to complete the task yourself through the robot tools, then automate what worked
 ## First look
 
 1. Read `TASK.md` and identify the required object relationships, orientation,
-   placement and robot end state. Write a short completion checklist in your notes.
+   placement, robot end state and any episode limit. Write a short completion checklist in your notes.
 2. Call `status` and read `MCP_SESSION.md`. Inspect the robot with
    `{{ robot.status }}` and the scene with `{{ robot.observe }}`. If the robot reports
    that motion is not armed, do not try to work around it: the operator arms motion.
@@ -51,6 +51,20 @@ Use these skills as needed rather than loading every reference up front:
 
 {{ block("images.forwarding") }}
 
+## Operator demonstrations and steering
+
+When the operator supplies a demonstration video or image, read
+[references/demonstrations.md](references/demonstrations.md). Imported files under
+`context/` are references for strategy and task intent; re-localize the real scene
+and choose targets in this robot's current frames. Record which source segments
+you inspected and which decisions they informed. An available filename is not
+evidence that you inspected the demonstration.
+
+Apply new operator steering to the ongoing task and update `memory/PROGRESS.md`.
+If the operator physically intervened, observe again before continuing. Keep the
+original wording separate from your interpretation, and distinguish an assisted
+attempt from an autonomous success in your run record.
+
 ## Motion and feedback
 
 Distinguish commanded targets from measured states: the reply's measured pose tells
@@ -77,5 +91,6 @@ toward the physical task rather than substituting a report for a feasible next p
 
 Partial visible progress or a clean tool return is not completion. Check every
 condition in `TASK.md` against fresh images from more than one camera. Record the
-successful strategy and evidence in `memory/`, then automate it as AGENTS.md
-describes.
+successful strategy and evidence in `memory/`. Continue into automation and further
+physical tests only within the task's requested scope. For a single-episode task,
+leave the requested stable end state and report the result.

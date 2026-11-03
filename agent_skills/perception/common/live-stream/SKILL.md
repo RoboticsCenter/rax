@@ -46,7 +46,7 @@ Older data is deleted as time goes by; copy what you need to keep into `output/`
 
 - **Before any motion that follows a pause**, check that the scene still matches what
   you planned against: `{{ robot.stream }}` with `seconds_ago: [0]` (or call
-  `{{ robot.observe }}`, which also saves depth for localization). If something
+  `{{ robot.observe }}` for fresh images and capture metadata). If something
   moved, re-localize before moving; never act on stale positions.
 - **What changed while you were away**: `{{ robot.stream }}` with a `sheet` over the time you
   were away, or `python -m api.stream changes {{ robot.overview_camera }} --seconds 30` to list the moments the
@@ -65,6 +65,13 @@ Older data is deleted as time goes by; copy what you need to keep into `output/`
 {% if camera_geometry %}
 Metric geometry comes from `{{ robot.observe }}` frames and `{{ robot.pixel }}`
 ([object-localization](../object-localization/SKILL.md)).
+{% elif robot.bimanual and robot.rgb_calibrated %}
+Calibrated RGB geometry comes from fresh `{{ robot.observe }}` images and their
+saved intrinsics and camera poses in the selected arm base. Use
+[object-localization](../object-localization/SKILL.md) for triangulation and preview
+scaling. Stream images do not carry that observation's capture-adjacent transforms;
+do not combine an old wrist image with the current arm pose. Metric depth remains
+unqualified and no pixel-to-base depth tool is exposed.
 {% elif robot.bimanual %}
 Camera-to-arm calibration is pending, even if camera depth is recorded. Use
 [object-localization](../object-localization/SKILL.md) for the current limits;

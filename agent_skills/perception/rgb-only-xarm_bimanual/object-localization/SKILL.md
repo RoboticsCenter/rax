@@ -15,7 +15,10 @@ Verified RGB extrinsics and matching color models are loaded. Wrist images are
 rectified; their saved `K` describes the saved image. Metadata contains
 `T_left_base_cam` and `T_right_base_cam` for every view, and `T_base_cam` in the
 selected observation base (`xarm_observe(arm="left" | "right")`, default left).
-Each wrist transform uses its owning arm's measured pose at capture time.
+Each wrist transform uses its owning arm's measured pose immediately after capture.
+Camera exposures and arm telemetry are not hardware synchronized. Use settled
+observations for triangulation; `arms_before`, `arms` and
+`arm_moved_during_capture_mm` help identify motion during the capture interval.
 `calibration.T_left_base_right_base` maps right-base points into the left base.
 Arm motion commands always take coordinates in the selected arm's own base.
 
@@ -49,12 +52,10 @@ transform. If the next action requires metric localization unavailable here,
 request calibration or a specific operator-provided measurement.
 {% endif %}
 
-The operator workflow is `scripts/xarm-bimanual-charuco-calibrate`, documented in
-`docs/xarm-wuji-bimanual-calibration.md`. It captures sequential wrist sweeps
-against one fixed board and reserves views for validation. A saved candidate
-does not enable runtime localization by itself: `xarm_status` must report that
-the backend loaded its transforms and matching RGB models. Refined wrist RGB
-intrinsics also require separate depth-alignment validation for metric RGB-D use.
+`xarm_status.calibration_status` must report `rgb_extrinsics_verified` before
+using calibrated transforms. Its calibration summary identifies the loaded bundle.
+The operator owns recalibration and depth-alignment validation; calibration files
+outside the workspace are not agent tools.
 
 Keep object/hand observations separate by side and serial in memory. Moving one
 wrist invalidates that view's previous pose relationship; a different camera or
