@@ -54,25 +54,34 @@ def archive_file(root, source, *, source_event_id=None, origin='operator_import'
         temporary.unlink(missing_ok=True)
 
 
-def publish_context(root):
-    """Publish staged imports only after normal workspace deployment has succeeded."""
-    root = Path(root)
-    workspace = root/'agent-workspace'
-    if not (workspace/'MCP_CONTRACT.json').is_file():
-        return
-    journal = root/'operator'/'events.jsonl'
+def staged_context(root):
+    """Resolve pre-launch staging corrections without rewriting the audit journal."""
+    journal = Path(root)/'operator'/'events.jsonl'
     if not journal.exists():
-        return
+        return {}
     supplied = {}
     for line in journal.read_text().split('\n'):
         try:
             event = json.loads(line)
         except ValueError:
             continue
-        if event.get('event') != 'context_staged':
-            continue
-        supplied[event['workspace_path']] = event['sha256']
-        destination = workspace/event['workspace_path']
+        if event.get('event') == 'context_staged':
+            supplied[event['workspace_path']] = event
+        elif event.get('event') == 'context_unstaged':
+            supplied.pop(event['workspace_path'], None)
+    return supplied
+
+
+def publish_context(root):
+    """Publish staged imports only after normal workspace deployment has succeeded."""
+    root = Path(root)
+    workspace = root/'agent-workspace'
+    if not (workspace/'MCP_CONTRACT.json').is_file():
+        return
+    staged = staged_context(root)
+    supplied = {path: event['sha256'] for path, event in staged.items()}
+    for relative, event in staged.items():
+        destination = workspace/relative
         if not destination.resolve().is_relative_to(workspace.resolve()):
             raise ValueError('context destination must stay inside the agent workspace')
         if destination.exists():

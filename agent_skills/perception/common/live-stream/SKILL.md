@@ -72,6 +72,9 @@ saved intrinsics and camera poses in the selected arm base. Use
 scaling. Stream images do not carry that observation's capture-adjacent transforms;
 do not combine an old wrist image with the current arm pose. Metric depth remains
 unqualified and no pixel-to-base depth tool is exposed.
+After camera maintenance or recalibration, obtain a fresh observation and use its
+calibration identifier and per-camera status. Historical stream frames can show
+what happened, but should not be paired with newly installed camera transforms.
 {% elif robot.bimanual %}
 Camera-to-arm calibration is pending, even if camera depth is recorded. Use
 [object-localization](../object-localization/SKILL.md) for the current limits;

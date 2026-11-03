@@ -1,22 +1,22 @@
 {
   "T_left_base_right_base": [
     [
-      0.9998172206171106,
-      -0.015389756691579123,
-      -0.011343753631400442,
-      0.008919900986559204
+      0.9997382303342455,
+      0.0151304019121447,
+      0.01716221856663991,
+      0.0017067309110735396
     ],
     [
-      0.01535122851591445,
-      0.9998761219347997,
-      -0.0034757111038977453,
-      -0.6368836458092716
+      -0.014888822441762465,
+      0.9997894840481611,
+      -0.014117738948216428,
+      -0.6213249719665342
     ],
     [
-      0.01139583873736768,
-      0.0033009352613432128,
-      0.9999296168660438,
-      0.009967027918948273
+      -0.01737221271023993,
+      0.013858518127465322,
+      0.9997530433566392,
+      0.01693699220834443
     ],
     [
       0.0,
@@ -148,14 +148,14 @@
     "wrist_left": {
       "K": [
         [
-          905.4855346679688,
+          969.8547226894896,
           0.0,
-          634.0691528320312
+          625.38592477674
         ],
         [
           0.0,
-          905.2677001953125,
-          354.7956237792969
+          961.6903717785926,
+          335.69054706687405
         ],
         [
           0.0,
@@ -164,11 +164,11 @@
         ]
       ],
       "distortion_coeffs": [
-        0.01307073427141763,
-        -0.046301867018765284,
-        0.0,
-        0.0,
-        0.0
+        0.22980426347508337,
+        -0.7073942273403236,
+        0.005019576352612623,
+        -0.01074145442227049,
+        0.7495770476579812
       ],
       "distortion_model": "brown_conrady",
       "factory_profile": {
@@ -204,50 +204,49 @@
       },
       "fps": 6,
       "height": 720,
-      "method": "Training-only radial k1/k2 refinement with factory focal lengths/principal point fixed; depth calibration pending",
+      "method": "Original training-only Brown5 color refinement; depth calibration pending",
       "serial": "108322071838",
       "training_frames": [
-        "/home/jerry/rax-runtime/bimanual-extrinsics-20261103T045627Z/coverage-collection/frames/1793682925067489387",
-        "/home/jerry/rax-runtime/bimanual-extrinsics-20261103T045627Z/coverage-collection/frames/1793682931125976355",
-        "/home/jerry/rax-runtime/bimanual-extrinsics-20261103T045627Z/coverage-collection/frames/1793682937894306463",
-        "/home/jerry/rax-runtime/bimanual-extrinsics-20261103T045627Z/coverage-collection/frames/1793682950827804609",
-        "/home/jerry/rax-runtime/bimanual-extrinsics-20261103T045627Z/coverage-collection/frames/1793682956494318809",
-        "/home/jerry/rax-runtime/bimanual-extrinsics-20261103T045627Z/coverage-collection/frames/1793682970274857067",
-        "/home/jerry/rax-runtime/bimanual-extrinsics-20261103T045627Z/coverage-collection/frames/1793682979565607696",
-        "/home/jerry/rax-runtime/bimanual-extrinsics-20261103T045627Z/coverage-collection/frames/1793682989198654014",
-        "/home/jerry/rax-runtime/bimanual-extrinsics-20261103T045627Z/coverage-collection/frames/1793682996099278182",
-        "/home/jerry/rax-runtime/bimanual-extrinsics-20261103T045627Z/coverage-collection/frames/1793683003667312093",
-        "/home/jerry/rax-runtime/bimanual-extrinsics-20261103T045627Z/coverage-collection/frames/1793683009196210378",
-        "/home/jerry/rax-runtime/bimanual-extrinsics-20261103T045627Z/coverage-collection/frames/1793683013999558140",
-        "/home/jerry/rax-runtime/bimanual-extrinsics-20261103T045627Z/coverage-collection/frames/1793683020360871384",
-        "/home/jerry/rax-runtime/bimanual-extrinsics-20261103T045627Z/coverage-collection/frames/1793683028933878014",
-        "/home/jerry/rax-runtime/bimanual-extrinsics-20261103T045627Z/coverage-collection/frames/1793683035147094052",
-        "/home/jerry/rax-runtime/bimanual-extrinsics-20261103T045627Z/collection/frames/1793682244648740159",
-        "/home/jerry/rax-runtime/bimanual-extrinsics-20261103T045627Z/collection/frames/1793682270444973146",
-        "/home/jerry/rax-runtime/bimanual-extrinsics-20261103T045627Z/collection/frames/1793682280055961982",
-        "/home/jerry/rax-runtime/bimanual-extrinsics-20261103T045627Z/collection/frames/1793682293094561192",
-        "/home/jerry/rax-runtime/bimanual-extrinsics-20261103T045627Z/collection/frames/1793682304081541325",
-        "/home/jerry/rax-runtime/bimanual-extrinsics-20261103T045627Z/collection/frames/1793682320652618936",
-        "/home/jerry/rax-runtime/bimanual-extrinsics-20261103T045627Z/collection/frames/1793682334455019570",
-        "/home/jerry/rax-runtime/bimanual-extrinsics-20261103T045627Z/collection/frames/1793682348990634772",
-        "/home/jerry/rax-runtime/bimanual-extrinsics-20261103T045627Z/collection/frames/1793682381787351451",
-        "/home/jerry/rax-runtime/bimanual-extrinsics-20261103T045627Z/collection/frames/1793682388575452143",
-        "/home/jerry/rax-runtime/bimanual-extrinsics-20261103T045627Z/collection/frames/1793682443214633535"
+        "/home/jerry/rax-runtime/sessions/20261103T073444Z_unscrew_bottle_b1d812/operator/full-recalibration-20261103T100920Z/collection-covered/frames/1793701313632670838",
+        "/home/jerry/rax-runtime/sessions/20261103T073444Z_unscrew_bottle_b1d812/operator/full-recalibration-20261103T100920Z/collection-covered/frames/1793701323588002109",
+        "/home/jerry/rax-runtime/sessions/20261103T073444Z_unscrew_bottle_b1d812/operator/full-recalibration-20261103T100920Z/collection-covered/frames/1793701336293228699",
+        "/home/jerry/rax-runtime/sessions/20261103T073444Z_unscrew_bottle_b1d812/operator/full-recalibration-20261103T100920Z/collection-covered/frames/1793701349086871330",
+        "/home/jerry/rax-runtime/sessions/20261103T073444Z_unscrew_bottle_b1d812/operator/full-recalibration-20261103T100920Z/collection-covered/frames/1793701358480373337",
+        "/home/jerry/rax-runtime/sessions/20261103T073444Z_unscrew_bottle_b1d812/operator/full-recalibration-20261103T100920Z/collection-covered/frames/1793701365816034232",
+        "/home/jerry/rax-runtime/sessions/20261103T073444Z_unscrew_bottle_b1d812/operator/full-recalibration-20261103T100920Z/collection-covered/frames/1793701372995259793",
+        "/home/jerry/rax-runtime/sessions/20261103T073444Z_unscrew_bottle_b1d812/operator/full-recalibration-20261103T100920Z/collection-covered/frames/1793701379197380617",
+        "/home/jerry/rax-runtime/sessions/20261103T073444Z_unscrew_bottle_b1d812/operator/full-recalibration-20261103T100920Z/collection-covered/frames/1793701385269183481",
+        "/home/jerry/rax-runtime/sessions/20261103T073444Z_unscrew_bottle_b1d812/operator/full-recalibration-20261103T100920Z/collection-covered/frames/1793701389955385092",
+        "/home/jerry/rax-runtime/sessions/20261103T073444Z_unscrew_bottle_b1d812/operator/full-recalibration-20261103T100920Z/collection-covered/frames/1793701399197143435",
+        "/home/jerry/rax-runtime/sessions/20261103T073444Z_unscrew_bottle_b1d812/operator/full-recalibration-20261103T100920Z/collection-covered/frames/1793701404253375887",
+        "/home/jerry/rax-runtime/sessions/20261103T073444Z_unscrew_bottle_b1d812/operator/full-recalibration-20261103T100920Z/collection-covered/frames/1793701408790656559",
+        "/home/jerry/rax-runtime/sessions/20261103T073444Z_unscrew_bottle_b1d812/operator/full-recalibration-20261103T100920Z/collection-covered/frames/1793701417518828215",
+        "/home/jerry/rax-runtime/sessions/20261103T073444Z_unscrew_bottle_b1d812/operator/full-recalibration-20261103T100920Z/collection-covered/frames/1793701429450272145",
+        "/home/jerry/rax-runtime/sessions/20261103T073444Z_unscrew_bottle_b1d812/operator/full-recalibration-20261103T100920Z/collection-initial/frames/1793700660997996335",
+        "/home/jerry/rax-runtime/sessions/20261103T073444Z_unscrew_bottle_b1d812/operator/full-recalibration-20261103T100920Z/collection-initial/frames/1793700685979856993",
+        "/home/jerry/rax-runtime/sessions/20261103T073444Z_unscrew_bottle_b1d812/operator/full-recalibration-20261103T100920Z/collection-initial/frames/1793700695768606193",
+        "/home/jerry/rax-runtime/sessions/20261103T073444Z_unscrew_bottle_b1d812/operator/full-recalibration-20261103T100920Z/collection-initial/frames/1793700726504157076",
+        "/home/jerry/rax-runtime/sessions/20261103T073444Z_unscrew_bottle_b1d812/operator/full-recalibration-20261103T100920Z/collection-initial/frames/1793700744689941733",
+        "/home/jerry/rax-runtime/sessions/20261103T073444Z_unscrew_bottle_b1d812/operator/full-recalibration-20261103T100920Z/collection-initial/frames/1793700760191166263",
+        "/home/jerry/rax-runtime/sessions/20261103T073444Z_unscrew_bottle_b1d812/operator/full-recalibration-20261103T100920Z/collection-initial/frames/1793700781694151696",
+        "/home/jerry/rax-runtime/sessions/20261103T073444Z_unscrew_bottle_b1d812/operator/full-recalibration-20261103T100920Z/collection-initial/frames/1793700817654882033",
+        "/home/jerry/rax-runtime/sessions/20261103T073444Z_unscrew_bottle_b1d812/operator/full-recalibration-20261103T100920Z/collection-initial/frames/1793700826240753534",
+        "/home/jerry/rax-runtime/sessions/20261103T073444Z_unscrew_bottle_b1d812/operator/full-recalibration-20261103T100920Z/collection-initial/frames/1793700884678492325"
       ],
-      "training_rms_px": 0.4810036216283479,
+      "training_rms_px": 0.3003008354683318,
       "width": 1280
     },
     "wrist_right": {
       "K": [
         [
-          925.86962890625,
+          859.2461692140139,
           0.0,
-          646.4573974609375
+          627.638276701003
         ],
         [
           0.0,
-          925.8562622070312,
-          350.99139404296875
+          857.8329288072715,
+          349.8243196792285
         ],
         [
           0.0,
@@ -256,11 +255,11 @@
         ]
       ],
       "distortion_coeffs": [
-        0.06563573390881684,
-        -0.1000933890082247,
-        0.0,
-        0.0,
-        0.0
+        0.17972461205670412,
+        -0.5907461332258801,
+        -0.0004857604821720669,
+        -0.0073220059937947725,
+        0.5399744098918601
       ],
       "distortion_model": "brown_conrady",
       "factory_profile": {
@@ -296,40 +295,37 @@
       },
       "fps": 6,
       "height": 720,
-      "method": "Training-only radial k1/k2 refinement with factory focal lengths/principal point fixed; depth calibration pending",
+      "method": "Original training-only Brown5 color refinement; depth calibration pending",
       "serial": "752112070450",
       "training_frames": [
-        "/home/jerry/rax-runtime/bimanual-extrinsics-20261103T045627Z/coverage-collection/frames/1793683069864115467",
-        "/home/jerry/rax-runtime/bimanual-extrinsics-20261103T045627Z/coverage-collection/frames/1793683081900980649",
-        "/home/jerry/rax-runtime/bimanual-extrinsics-20261103T045627Z/coverage-collection/frames/1793683088616742868",
-        "/home/jerry/rax-runtime/bimanual-extrinsics-20261103T045627Z/coverage-collection/frames/1793683101170621925",
-        "/home/jerry/rax-runtime/bimanual-extrinsics-20261103T045627Z/coverage-collection/frames/1793683107239964151",
-        "/home/jerry/rax-runtime/bimanual-extrinsics-20261103T045627Z/coverage-collection/frames/1793683115407583299",
-        "/home/jerry/rax-runtime/bimanual-extrinsics-20261103T045627Z/coverage-collection/frames/1793683125455714931",
-        "/home/jerry/rax-runtime/bimanual-extrinsics-20261103T045627Z/coverage-collection/frames/1793683139694536002",
-        "/home/jerry/rax-runtime/bimanual-extrinsics-20261103T045627Z/coverage-collection/frames/1793683147617856037",
-        "/home/jerry/rax-runtime/bimanual-extrinsics-20261103T045627Z/coverage-collection/frames/1793683153153265592",
-        "/home/jerry/rax-runtime/bimanual-extrinsics-20261103T045627Z/coverage-collection/frames/1793683158937358696",
-        "/home/jerry/rax-runtime/bimanual-extrinsics-20261103T045627Z/coverage-collection/frames/1793683164206821085",
-        "/home/jerry/rax-runtime/bimanual-extrinsics-20261103T045627Z/coverage-collection/frames/1793683176062383022",
-        "/home/jerry/rax-runtime/bimanual-extrinsics-20261103T045627Z/coverage-collection/frames/1793683182894574688",
-        "/home/jerry/rax-runtime/bimanual-extrinsics-20261103T045627Z/coverage-collection/frames/1793683192382879364",
-        "/home/jerry/rax-runtime/bimanual-extrinsics-20261103T045627Z/collection/frames/1793682484574894426",
-        "/home/jerry/rax-runtime/bimanual-extrinsics-20261103T045627Z/collection/frames/1793682491943286134",
-        "/home/jerry/rax-runtime/bimanual-extrinsics-20261103T045627Z/collection/frames/1793682504994518502",
-        "/home/jerry/rax-runtime/bimanual-extrinsics-20261103T045627Z/collection/frames/1793682514620215942",
-        "/home/jerry/rax-runtime/bimanual-extrinsics-20261103T045627Z/collection/frames/1793682527570964002",
-        "/home/jerry/rax-runtime/bimanual-extrinsics-20261103T045627Z/collection/frames/1793682538589553469",
-        "/home/jerry/rax-runtime/bimanual-extrinsics-20261103T045627Z/collection/frames/1793682555370099734",
-        "/home/jerry/rax-runtime/bimanual-extrinsics-20261103T045627Z/collection/frames/1793682569118002682",
-        "/home/jerry/rax-runtime/bimanual-extrinsics-20261103T045627Z/collection/frames/1793682601666036123",
-        "/home/jerry/rax-runtime/bimanual-extrinsics-20261103T045627Z/collection/frames/1793682616274101170",
-        "/home/jerry/rax-runtime/bimanual-extrinsics-20261103T045627Z/collection/frames/1793682623023585228",
-        "/home/jerry/rax-runtime/bimanual-extrinsics-20261103T045627Z/collection/frames/1793682640474485763",
-        "/home/jerry/rax-runtime/bimanual-extrinsics-20261103T045627Z/collection/frames/1793682653853089672",
-        "/home/jerry/rax-runtime/bimanual-extrinsics-20261103T045627Z/collection/frames/1793682668999865915"
+        "/home/jerry/rax-runtime/sessions/20261103T073444Z_unscrew_bottle_b1d812/operator/full-recalibration-20261103T100920Z/collection-covered/frames/1793701477182060009",
+        "/home/jerry/rax-runtime/sessions/20261103T073444Z_unscrew_bottle_b1d812/operator/full-recalibration-20261103T100920Z/collection-covered/frames/1793701485794440976",
+        "/home/jerry/rax-runtime/sessions/20261103T073444Z_unscrew_bottle_b1d812/operator/full-recalibration-20261103T100920Z/collection-covered/frames/1793701495802146247",
+        "/home/jerry/rax-runtime/sessions/20261103T073444Z_unscrew_bottle_b1d812/operator/full-recalibration-20261103T100920Z/collection-covered/frames/1793701507194106922",
+        "/home/jerry/rax-runtime/sessions/20261103T073444Z_unscrew_bottle_b1d812/operator/full-recalibration-20261103T100920Z/collection-covered/frames/1793701516338469173",
+        "/home/jerry/rax-runtime/sessions/20261103T073444Z_unscrew_bottle_b1d812/operator/full-recalibration-20261103T100920Z/collection-covered/frames/1793701521275873042",
+        "/home/jerry/rax-runtime/sessions/20261103T073444Z_unscrew_bottle_b1d812/operator/full-recalibration-20261103T100920Z/collection-covered/frames/1793701532886142894",
+        "/home/jerry/rax-runtime/sessions/20261103T073444Z_unscrew_bottle_b1d812/operator/full-recalibration-20261103T100920Z/collection-covered/frames/1793701543981229600",
+        "/home/jerry/rax-runtime/sessions/20261103T073444Z_unscrew_bottle_b1d812/operator/full-recalibration-20261103T100920Z/collection-covered/frames/1793701551567284898",
+        "/home/jerry/rax-runtime/sessions/20261103T073444Z_unscrew_bottle_b1d812/operator/full-recalibration-20261103T100920Z/collection-covered/frames/1793701562298269210",
+        "/home/jerry/rax-runtime/sessions/20261103T073444Z_unscrew_bottle_b1d812/operator/full-recalibration-20261103T100920Z/collection-covered/frames/1793701566946886312",
+        "/home/jerry/rax-runtime/sessions/20261103T073444Z_unscrew_bottle_b1d812/operator/full-recalibration-20261103T100920Z/collection-covered/frames/1793701572111847443",
+        "/home/jerry/rax-runtime/sessions/20261103T073444Z_unscrew_bottle_b1d812/operator/full-recalibration-20261103T100920Z/collection-covered/frames/1793701579620173562",
+        "/home/jerry/rax-runtime/sessions/20261103T073444Z_unscrew_bottle_b1d812/operator/full-recalibration-20261103T100920Z/collection-covered/frames/1793701585536720423",
+        "/home/jerry/rax-runtime/sessions/20261103T073444Z_unscrew_bottle_b1d812/operator/full-recalibration-20261103T100920Z/collection-covered/frames/1793701593263505056",
+        "/home/jerry/rax-runtime/sessions/20261103T073444Z_unscrew_bottle_b1d812/operator/full-recalibration-20261103T100920Z/collection-initial/frames/1793700932550859354",
+        "/home/jerry/rax-runtime/sessions/20261103T073444Z_unscrew_bottle_b1d812/operator/full-recalibration-20261103T100920Z/collection-initial/frames/1793700939938505207",
+        "/home/jerry/rax-runtime/sessions/20261103T073444Z_unscrew_bottle_b1d812/operator/full-recalibration-20261103T100920Z/collection-initial/frames/1793700975327730632",
+        "/home/jerry/rax-runtime/sessions/20261103T073444Z_unscrew_bottle_b1d812/operator/full-recalibration-20261103T100920Z/collection-initial/frames/1793701008678058851",
+        "/home/jerry/rax-runtime/sessions/20261103T073444Z_unscrew_bottle_b1d812/operator/full-recalibration-20261103T100920Z/collection-initial/frames/1793701027167564559",
+        "/home/jerry/rax-runtime/sessions/20261103T073444Z_unscrew_bottle_b1d812/operator/full-recalibration-20261103T100920Z/collection-initial/frames/1793701042743425137",
+        "/home/jerry/rax-runtime/sessions/20261103T073444Z_unscrew_bottle_b1d812/operator/full-recalibration-20261103T100920Z/collection-initial/frames/1793701083582091373",
+        "/home/jerry/rax-runtime/sessions/20261103T073444Z_unscrew_bottle_b1d812/operator/full-recalibration-20261103T100920Z/collection-initial/frames/1793701099877580489",
+        "/home/jerry/rax-runtime/sessions/20261103T073444Z_unscrew_bottle_b1d812/operator/full-recalibration-20261103T100920Z/collection-initial/frames/1793701108399905056",
+        "/home/jerry/rax-runtime/sessions/20261103T073444Z_unscrew_bottle_b1d812/operator/full-recalibration-20261103T100920Z/collection-initial/frames/1793701132356909888",
+        "/home/jerry/rax-runtime/sessions/20261103T073444Z_unscrew_bottle_b1d812/operator/full-recalibration-20261103T100920Z/collection-initial/frames/1793701147558754906"
       ],
-      "training_rms_px": 0.4616466220142308,
+      "training_rms_px": 0.2938568265962101,
       "width": 1280
     }
   },
@@ -369,507 +365,30 @@
       "width": 1280
     }
   ],
-  "collection": "/home/jerry/rax-runtime/bimanual-extrinsics-20261103T045627Z/coverage-collection",
+  "collection": "/home/jerry/rax-runtime/sessions/20261103T073444Z_unscrew_bottle_b1d812/operator/full-recalibration-20261103T100920Z/collection-covered",
   "convention": "T_A_B maps column-vector points from B into A; translations in metres",
-  "coverage_source": "/home/jerry/rax-runtime/bimanual-extrinsics-20261103T045627Z/collection",
+  "coverage_source": "/home/jerry/rax-runtime/sessions/20261103T073444Z_unscrew_bottle_b1d812/operator/full-recalibration-20261103T100920Z/planning",
+  "fit_report": "fit-result.json",
   "fixed": {
     "side_a": {
       "T_cam_base": [
         [
-          0.9977549814693956,
-          -0.06504100142024805,
-          0.015958229452481848,
-          -0.32314382384757134
+          0.9999566236243266,
+          -0.009008678413531184,
+          0.002365287103064463,
+          -0.26645738438842426
         ],
         [
-          -0.0062796292823552565,
-          -0.3281010685927313,
-          -0.9446217523667261,
-          0.034039156039753424
+          -7.105137780582273e-05,
+          -0.26131990520435777,
+          -0.9652522479101973,
+          0.04297707009155748
         ],
         [
-          0.06667505687348875,
-          0.9424008472632861,
-          -0.3277729089909017,
-          0.7359328131151394
-        ],
-        [
-          0.0,
-          0.0,
-          0.0,
-          1.0
-        ]
-      ],
-      "T_cam_board": [
-        [
-          0.9943238156312352,
-          0.10630850295427129,
-          -0.004318780865481289,
-          -0.1391563800003946
-        ],
-        [
-          -0.02879036150270347,
-          0.307915238727033,
-          0.950978086416411,
-          0.10210109535041967
-        ],
-        [
-          0.10242687515045068,
-          -0.9454558202048875,
-          0.30922811529293076,
-          0.5430049163341666
-        ],
-        [
-          0.0,
-          0.0,
-          0.0,
-          1.0
-        ]
-      ],
-      "T_cam_left_base": [
-        [
-          0.9977549814693956,
-          -0.06504100142024805,
-          0.015958229452481848,
-          -0.32314382384757134
-        ],
-        [
-          -0.0062796292823552565,
-          -0.3281010685927313,
-          -0.9446217523667261,
-          0.034039156039753424
-        ],
-        [
-          0.06667505687348875,
-          0.9424008472632861,
-          -0.3277729089909017,
-          0.7359328131151394
-        ],
-        [
-          0.0,
-          0.0,
-          0.0,
-          1.0
-        ]
-      ],
-      "T_cam_right_base": [
-        [
-          0.996756010563276,
-          -0.08033547358715015,
-          0.004864883298834238,
-          -0.2726613419739147
-        ],
-        [
-          -0.02207999313365387,
-          -0.33108191735141423,
-          -0.9433436478326073,
-          0.23353027574889412
-        ],
-        [
-          0.07739463359433119,
-          0.9401760344140028,
-          -0.3317816978140291,
-          0.1330609388669487
-        ],
-        [
-          0.0,
-          0.0,
-          0.0,
-          1.0
-        ]
-      ],
-      "held_out_count": 8,
-      "held_out_residuals": [
-        {
-          "frame": "/home/jerry/rax-runtime/camera-maintenance-20261103T063615Z/agent-workspace/runtime/frames/20261102224008d1b0fd",
-          "reference": "side_b",
-          "rotation_error_deg": 0.28254808396050446,
-          "translation_error_m": 0.0021962025695997207
-        },
-        {
-          "frame": "/home/jerry/rax-runtime/camera-maintenance-20261103T063615Z/agent-workspace/runtime/frames/20261102224008d1b0fd",
-          "reference": "wrist_left",
-          "rotation_error_deg": 0.4010981967687442,
-          "translation_error_m": 0.004498456337694297
-        },
-        {
-          "frame": "/home/jerry/rax-runtime/camera-maintenance-20261103T063615Z/agent-workspace/runtime/frames/20261102224008d1b0fd",
-          "reference": "wrist_right",
-          "rotation_error_deg": 0.4181268427196114,
-          "translation_error_m": 0.003337862036625466
-        },
-        {
-          "frame": "/home/jerry/rax-runtime/camera-maintenance-20261103T063615Z/agent-workspace/runtime/frames/20261102224010e0a356",
-          "reference": "side_b",
-          "rotation_error_deg": 0.29895408449336464,
-          "translation_error_m": 0.0024766517085601084
-        },
-        {
-          "frame": "/home/jerry/rax-runtime/camera-maintenance-20261103T063615Z/agent-workspace/runtime/frames/20261102224010e0a356",
-          "reference": "wrist_left",
-          "rotation_error_deg": 0.32433361592270965,
-          "translation_error_m": 0.00443368318160668
-        },
-        {
-          "frame": "/home/jerry/rax-runtime/camera-maintenance-20261103T063615Z/agent-workspace/runtime/frames/20261102224010e0a356",
-          "reference": "wrist_right",
-          "rotation_error_deg": 0.46437564292355343,
-          "translation_error_m": 0.003223552831795235
-        },
-        {
-          "frame": "/home/jerry/rax-runtime/camera-maintenance-20261103T063615Z/agent-workspace/runtime/frames/20261102224012633ae9",
-          "reference": "side_b",
-          "rotation_error_deg": 0.3721668803548681,
-          "translation_error_m": 0.002452789505338446
-        },
-        {
-          "frame": "/home/jerry/rax-runtime/camera-maintenance-20261103T063615Z/agent-workspace/runtime/frames/20261102224012633ae9",
-          "reference": "wrist_left",
-          "rotation_error_deg": 0.25470275239914236,
-          "translation_error_m": 0.00435404380348194
-        },
-        {
-          "frame": "/home/jerry/rax-runtime/camera-maintenance-20261103T063615Z/agent-workspace/runtime/frames/20261102224012633ae9",
-          "reference": "wrist_right",
-          "rotation_error_deg": 0.5209292253965128,
-          "translation_error_m": 0.0033435844089358367
-        },
-        {
-          "frame": "/home/jerry/rax-runtime/camera-maintenance-20261103T063615Z/agent-workspace/runtime/frames/2026110222401405c0b7",
-          "reference": "side_b",
-          "rotation_error_deg": 0.23346064483075754,
-          "translation_error_m": 0.0018749360520819655
-        },
-        {
-          "frame": "/home/jerry/rax-runtime/camera-maintenance-20261103T063615Z/agent-workspace/runtime/frames/2026110222401405c0b7",
-          "reference": "wrist_left",
-          "rotation_error_deg": 0.3740144906361049,
-          "translation_error_m": 0.004361417181609135
-        },
-        {
-          "frame": "/home/jerry/rax-runtime/camera-maintenance-20261103T063615Z/agent-workspace/runtime/frames/2026110222401405c0b7",
-          "reference": "wrist_right",
-          "rotation_error_deg": 0.4850000786110582,
-          "translation_error_m": 0.003565996147287319
-        },
-        {
-          "frame": "/home/jerry/rax-runtime/camera-maintenance-20261103T063615Z/agent-workspace/runtime/frames/2026110222401612d05d",
-          "reference": "side_b",
-          "rotation_error_deg": 0.2931219642939284,
-          "translation_error_m": 0.0020121364383579375
-        },
-        {
-          "frame": "/home/jerry/rax-runtime/camera-maintenance-20261103T063615Z/agent-workspace/runtime/frames/2026110222401612d05d",
-          "reference": "wrist_left",
-          "rotation_error_deg": 0.24881822628178096,
-          "translation_error_m": 0.004468468273336834
-        },
-        {
-          "frame": "/home/jerry/rax-runtime/camera-maintenance-20261103T063615Z/agent-workspace/runtime/frames/2026110222401612d05d",
-          "reference": "wrist_right",
-          "rotation_error_deg": 0.5120014389147697,
-          "translation_error_m": 0.00333618168095661
-        },
-        {
-          "frame": "/home/jerry/rax-runtime/camera-maintenance-20261103T063615Z/agent-workspace/runtime/frames/202611022240181bf13c",
-          "reference": "side_b",
-          "rotation_error_deg": 0.2836856397948399,
-          "translation_error_m": 0.001968114143976466
-        },
-        {
-          "frame": "/home/jerry/rax-runtime/camera-maintenance-20261103T063615Z/agent-workspace/runtime/frames/202611022240181bf13c",
-          "reference": "wrist_left",
-          "rotation_error_deg": 0.20435977782479034,
-          "translation_error_m": 0.004379461886778731
-        },
-        {
-          "frame": "/home/jerry/rax-runtime/camera-maintenance-20261103T063615Z/agent-workspace/runtime/frames/202611022240181bf13c",
-          "reference": "wrist_right",
-          "rotation_error_deg": 0.661780078537976,
-          "translation_error_m": 0.003570505124217403
-        },
-        {
-          "frame": "/home/jerry/rax-runtime/camera-maintenance-20261103T063615Z/agent-workspace/runtime/frames/2026110222401925abb0",
-          "reference": "side_b",
-          "rotation_error_deg": 0.3176218305997559,
-          "translation_error_m": 0.0021506873525492655
-        },
-        {
-          "frame": "/home/jerry/rax-runtime/camera-maintenance-20261103T063615Z/agent-workspace/runtime/frames/2026110222401925abb0",
-          "reference": "wrist_left",
-          "rotation_error_deg": 0.26753902378059014,
-          "translation_error_m": 0.004247932791020749
-        },
-        {
-          "frame": "/home/jerry/rax-runtime/camera-maintenance-20261103T063615Z/agent-workspace/runtime/frames/2026110222401925abb0",
-          "reference": "wrist_right",
-          "rotation_error_deg": 0.5509723932400904,
-          "translation_error_m": 0.00357518945445192
-        },
-        {
-          "frame": "/home/jerry/rax-runtime/camera-maintenance-20261103T063615Z/agent-workspace/runtime/frames/20261102224021c20c0a",
-          "reference": "side_b",
-          "rotation_error_deg": 0.33682082384159723,
-          "translation_error_m": 0.0017752968126696837
-        },
-        {
-          "frame": "/home/jerry/rax-runtime/camera-maintenance-20261103T063615Z/agent-workspace/runtime/frames/20261102224021c20c0a",
-          "reference": "wrist_left",
-          "rotation_error_deg": 0.27126053405026657,
-          "translation_error_m": 0.0044538742704897695
-        },
-        {
-          "frame": "/home/jerry/rax-runtime/camera-maintenance-20261103T063615Z/agent-workspace/runtime/frames/20261102224021c20c0a",
-          "reference": "wrist_right",
-          "rotation_error_deg": 0.723208786575382,
-          "translation_error_m": 0.0036546783263956234
-        }
-      ],
-      "ok": true,
-      "recalibration": {
-        "method": "Stationary board transfer from three frozen calibrated cameras; equal camera weights.",
-        "report": "side_a-recalibration-report.json",
-        "source_manifest_sha256": "8aef38ed6ace329b0ed9ab448480f5f8bd1561977a9e2c85139000717c8b954d"
-      },
-      "stationary_board_residuals": [
-        {
-          "frame": "/home/jerry/rax-runtime/camera-maintenance-20261103T063615Z/agent-workspace/runtime/frames/20261102223947b312be",
-          "reference": "side_b",
-          "rotation_error_deg": 0.4166210208393285,
-          "translation_error_m": 0.002522435493708026
-        },
-        {
-          "frame": "/home/jerry/rax-runtime/camera-maintenance-20261103T063615Z/agent-workspace/runtime/frames/20261102223947b312be",
-          "reference": "wrist_left",
-          "rotation_error_deg": 0.5749136911336166,
-          "translation_error_m": 0.004359644771456656
-        },
-        {
-          "frame": "/home/jerry/rax-runtime/camera-maintenance-20261103T063615Z/agent-workspace/runtime/frames/20261102223947b312be",
-          "reference": "wrist_right",
-          "rotation_error_deg": 0.23189048852657912,
-          "translation_error_m": 0.00320860473462872
-        },
-        {
-          "frame": "/home/jerry/rax-runtime/camera-maintenance-20261103T063615Z/agent-workspace/runtime/frames/20261102223949d572e7",
-          "reference": "side_b",
-          "rotation_error_deg": 0.29349071836660684,
-          "translation_error_m": 0.002231858864068634
-        },
-        {
-          "frame": "/home/jerry/rax-runtime/camera-maintenance-20261103T063615Z/agent-workspace/runtime/frames/20261102223949d572e7",
-          "reference": "wrist_left",
-          "rotation_error_deg": 0.31539527091203373,
-          "translation_error_m": 0.004342665780275307
-        },
-        {
-          "frame": "/home/jerry/rax-runtime/camera-maintenance-20261103T063615Z/agent-workspace/runtime/frames/20261102223949d572e7",
-          "reference": "wrist_right",
-          "rotation_error_deg": 0.4923245204202975,
-          "translation_error_m": 0.003400909969007064
-        },
-        {
-          "frame": "/home/jerry/rax-runtime/camera-maintenance-20261103T063615Z/agent-workspace/runtime/frames/20261102223951cae819",
-          "reference": "side_b",
-          "rotation_error_deg": 0.29765059724119536,
-          "translation_error_m": 0.002375688298990315
-        },
-        {
-          "frame": "/home/jerry/rax-runtime/camera-maintenance-20261103T063615Z/agent-workspace/runtime/frames/20261102223951cae819",
-          "reference": "wrist_left",
-          "rotation_error_deg": 0.4908844284918987,
-          "translation_error_m": 0.004404671495664282
-        },
-        {
-          "frame": "/home/jerry/rax-runtime/camera-maintenance-20261103T063615Z/agent-workspace/runtime/frames/20261102223951cae819",
-          "reference": "wrist_right",
-          "rotation_error_deg": 0.30289584393159186,
-          "translation_error_m": 0.003239096281817784
-        },
-        {
-          "frame": "/home/jerry/rax-runtime/camera-maintenance-20261103T063615Z/agent-workspace/runtime/frames/20261102223952d0e239",
-          "reference": "side_b",
-          "rotation_error_deg": 0.32975729754604466,
-          "translation_error_m": 0.002450178784513933
-        },
-        {
-          "frame": "/home/jerry/rax-runtime/camera-maintenance-20261103T063615Z/agent-workspace/runtime/frames/20261102223952d0e239",
-          "reference": "wrist_left",
-          "rotation_error_deg": 0.3685777183246517,
-          "translation_error_m": 0.004325684561278277
-        },
-        {
-          "frame": "/home/jerry/rax-runtime/camera-maintenance-20261103T063615Z/agent-workspace/runtime/frames/20261102223952d0e239",
-          "reference": "wrist_right",
-          "rotation_error_deg": 0.4067958092500606,
-          "translation_error_m": 0.003323353662242135
-        },
-        {
-          "frame": "/home/jerry/rax-runtime/camera-maintenance-20261103T063615Z/agent-workspace/runtime/frames/20261102223954bc3868",
-          "reference": "side_b",
-          "rotation_error_deg": 0.3458658443290357,
-          "translation_error_m": 0.0023916577144857203
-        },
-        {
-          "frame": "/home/jerry/rax-runtime/camera-maintenance-20261103T063615Z/agent-workspace/runtime/frames/20261102223954bc3868",
-          "reference": "wrist_left",
-          "rotation_error_deg": 0.3118233958683876,
-          "translation_error_m": 0.004106994397880373
-        },
-        {
-          "frame": "/home/jerry/rax-runtime/camera-maintenance-20261103T063615Z/agent-workspace/runtime/frames/20261102223954bc3868",
-          "reference": "wrist_right",
-          "rotation_error_deg": 0.5106088822051925,
-          "translation_error_m": 0.0033637749710441513
-        },
-        {
-          "frame": "/home/jerry/rax-runtime/camera-maintenance-20261103T063615Z/agent-workspace/runtime/frames/2026110222395650b59e",
-          "reference": "side_b",
-          "rotation_error_deg": 0.2703563150130702,
-          "translation_error_m": 0.002223469963518138
-        },
-        {
-          "frame": "/home/jerry/rax-runtime/camera-maintenance-20261103T063615Z/agent-workspace/runtime/frames/2026110222395650b59e",
-          "reference": "wrist_left",
-          "rotation_error_deg": 0.2267533949126223,
-          "translation_error_m": 0.004371360834947101
-        },
-        {
-          "frame": "/home/jerry/rax-runtime/camera-maintenance-20261103T063615Z/agent-workspace/runtime/frames/2026110222395650b59e",
-          "reference": "wrist_right",
-          "rotation_error_deg": 0.5807559796055426,
-          "translation_error_m": 0.0032898651577445335
-        },
-        {
-          "frame": "/home/jerry/rax-runtime/camera-maintenance-20261103T063615Z/agent-workspace/runtime/frames/20261102223958d8dfec",
-          "reference": "side_b",
-          "rotation_error_deg": 0.26311871643399,
-          "translation_error_m": 0.002019858016816373
-        },
-        {
-          "frame": "/home/jerry/rax-runtime/camera-maintenance-20261103T063615Z/agent-workspace/runtime/frames/20261102223958d8dfec",
-          "reference": "wrist_left",
-          "rotation_error_deg": 0.3263079183470883,
-          "translation_error_m": 0.004350391885993328
-        },
-        {
-          "frame": "/home/jerry/rax-runtime/camera-maintenance-20261103T063615Z/agent-workspace/runtime/frames/20261102223958d8dfec",
-          "reference": "wrist_right",
-          "rotation_error_deg": 0.5267822320999417,
-          "translation_error_m": 0.0034519877492977073
-        },
-        {
-          "frame": "/home/jerry/rax-runtime/camera-maintenance-20261103T063615Z/agent-workspace/runtime/frames/202611022240009c5495",
-          "reference": "side_b",
-          "rotation_error_deg": 0.30039035093179317,
-          "translation_error_m": 0.002220031441800275
-        },
-        {
-          "frame": "/home/jerry/rax-runtime/camera-maintenance-20261103T063615Z/agent-workspace/runtime/frames/202611022240009c5495",
-          "reference": "wrist_left",
-          "rotation_error_deg": 0.44145062005159724,
-          "translation_error_m": 0.004408351550250577
-        },
-        {
-          "frame": "/home/jerry/rax-runtime/camera-maintenance-20261103T063615Z/agent-workspace/runtime/frames/202611022240009c5495",
-          "reference": "wrist_right",
-          "rotation_error_deg": 0.37060552402538127,
-          "translation_error_m": 0.003295383972294514
-        },
-        {
-          "frame": "/home/jerry/rax-runtime/camera-maintenance-20261103T063615Z/agent-workspace/runtime/frames/20261102224001185bca",
-          "reference": "side_b",
-          "rotation_error_deg": 0.29884276235985474,
-          "translation_error_m": 0.0023797991238665773
-        },
-        {
-          "frame": "/home/jerry/rax-runtime/camera-maintenance-20261103T063615Z/agent-workspace/runtime/frames/20261102224001185bca",
-          "reference": "wrist_left",
-          "rotation_error_deg": 0.46929834150505234,
-          "translation_error_m": 0.004360341232789547
-        },
-        {
-          "frame": "/home/jerry/rax-runtime/camera-maintenance-20261103T063615Z/agent-workspace/runtime/frames/20261102224001185bca",
-          "reference": "wrist_right",
-          "rotation_error_deg": 0.384501433004908,
-          "translation_error_m": 0.0033827568667833844
-        },
-        {
-          "frame": "/home/jerry/rax-runtime/camera-maintenance-20261103T063615Z/agent-workspace/runtime/frames/202611022240031b4f28",
-          "reference": "side_b",
-          "rotation_error_deg": 0.362840833658646,
-          "translation_error_m": 0.002718405733806709
-        },
-        {
-          "frame": "/home/jerry/rax-runtime/camera-maintenance-20261103T063615Z/agent-workspace/runtime/frames/202611022240031b4f28",
-          "reference": "wrist_left",
-          "rotation_error_deg": 0.3498702748686852,
-          "translation_error_m": 0.004315717342328457
-        },
-        {
-          "frame": "/home/jerry/rax-runtime/camera-maintenance-20261103T063615Z/agent-workspace/runtime/frames/202611022240031b4f28",
-          "reference": "wrist_right",
-          "rotation_error_deg": 0.38953264503568363,
-          "translation_error_m": 0.003160563961345697
-        },
-        {
-          "frame": "/home/jerry/rax-runtime/camera-maintenance-20261103T063615Z/agent-workspace/runtime/frames/202611022240054aa563",
-          "reference": "side_b",
-          "rotation_error_deg": 0.3006711893620082,
-          "translation_error_m": 0.002404233405487103
-        },
-        {
-          "frame": "/home/jerry/rax-runtime/camera-maintenance-20261103T063615Z/agent-workspace/runtime/frames/202611022240054aa563",
-          "reference": "wrist_left",
-          "rotation_error_deg": 0.29983230368046043,
-          "translation_error_m": 0.004278718036447112
-        },
-        {
-          "frame": "/home/jerry/rax-runtime/camera-maintenance-20261103T063615Z/agent-workspace/runtime/frames/202611022240054aa563",
-          "reference": "wrist_right",
-          "rotation_error_deg": 0.4385864796608766,
-          "translation_error_m": 0.003319115033670561
-        },
-        {
-          "frame": "/home/jerry/rax-runtime/camera-maintenance-20261103T063615Z/agent-workspace/runtime/frames/2026110222400772897a",
-          "reference": "side_b",
-          "rotation_error_deg": 0.32955573401622523,
-          "translation_error_m": 0.0023317618385937065
-        },
-        {
-          "frame": "/home/jerry/rax-runtime/camera-maintenance-20261103T063615Z/agent-workspace/runtime/frames/2026110222400772897a",
-          "reference": "wrist_left",
-          "rotation_error_deg": 0.4648833039502453,
-          "translation_error_m": 0.004383495357973329
-        },
-        {
-          "frame": "/home/jerry/rax-runtime/camera-maintenance-20261103T063615Z/agent-workspace/runtime/frames/2026110222400772897a",
-          "reference": "wrist_right",
-          "rotation_error_deg": 0.2971114540386071,
-          "translation_error_m": 0.003259881206215717
-        }
-      ],
-      "training_count": 12
-    },
-    "side_b": {
-      "T_cam_base": [
-        [
-          -0.8275487345809269,
-          0.5613322696715343,
-          -0.008317146079615067,
-          0.41644295163889633
-        ],
-        [
-          0.45786836888559046,
-          0.6662956020107453,
-          -0.5885632740115432,
-          0.02386835255175137
-        ],
-        [
-          -0.3248378805920803,
-          -0.4908729507383166,
-          -0.8084083730181812,
-          0.768936965282389
+          0.009313743690914929,
+          0.9652102107091638,
+          -0.261309210172992,
+          0.953074604737517
         ],
         [
           0.0,
@@ -880,22 +399,22 @@
       ],
       "T_cam_board": [
         [
-          -0.8037003760867314,
-          -0.5949202434782656,
-          -0.011645143958174203,
-          0.15419802690382964
+          0.06744813812684652,
+          -0.9977208145343256,
+          -0.001981138103398561,
+          0.2089399497765813
         ],
         [
-          0.4793900627750102,
-          -0.6589716149558738,
-          0.5796046742349638,
-          -0.04326600001159902
+          0.2585916335603754,
+          0.015563491582260613,
+          0.9658613486325802,
+          0.0830477749935325
         ],
         [
-          -0.35249237323751736,
-          0.4602459283711349,
-          0.8148145876376869,
-          0.8181869255775541
+          -0.9636291380587241,
+          -0.06565785539241903,
+          0.2590519837975958,
+          0.7602116902663324
         ],
         [
           0.0,
@@ -906,22 +425,22 @@
       ],
       "T_cam_left_base": [
         [
-          -0.8275487345809269,
-          0.5613322696715343,
-          -0.008317146079615067,
-          0.41644295163889633
+          0.9999566236243266,
+          -0.009008678413531184,
+          0.002365287103064463,
+          -0.26645738438842426
         ],
         [
-          0.45786836888559046,
-          0.6662956020107453,
-          -0.5885632740115432,
-          0.02386835255175137
+          -7.105137780582273e-05,
+          -0.26131990520435777,
+          -0.9652522479101973,
+          0.04297707009155748
         ],
         [
-          -0.3248378805920803,
-          -0.4908729507383166,
-          -0.8084083730181812,
-          0.768936965282389
+          0.009313743690914929,
+          0.9652102107091638,
+          -0.261309210172992,
+          0.953074604737517
         ],
         [
           0.0,
@@ -932,22 +451,22 @@
       ],
       "T_cam_right_base": [
         [
-          -0.8188751166443029,
-          0.5739710522308894,
-          -0.0008800805324186549,
-          0.05147505921890076
+          0.9997879036558497,
+          0.006155743041321588,
+          0.01965335928161154,
+          -0.25911334979717376
         ],
         [
-          0.4613059638759239,
-          0.6572237705420808,
-          -0.5960316460784226,
-          -0.40226650571233924
+          0.020588280260108664,
+          -0.2746429340069219,
+          -0.961325845650684,
+          0.1889930617994277
         ],
         [
-          -0.3415265012166446,
-          -0.4884814701044603,
-          -0.8029604612503043,
-          1.0706109692224142
+          -0.0005200186286128298,
+          0.9615265808222259,
+          -0.2747114194076161,
+          0.3489555016244198
         ],
         [
           0.0,
@@ -959,227 +478,471 @@
       "held_out_count": 6,
       "held_out_residuals": [
         {
-          "rotation_error_deg": 0.11167831983949729,
-          "translation_error_m": 0.00020294010799339928
+          "rotation_error_deg": 0.16708920392131626,
+          "translation_error_m": 0.00038423136320323654
         },
         {
-          "rotation_error_deg": 0.09598665213268076,
-          "translation_error_m": 0.0006221886914919689
+          "rotation_error_deg": 0.11549422776839544,
+          "translation_error_m": 0.0011344250726112335
         },
         {
-          "rotation_error_deg": 0.045366217348654966,
-          "translation_error_m": 3.9386677258198963e-05
+          "rotation_error_deg": 0.1794523965649968,
+          "translation_error_m": 0.0006058659787869856
         },
         {
-          "rotation_error_deg": 0.024740314327126964,
-          "translation_error_m": 0.00017863534245350464
+          "rotation_error_deg": 0.11076886816700525,
+          "translation_error_m": 0.0004052091101859738
         },
         {
-          "rotation_error_deg": 0.13746972890596043,
-          "translation_error_m": 0.0005144191236504917
+          "rotation_error_deg": 0.23289582817753607,
+          "translation_error_m": 0.0007000655530994539
         },
         {
-          "rotation_error_deg": 0.1316067335530727,
-          "translation_error_m": 0.000529385264040358
+          "rotation_error_deg": 0.2841135417386535,
+          "translation_error_m": 0.0010938249754564007
         }
       ],
       "ok": true,
       "stationary_board_residuals": [
         {
-          "rotation_error_deg": 0.1305745778137989,
-          "translation_error_m": 0.000752359354643575
+          "rotation_error_deg": 0.26364572276668347,
+          "translation_error_m": 0.0009558872497464565
         },
         {
-          "rotation_error_deg": 0.06109579382736263,
-          "translation_error_m": 0.0003573369613925754
+          "rotation_error_deg": 0.0980283340778487,
+          "translation_error_m": 0.00028964062889796997
         },
         {
-          "rotation_error_deg": 0.07504743724664263,
-          "translation_error_m": 0.0002706751058058874
+          "rotation_error_deg": 0.3070919396815074,
+          "translation_error_m": 0.0016086151744731801
         },
         {
-          "rotation_error_deg": 0.08276471615450258,
-          "translation_error_m": 0.0008062162375932836
+          "rotation_error_deg": 0.08454226784152381,
+          "translation_error_m": 0.001245325700294925
         },
         {
-          "rotation_error_deg": 0.20715556553257708,
-          "translation_error_m": 0.00044963399004920284
+          "rotation_error_deg": 0.27852991490269874,
+          "translation_error_m": 0.00044247801721945514
         },
         {
-          "rotation_error_deg": 0.18277966208466612,
-          "translation_error_m": 0.0006577752441753573
+          "rotation_error_deg": 0.2150046615505984,
+          "translation_error_m": 0.0009861549903038135
         },
         {
-          "rotation_error_deg": 0.14724606671860493,
-          "translation_error_m": 0.0005358653694106966
+          "rotation_error_deg": 0.18416729430671544,
+          "translation_error_m": 0.0004089348138981518
         },
         {
-          "rotation_error_deg": 0.09936185518753758,
-          "translation_error_m": 0.00039429487692425294
+          "rotation_error_deg": 0.2632045089180963,
+          "translation_error_m": 0.00033936468194818
         },
         {
-          "rotation_error_deg": 0.17797065693367256,
-          "translation_error_m": 0.00020169177500360252
+          "rotation_error_deg": 0.25416643690156016,
+          "translation_error_m": 0.0004896692855728522
         },
         {
-          "rotation_error_deg": 0.07708307367447137,
-          "translation_error_m": 0.000566264064587328
+          "rotation_error_deg": 0.4690115190654413,
+          "translation_error_m": 0.0008621971468446385
         },
         {
-          "rotation_error_deg": 0.0893892026842509,
-          "translation_error_m": 0.00019863599584612275
+          "rotation_error_deg": 0.32849189399344053,
+          "translation_error_m": 0.0004828421360187623
         },
         {
-          "rotation_error_deg": 0.03797618254312896,
-          "translation_error_m": 0.0005817683309328538
+          "rotation_error_deg": 0.28437000070823526,
+          "translation_error_m": 0.0009910374222715512
         },
         {
-          "rotation_error_deg": 0.13548471008757446,
-          "translation_error_m": 0.0005724376237343631
+          "rotation_error_deg": 0.24517638531329472,
+          "translation_error_m": 0.0028309320397785654
         },
         {
-          "rotation_error_deg": 0.04215671672625146,
-          "translation_error_m": 0.0007838406747824571
+          "rotation_error_deg": 0.24434083381715638,
+          "translation_error_m": 0.00046182277529124106
         },
         {
-          "rotation_error_deg": 0.15937079527898118,
-          "translation_error_m": 0.000817981065053786
+          "rotation_error_deg": 0.20818330066351984,
+          "translation_error_m": 0.0007707206741752907
         },
         {
-          "rotation_error_deg": 0.07080495484890577,
-          "translation_error_m": 0.0001276952039516588
+          "rotation_error_deg": 0.34993041771898087,
+          "translation_error_m": 0.0008303148551087028
         },
         {
-          "rotation_error_deg": 0.18770775639462142,
-          "translation_error_m": 0.0002555705002661855
+          "rotation_error_deg": 0.2526284126559205,
+          "translation_error_m": 0.0033405863355378783
         },
         {
-          "rotation_error_deg": 0.20817589531675176,
-          "translation_error_m": 0.00047277804122402005
+          "rotation_error_deg": 0.16157747377406612,
+          "translation_error_m": 0.0007314166089515411
         },
         {
-          "rotation_error_deg": 0.08274835782465118,
-          "translation_error_m": 0.00031226596532198
+          "rotation_error_deg": 0.1349689966399559,
+          "translation_error_m": 0.0005747840802070017
         },
         {
-          "rotation_error_deg": 0.07858369527506374,
-          "translation_error_m": 0.0005171465143843155
+          "rotation_error_deg": 0.28933302814160905,
+          "translation_error_m": 0.0003447073412571213
         },
         {
-          "rotation_error_deg": 0.08458884489856622,
-          "translation_error_m": 0.0002755245493683051
+          "rotation_error_deg": 0.23783331380144512,
+          "translation_error_m": 0.0008148069845717619
         },
         {
-          "rotation_error_deg": 0.06894612684198939,
-          "translation_error_m": 0.0003195454623965039
+          "rotation_error_deg": 0.093898124282661,
+          "translation_error_m": 0.001276159455640134
         },
         {
-          "rotation_error_deg": 0.05265873467877707,
-          "translation_error_m": 0.000355886685646566
+          "rotation_error_deg": 0.08849321479839402,
+          "translation_error_m": 0.0011426480869716775
         },
         {
-          "rotation_error_deg": 0.11985852915595815,
-          "translation_error_m": 0.0005712926738315205
+          "rotation_error_deg": 0.2115817530001144,
+          "translation_error_m": 0.0005713722239005288
         },
         {
-          "rotation_error_deg": 0.08865713705690449,
-          "translation_error_m": 0.0007367483741055308
+          "rotation_error_deg": 0.4925112162662763,
+          "translation_error_m": 0.002505452794211563
         },
         {
-          "rotation_error_deg": 0.1513788158076273,
-          "translation_error_m": 0.00036569429012615765
+          "rotation_error_deg": 0.11718095148944274,
+          "translation_error_m": 0.0011006899470049143
         },
         {
-          "rotation_error_deg": 0.01941967689574904,
-          "translation_error_m": 0.00016629865169672927
+          "rotation_error_deg": 0.19253677950588777,
+          "translation_error_m": 0.00045262513002787194
         },
         {
-          "rotation_error_deg": 0.056993580687226736,
-          "translation_error_m": 0.0009822058202893006
+          "rotation_error_deg": 0.10061345638170177,
+          "translation_error_m": 0.0010720428185666756
         },
         {
-          "rotation_error_deg": 0.05470120956561411,
-          "translation_error_m": 0.0005947441656704738
+          "rotation_error_deg": 0.1562172366643824,
+          "translation_error_m": 0.0006748355044411048
         },
         {
-          "rotation_error_deg": 0.1909960667497193,
-          "translation_error_m": 0.0006368258767930819
+          "rotation_error_deg": 0.29012798779183085,
+          "translation_error_m": 0.0010262713566974605
+        }
+      ],
+      "training_count": 30
+    },
+    "side_b": {
+      "T_cam_base": [
+        [
+          -0.7900544062731581,
+          0.6081414049275287,
+          -0.07731795872331154,
+          0.4512118059659527
+        ],
+        [
+          0.5221718078204729,
+          0.6015020329394709,
+          -0.6045923481877546,
+          0.01633116405717451
+        ],
+        [
+          -0.32117073068053253,
+          -0.5180341069683111,
+          -0.792773628327581,
+          0.7724829418907709
+        ],
+        [
+          0.0,
+          0.0,
+          0.0,
+          1.0
+        ]
+      ],
+      "T_cam_board": [
+        [
+          -0.6534624234842096,
+          0.7531735765731912,
+          0.07560704098224555,
+          -0.04611325252644313
+        ],
+        [
+          -0.5713759810898188,
+          -0.5563019094589318,
+          0.6033719199349548,
+          0.1350091631506183
+        ],
+        [
+          0.4965041282082059,
+          0.35108082984448724,
+          0.7938676851893618,
+          0.7142789108657126
+        ],
+        [
+          0.0,
+          0.0,
+          0.0,
+          1.0
+        ]
+      ],
+      "T_cam_left_base": [
+        [
+          -0.7900544062731581,
+          0.6081414049275287,
+          -0.07731795872331154,
+          0.4512118059659527
+        ],
+        [
+          0.5221718078204729,
+          0.6015020329394709,
+          -0.6045923481877546,
+          0.01633116405717451
+        ],
+        [
+          -0.32117073068053253,
+          -0.5180341069683111,
+          -0.792773628327581,
+          0.7724829418907709
+        ],
+        [
+          0.0,
+          0.0,
+          0.0,
+          1.0
+        ]
+      ],
+      "T_cam_right_base": [
+        [
+          -0.7975589193674868,
+          0.5949880284288983,
+          -0.09944353253811897,
+          0.07070042065658906
+        ],
+        [
+          0.5235825689897792,
+          0.6008973224689017,
+          -0.6039732620735528,
+          -0.3667458388219378
+        ],
+        [
+          -0.29960150798590846,
+          -0.5337711624619654,
+          -0.7907763796020797,
+          1.0803751161008155
+        ],
+        [
+          0.0,
+          0.0,
+          0.0,
+          1.0
+        ]
+      ],
+      "held_out_count": 6,
+      "held_out_residuals": [
+        {
+          "rotation_error_deg": 0.05275651032419096,
+          "translation_error_m": 0.00018692630584190808
+        },
+        {
+          "rotation_error_deg": 0.039481885985355174,
+          "translation_error_m": 0.00020424424486641324
+        },
+        {
+          "rotation_error_deg": 0.08586138012806632,
+          "translation_error_m": 0.0002631951272067051
+        },
+        {
+          "rotation_error_deg": 0.10485007232274617,
+          "translation_error_m": 9.170466115551765e-05
+        },
+        {
+          "rotation_error_deg": 0.03631394964697116,
+          "translation_error_m": 0.00011571639580403819
+        },
+        {
+          "rotation_error_deg": 0.06594071255983736,
+          "translation_error_m": 0.00021001718640837764
+        }
+      ],
+      "ok": true,
+      "stationary_board_residuals": [
+        {
+          "rotation_error_deg": 0.09173515247362356,
+          "translation_error_m": 0.00036296695645166894
+        },
+        {
+          "rotation_error_deg": 0.0684368171549608,
+          "translation_error_m": 6.787088649775129e-05
+        },
+        {
+          "rotation_error_deg": 0.03389489661584902,
+          "translation_error_m": 9.168785950790818e-05
+        },
+        {
+          "rotation_error_deg": 0.01464897530444522,
+          "translation_error_m": 0.00021018363372326884
+        },
+        {
+          "rotation_error_deg": 0.06353629935406167,
+          "translation_error_m": 0.0004036771140658072
+        },
+        {
+          "rotation_error_deg": 0.09556048258960015,
+          "translation_error_m": 0.00010117756369345721
+        },
+        {
+          "rotation_error_deg": 0.03208112907535965,
+          "translation_error_m": 0.00037093690503000974
+        },
+        {
+          "rotation_error_deg": 0.038725216029310415,
+          "translation_error_m": 0.00025229950765333966
+        },
+        {
+          "rotation_error_deg": 0.1172264056157157,
+          "translation_error_m": 0.0005098021795222861
+        },
+        {
+          "rotation_error_deg": 0.051147127271091365,
+          "translation_error_m": 0.0001789160480280459
+        },
+        {
+          "rotation_error_deg": 0.05432761190011062,
+          "translation_error_m": 0.00012398447556116775
+        },
+        {
+          "rotation_error_deg": 0.056902278121984166,
+          "translation_error_m": 0.00012989912663611343
+        },
+        {
+          "rotation_error_deg": 0.02077047623373102,
+          "translation_error_m": 7.426078859249126e-05
+        },
+        {
+          "rotation_error_deg": 0.10409141517880463,
+          "translation_error_m": 0.00010078395900408736
+        },
+        {
+          "rotation_error_deg": 0.06772548872450186,
+          "translation_error_m": 0.0002809703863794402
+        },
+        {
+          "rotation_error_deg": 0.06144313649441812,
+          "translation_error_m": 0.0001755167500373306
+        },
+        {
+          "rotation_error_deg": 0.06288937768150049,
+          "translation_error_m": 9.208933581519407e-05
+        },
+        {
+          "rotation_error_deg": 0.03549000065205234,
+          "translation_error_m": 7.389262378332697e-05
+        },
+        {
+          "rotation_error_deg": 0.08034379451332249,
+          "translation_error_m": 0.0003013437306959435
+        },
+        {
+          "rotation_error_deg": 0.024764647906427177,
+          "translation_error_m": 0.00018025421999289288
+        },
+        {
+          "rotation_error_deg": 0.054292897501439515,
+          "translation_error_m": 0.00046641452996076625
+        },
+        {
+          "rotation_error_deg": 0.05063440137144248,
+          "translation_error_m": 0.00030076927703942584
+        },
+        {
+          "rotation_error_deg": 0.0171055846342993,
+          "translation_error_m": 0.0001871718146146744
+        },
+        {
+          "rotation_error_deg": 0.06500134400152854,
+          "translation_error_m": 0.00015081473014904405
+        },
+        {
+          "rotation_error_deg": 0.05342614360658236,
+          "translation_error_m": 2.8306895062931825e-05
+        },
+        {
+          "rotation_error_deg": 0.03984285175458154,
+          "translation_error_m": 0.0002087071842160765
+        },
+        {
+          "rotation_error_deg": 0.06342315685237812,
+          "translation_error_m": 0.00020650568150655388
+        },
+        {
+          "rotation_error_deg": 0.05380274357892047,
+          "translation_error_m": 9.753144464718528e-05
+        },
+        {
+          "rotation_error_deg": 0.05090055082049628,
+          "translation_error_m": 0.00011143172031604021
+        },
+        {
+          "rotation_error_deg": 0.027715415584743833,
+          "translation_error_m": 0.00015870823092975692
         }
       ],
       "training_count": 30
     }
   },
-  "fixed_camera_updates": [
-    {
-      "camera": "side_a",
-      "original_verification_applies_to": [
-        "side_b",
-        "wrist_left",
-        "wrist_right"
-      ],
-      "recorded_at": "2026-11-03T06:40:23Z",
-      "report": "side_a-recalibration-report.json"
-    }
-  ],
   "fresh_verification": {
     "cameras": {
       "side_a": {
-        "checks": 24,
-        "fresh_frames": 8,
-        "max_reprojection_mean_px": 0.6737701892852783,
-        "max_rotation_deg": 0.723208786575382,
-        "max_translation_mm": 4.4984563376942965,
-        "report": "side_a-recalibration-report.json"
+        "checks": 19,
+        "max_reprojection_mean_px": 0.742639422416687,
+        "max_rotation_deg": 0.4324976933814445,
+        "max_translation_mm": 1.806365990639095
       },
       "side_b": {
         "checks": 19,
-        "max_reprojection_mean_px": 0.39463770389556885,
-        "max_rotation_deg": 0.26821366259167495,
-        "max_translation_mm": 2.2152591626366185
+        "max_reprojection_mean_px": 0.27876561880111694,
+        "max_rotation_deg": 0.15268748474585106,
+        "max_translation_mm": 0.6162372488574223
       },
       "wrist_left": {
         "checks": 19,
-        "max_reprojection_mean_px": 0.5884211659431458,
-        "max_rotation_deg": 0.44406569935479473,
-        "max_translation_mm": 4.754622297094266
+        "max_reprojection_mean_px": 0.3046174943447113,
+        "max_rotation_deg": 0.4021951411932402,
+        "max_translation_mm": 4.061352369124377
       },
       "wrist_right": {
         "checks": 19,
-        "max_reprojection_mean_px": 0.5735316276550293,
-        "max_rotation_deg": 0.5183245291941881,
-        "max_translation_mm": 3.485087675958352
+        "max_reprojection_mean_px": 0.32253095507621765,
+        "max_rotation_deg": 0.4302854441465605,
+        "max_translation_mm": 4.4815621178344
       }
     },
-    "fit_sha256": "e86336d2a9904e530ebc915629992bd3e92cb66dc25f5df81e86a879ad0cf6f1",
+    "fit_sha256": "b4099e8d08dbe4ef43029088bbb425562bc3594f6e3c2b2e305e45fbd92041df",
     "ok": true,
     "report": "verification-report.json",
-    "source": "/home/jerry/rax-runtime/bimanual-extrinsics-20261103T045627Z/verification-pooled/verification.json"
+    "source": "/home/jerry/rax-runtime/sessions/20261103T073444Z_unscrew_bottle_b1d812/operator/full-recalibration-20261103T100920Z/verification-full-optics/verification.json"
   },
-  "installed": false,
-  "method": "Coverage-guided 18-pose sweep inside original envelope; original hand-eye fit; three reserved views per arm; stationary shared board; training-only radial distortion refinement with factory K fixed",
+  "installed": true,
+  "installed_at": "2026-11-03T10:36:07.379626+00:00",
+  "method": "Coverage-guided 18-pose sweep inside original envelope; original hand-eye fit; three reserved views per arm; stationary shared board; original training-only Brown5 wrist color refinement",
   "ok": true,
-  "optical_training_collection": "/home/jerry/rax-runtime/bimanual-extrinsics-20261103T045627Z/collection",
-  "status": "verified RGB extrinsics candidate; backend integration pending",
+  "optical_training_collection": "/home/jerry/rax-runtime/sessions/20261103T073444Z_unscrew_bottle_b1d812/operator/full-recalibration-20261103T100920Z/collection-initial",
+  "status": "rgb_extrinsics_verified",
   "wrists": {
     "left": {
       "T_base_board": [
         [
-          0.9991016507628931,
-          0.04109792426205261,
-          0.010336927213290555,
-          0.1702835063888781
+          0.058451844374238844,
+          -0.9982901632653967,
+          0.0003630658313162169,
+          0.4735775903199836
         ],
         [
-          0.0413015055938659,
-          -0.9989400963650494,
-          -0.020319190679402674,
-          -0.2161133360020077
+          -0.9982874431457633,
+          -0.05845253661832755,
+          -0.0023413287632483588,
+          -0.20090722882331377
         ],
         [
-          0.009490894506954672,
-          0.020727867607080307,
-          -0.9997401054403698,
-          0.0018798634175654129
+          0.0023585475921210474,
+          -0.00022558907593993468,
+          -0.9999971931774734,
+          0.012842969053480723
         ],
         [
           0.0,
@@ -1190,22 +953,22 @@
       ],
       "T_cam_flange": [
         [
-          -0.011047637227467821,
-          0.9998583922721215,
-          0.012694294572722104,
-          0.020439285825593383
+          -0.02354381401524208,
+          0.9996685338509097,
+          0.010416873330716028,
+          0.02887536405034064
         ],
         [
-          -0.9998721006754153,
-          -0.011192826163450298,
-          0.011423788049811616,
-          -0.06992114435610254
+          -0.9997051654494324,
+          -0.02360401995536099,
+          0.005694946502815115,
+          -0.043700565602375986
         ],
         [
-          0.011564255385562223,
-          -0.012566465114882372,
-          0.9998541653420733,
-          -0.017488494615845646
+          0.00593893890679924,
+          -0.010279721315260216,
+          0.9999295256838563,
+          0.04003949210228949
         ],
         [
           0.0,
@@ -1216,22 +979,22 @@
       ],
       "T_cam_tcp": [
         [
-          -0.011047637227467821,
-          0.9998583922721215,
-          0.012694294572722104,
-          0.022622704492101586
+          -0.02354381401524208,
+          0.9996685338509097,
+          0.010416873330716028,
+          0.030667066263223797
         ],
         [
-          -0.9998721006754153,
-          -0.011192826163450298,
-          0.011423788049811616,
-          -0.06795625281153495
+          -0.9997051654494324,
+          -0.02360401995536099,
+          0.005694946502815115,
+          -0.042721034803891784
         ],
         [
-          0.011564255385562223,
-          -0.012566465114882372,
-          0.9998541653420733,
-          0.15448642182299094
+          0.00593893890679924,
+          -0.010279721315260216,
+          0.9999295256838563,
+          0.21202737051991277
         ],
         [
           0.0,
@@ -1243,14 +1006,14 @@
       "color_model": {
         "K": [
           [
-            905.4855346679688,
+            969.8547226894896,
             0.0,
-            634.0691528320312
+            625.38592477674
           ],
           [
             0.0,
-            905.2677001953125,
-            354.7956237792969
+            961.6903717785926,
+            335.69054706687405
           ],
           [
             0.0,
@@ -1259,11 +1022,11 @@
           ]
         ],
         "distortion_coeffs": [
-          0.01307073427141763,
-          -0.046301867018765284,
-          0.0,
-          0.0,
-          0.0
+          0.22980426347508337,
+          -0.7073942273403236,
+          0.005019576352612623,
+          -0.01074145442227049,
+          0.7495770476579812
         ],
         "distortion_model": "brown_conrady",
         "factory_profile": {
@@ -1299,165 +1062,164 @@
         },
         "fps": 6,
         "height": 720,
-        "method": "Training-only radial k1/k2 refinement with factory focal lengths/principal point fixed; depth calibration pending",
+        "method": "Original training-only Brown5 color refinement; depth calibration pending",
         "serial": "108322071838",
         "training_frames": [
-          "/home/jerry/rax-runtime/bimanual-extrinsics-20261103T045627Z/coverage-collection/frames/1793682925067489387",
-          "/home/jerry/rax-runtime/bimanual-extrinsics-20261103T045627Z/coverage-collection/frames/1793682931125976355",
-          "/home/jerry/rax-runtime/bimanual-extrinsics-20261103T045627Z/coverage-collection/frames/1793682937894306463",
-          "/home/jerry/rax-runtime/bimanual-extrinsics-20261103T045627Z/coverage-collection/frames/1793682950827804609",
-          "/home/jerry/rax-runtime/bimanual-extrinsics-20261103T045627Z/coverage-collection/frames/1793682956494318809",
-          "/home/jerry/rax-runtime/bimanual-extrinsics-20261103T045627Z/coverage-collection/frames/1793682970274857067",
-          "/home/jerry/rax-runtime/bimanual-extrinsics-20261103T045627Z/coverage-collection/frames/1793682979565607696",
-          "/home/jerry/rax-runtime/bimanual-extrinsics-20261103T045627Z/coverage-collection/frames/1793682989198654014",
-          "/home/jerry/rax-runtime/bimanual-extrinsics-20261103T045627Z/coverage-collection/frames/1793682996099278182",
-          "/home/jerry/rax-runtime/bimanual-extrinsics-20261103T045627Z/coverage-collection/frames/1793683003667312093",
-          "/home/jerry/rax-runtime/bimanual-extrinsics-20261103T045627Z/coverage-collection/frames/1793683009196210378",
-          "/home/jerry/rax-runtime/bimanual-extrinsics-20261103T045627Z/coverage-collection/frames/1793683013999558140",
-          "/home/jerry/rax-runtime/bimanual-extrinsics-20261103T045627Z/coverage-collection/frames/1793683020360871384",
-          "/home/jerry/rax-runtime/bimanual-extrinsics-20261103T045627Z/coverage-collection/frames/1793683028933878014",
-          "/home/jerry/rax-runtime/bimanual-extrinsics-20261103T045627Z/coverage-collection/frames/1793683035147094052",
-          "/home/jerry/rax-runtime/bimanual-extrinsics-20261103T045627Z/collection/frames/1793682244648740159",
-          "/home/jerry/rax-runtime/bimanual-extrinsics-20261103T045627Z/collection/frames/1793682270444973146",
-          "/home/jerry/rax-runtime/bimanual-extrinsics-20261103T045627Z/collection/frames/1793682280055961982",
-          "/home/jerry/rax-runtime/bimanual-extrinsics-20261103T045627Z/collection/frames/1793682293094561192",
-          "/home/jerry/rax-runtime/bimanual-extrinsics-20261103T045627Z/collection/frames/1793682304081541325",
-          "/home/jerry/rax-runtime/bimanual-extrinsics-20261103T045627Z/collection/frames/1793682320652618936",
-          "/home/jerry/rax-runtime/bimanual-extrinsics-20261103T045627Z/collection/frames/1793682334455019570",
-          "/home/jerry/rax-runtime/bimanual-extrinsics-20261103T045627Z/collection/frames/1793682348990634772",
-          "/home/jerry/rax-runtime/bimanual-extrinsics-20261103T045627Z/collection/frames/1793682381787351451",
-          "/home/jerry/rax-runtime/bimanual-extrinsics-20261103T045627Z/collection/frames/1793682388575452143",
-          "/home/jerry/rax-runtime/bimanual-extrinsics-20261103T045627Z/collection/frames/1793682443214633535"
+          "/home/jerry/rax-runtime/sessions/20261103T073444Z_unscrew_bottle_b1d812/operator/full-recalibration-20261103T100920Z/collection-covered/frames/1793701313632670838",
+          "/home/jerry/rax-runtime/sessions/20261103T073444Z_unscrew_bottle_b1d812/operator/full-recalibration-20261103T100920Z/collection-covered/frames/1793701323588002109",
+          "/home/jerry/rax-runtime/sessions/20261103T073444Z_unscrew_bottle_b1d812/operator/full-recalibration-20261103T100920Z/collection-covered/frames/1793701336293228699",
+          "/home/jerry/rax-runtime/sessions/20261103T073444Z_unscrew_bottle_b1d812/operator/full-recalibration-20261103T100920Z/collection-covered/frames/1793701349086871330",
+          "/home/jerry/rax-runtime/sessions/20261103T073444Z_unscrew_bottle_b1d812/operator/full-recalibration-20261103T100920Z/collection-covered/frames/1793701358480373337",
+          "/home/jerry/rax-runtime/sessions/20261103T073444Z_unscrew_bottle_b1d812/operator/full-recalibration-20261103T100920Z/collection-covered/frames/1793701365816034232",
+          "/home/jerry/rax-runtime/sessions/20261103T073444Z_unscrew_bottle_b1d812/operator/full-recalibration-20261103T100920Z/collection-covered/frames/1793701372995259793",
+          "/home/jerry/rax-runtime/sessions/20261103T073444Z_unscrew_bottle_b1d812/operator/full-recalibration-20261103T100920Z/collection-covered/frames/1793701379197380617",
+          "/home/jerry/rax-runtime/sessions/20261103T073444Z_unscrew_bottle_b1d812/operator/full-recalibration-20261103T100920Z/collection-covered/frames/1793701385269183481",
+          "/home/jerry/rax-runtime/sessions/20261103T073444Z_unscrew_bottle_b1d812/operator/full-recalibration-20261103T100920Z/collection-covered/frames/1793701389955385092",
+          "/home/jerry/rax-runtime/sessions/20261103T073444Z_unscrew_bottle_b1d812/operator/full-recalibration-20261103T100920Z/collection-covered/frames/1793701399197143435",
+          "/home/jerry/rax-runtime/sessions/20261103T073444Z_unscrew_bottle_b1d812/operator/full-recalibration-20261103T100920Z/collection-covered/frames/1793701404253375887",
+          "/home/jerry/rax-runtime/sessions/20261103T073444Z_unscrew_bottle_b1d812/operator/full-recalibration-20261103T100920Z/collection-covered/frames/1793701408790656559",
+          "/home/jerry/rax-runtime/sessions/20261103T073444Z_unscrew_bottle_b1d812/operator/full-recalibration-20261103T100920Z/collection-covered/frames/1793701417518828215",
+          "/home/jerry/rax-runtime/sessions/20261103T073444Z_unscrew_bottle_b1d812/operator/full-recalibration-20261103T100920Z/collection-covered/frames/1793701429450272145",
+          "/home/jerry/rax-runtime/sessions/20261103T073444Z_unscrew_bottle_b1d812/operator/full-recalibration-20261103T100920Z/collection-initial/frames/1793700660997996335",
+          "/home/jerry/rax-runtime/sessions/20261103T073444Z_unscrew_bottle_b1d812/operator/full-recalibration-20261103T100920Z/collection-initial/frames/1793700685979856993",
+          "/home/jerry/rax-runtime/sessions/20261103T073444Z_unscrew_bottle_b1d812/operator/full-recalibration-20261103T100920Z/collection-initial/frames/1793700695768606193",
+          "/home/jerry/rax-runtime/sessions/20261103T073444Z_unscrew_bottle_b1d812/operator/full-recalibration-20261103T100920Z/collection-initial/frames/1793700726504157076",
+          "/home/jerry/rax-runtime/sessions/20261103T073444Z_unscrew_bottle_b1d812/operator/full-recalibration-20261103T100920Z/collection-initial/frames/1793700744689941733",
+          "/home/jerry/rax-runtime/sessions/20261103T073444Z_unscrew_bottle_b1d812/operator/full-recalibration-20261103T100920Z/collection-initial/frames/1793700760191166263",
+          "/home/jerry/rax-runtime/sessions/20261103T073444Z_unscrew_bottle_b1d812/operator/full-recalibration-20261103T100920Z/collection-initial/frames/1793700781694151696",
+          "/home/jerry/rax-runtime/sessions/20261103T073444Z_unscrew_bottle_b1d812/operator/full-recalibration-20261103T100920Z/collection-initial/frames/1793700817654882033",
+          "/home/jerry/rax-runtime/sessions/20261103T073444Z_unscrew_bottle_b1d812/operator/full-recalibration-20261103T100920Z/collection-initial/frames/1793700826240753534",
+          "/home/jerry/rax-runtime/sessions/20261103T073444Z_unscrew_bottle_b1d812/operator/full-recalibration-20261103T100920Z/collection-initial/frames/1793700884678492325"
         ],
-        "training_rms_px": 0.4810036216283479,
+        "training_rms_px": 0.3003008354683318,
         "width": 1280
       },
       "detections": [
         {
-          "charuco_corners": 108,
+          "charuco_corners": 106,
           "held_out": false,
           "index": 0,
-          "reprojection_max_px": 0.9978210926055908,
-          "reprojection_mean_px": 0.3737237751483917
+          "reprojection_max_px": 0.9970340728759766,
+          "reprojection_mean_px": 0.2767565846443176
         },
         {
-          "charuco_corners": 95,
+          "charuco_corners": 96,
           "held_out": false,
           "index": 1,
-          "reprojection_max_px": 1.3959158658981323,
-          "reprojection_mean_px": 0.35015514492988586
+          "reprojection_max_px": 0.7543125748634338,
+          "reprojection_mean_px": 0.23137980699539185
         },
         {
-          "charuco_corners": 108,
+          "charuco_corners": 96,
           "held_out": false,
           "index": 2,
-          "reprojection_max_px": 1.4114108085632324,
-          "reprojection_mean_px": 0.38955843448638916
-        },
-        {
-          "charuco_corners": 104,
-          "held_out": false,
-          "index": 3,
-          "reprojection_max_px": 1.2167766094207764,
-          "reprojection_mean_px": 0.3685937225818634
-        },
-        {
-          "charuco_corners": 100,
-          "held_out": false,
-          "index": 4,
-          "reprojection_max_px": 1.3007407188415527,
-          "reprojection_mean_px": 0.3880945146083832
-        },
-        {
-          "charuco_corners": 92,
-          "held_out": false,
-          "index": 5,
-          "reprojection_max_px": 1.509131908416748,
-          "reprojection_mean_px": 0.39820224046707153
-        },
-        {
-          "charuco_corners": 108,
-          "held_out": false,
-          "index": 6,
-          "reprojection_max_px": 1.4042713642120361,
-          "reprojection_mean_px": 0.42190873622894287
-        },
-        {
-          "charuco_corners": 105,
-          "held_out": false,
-          "index": 7,
-          "reprojection_max_px": 1.0885354280471802,
-          "reprojection_mean_px": 0.36823222041130066
-        },
-        {
-          "charuco_corners": 104,
-          "held_out": false,
-          "index": 8,
-          "reprojection_max_px": 1.2293697595596313,
-          "reprojection_mean_px": 0.3784834146499634
+          "reprojection_max_px": 1.5764105319976807,
+          "reprojection_mean_px": 0.2524361312389374
         },
         {
           "charuco_corners": 102,
           "held_out": false,
-          "index": 9,
-          "reprojection_max_px": 1.395390510559082,
-          "reprojection_mean_px": 0.39599481225013733
+          "index": 3,
+          "reprojection_max_px": 0.95269775390625,
+          "reprojection_mean_px": 0.2533518373966217
         },
         {
-          "charuco_corners": 93,
+          "charuco_corners": 97,
+          "held_out": false,
+          "index": 4,
+          "reprojection_max_px": 0.8830533027648926,
+          "reprojection_mean_px": 0.2407991737127304
+        },
+        {
+          "charuco_corners": 98,
+          "held_out": false,
+          "index": 5,
+          "reprojection_max_px": 0.6840077638626099,
+          "reprojection_mean_px": 0.2679835855960846
+        },
+        {
+          "charuco_corners": 98,
+          "held_out": false,
+          "index": 6,
+          "reprojection_max_px": 1.116936445236206,
+          "reprojection_mean_px": 0.27697402238845825
+        },
+        {
+          "charuco_corners": 90,
+          "held_out": false,
+          "index": 7,
+          "reprojection_max_px": 0.9553000926971436,
+          "reprojection_mean_px": 0.253505676984787
+        },
+        {
+          "charuco_corners": 100,
+          "held_out": false,
+          "index": 8,
+          "reprojection_max_px": 0.700704038143158,
+          "reprojection_mean_px": 0.26380255818367004
+        },
+        {
+          "charuco_corners": 108,
+          "held_out": false,
+          "index": 9,
+          "reprojection_max_px": 0.729127049446106,
+          "reprojection_mean_px": 0.23936913907527924
+        },
+        {
+          "charuco_corners": 102,
           "held_out": false,
           "index": 10,
-          "reprojection_max_px": 1.1471247673034668,
-          "reprojection_mean_px": 0.387704998254776
+          "reprojection_max_px": 0.8435333967208862,
+          "reprojection_mean_px": 0.27273866534233093
         },
         {
           "charuco_corners": 108,
           "held_out": false,
           "index": 11,
-          "reprojection_max_px": 1.0911649465560913,
-          "reprojection_mean_px": 0.3657371997833252
+          "reprojection_max_px": 0.882486879825592,
+          "reprojection_mean_px": 0.2610335946083069
         },
         {
-          "charuco_corners": 105,
+          "charuco_corners": 94,
           "held_out": false,
           "index": 12,
-          "reprojection_max_px": 1.4649826288223267,
-          "reprojection_mean_px": 0.38156619668006897
+          "reprojection_max_px": 0.811078667640686,
+          "reprojection_mean_px": 0.24594154953956604
         },
         {
-          "charuco_corners": 104,
+          "charuco_corners": 108,
           "held_out": false,
           "index": 13,
-          "reprojection_max_px": 1.122072458267212,
-          "reprojection_mean_px": 0.37217584252357483
+          "reprojection_max_px": 0.8494413495063782,
+          "reprojection_mean_px": 0.2476455718278885
         },
         {
-          "charuco_corners": 104,
+          "charuco_corners": 97,
           "held_out": false,
           "index": 14,
-          "reprojection_max_px": 1.456774115562439,
-          "reprojection_mean_px": 0.38752835988998413
+          "reprojection_max_px": 0.7017322778701782,
+          "reprojection_mean_px": 0.2226698249578476
         },
         {
-          "charuco_corners": 104,
+          "charuco_corners": 96,
           "held_out": true,
           "index": 15,
-          "reprojection_max_px": 1.4327112436294556,
-          "reprojection_mean_px": 0.38229915499687195
+          "reprojection_max_px": 0.6904821395874023,
+          "reprojection_mean_px": 0.24013441801071167
         },
         {
-          "charuco_corners": 104,
+          "charuco_corners": 100,
           "held_out": true,
           "index": 16,
-          "reprojection_max_px": 1.1729143857955933,
-          "reprojection_mean_px": 0.3906121551990509
+          "reprojection_max_px": 0.8018093109130859,
+          "reprojection_mean_px": 0.25062325596809387
         },
         {
-          "charuco_corners": 104,
+          "charuco_corners": 95,
           "held_out": true,
           "index": 17,
-          "reprojection_max_px": 0.927244246006012,
-          "reprojection_mean_px": 0.33795034885406494
+          "reprojection_max_px": 1.47007155418396,
+          "reprojection_mean_px": 0.2715165317058563
         }
       ],
       "held_out_count": 3,
@@ -1466,110 +1228,110 @@
         {
           "held_out": false,
           "index": 0,
-          "rotation_error_deg": 0.5226010434681155,
-          "translation_error_m": 0.0016963096096264361
+          "rotation_error_deg": 0.23663662873293198,
+          "translation_error_m": 0.0020322396295977922
         },
         {
           "held_out": false,
           "index": 1,
-          "rotation_error_deg": 0.2261318623940724,
-          "translation_error_m": 0.0012713178097231814
+          "rotation_error_deg": 0.18541719449558322,
+          "translation_error_m": 0.0012537928743655495
         },
         {
           "held_out": false,
           "index": 2,
-          "rotation_error_deg": 0.1823978286756302,
-          "translation_error_m": 0.0010681815075686333
+          "rotation_error_deg": 0.2391887020521204,
+          "translation_error_m": 0.0024423650622071432
         },
         {
           "held_out": false,
           "index": 3,
-          "rotation_error_deg": 0.48857397925286494,
-          "translation_error_m": 0.0010200288884347724
+          "rotation_error_deg": 0.16816814608018973,
+          "translation_error_m": 0.0011731382656683545
         },
         {
           "held_out": false,
           "index": 4,
-          "rotation_error_deg": 0.17501087867739928,
-          "translation_error_m": 0.0014913335245834488
+          "rotation_error_deg": 0.22082315621874712,
+          "translation_error_m": 0.0018632916983967714
         },
         {
           "held_out": false,
           "index": 5,
-          "rotation_error_deg": 0.38939022133815643,
-          "translation_error_m": 0.0020128040496608475
+          "rotation_error_deg": 0.08122924078805831,
+          "translation_error_m": 0.0005457744227785822
         },
         {
           "held_out": false,
           "index": 6,
-          "rotation_error_deg": 0.45968384951622177,
-          "translation_error_m": 0.002110969729374936
+          "rotation_error_deg": 0.11002528934598342,
+          "translation_error_m": 0.0017611788237241522
         },
         {
           "held_out": false,
           "index": 7,
-          "rotation_error_deg": 0.28799629710742575,
-          "translation_error_m": 0.00047086635633593706
+          "rotation_error_deg": 0.1560817314819829,
+          "translation_error_m": 0.00043600580269819296
         },
         {
           "held_out": false,
           "index": 8,
-          "rotation_error_deg": 0.35492407644078566,
-          "translation_error_m": 0.0008420035620945868
+          "rotation_error_deg": 0.30597358848160927,
+          "translation_error_m": 0.0016816674642789137
         },
         {
           "held_out": false,
           "index": 9,
-          "rotation_error_deg": 0.09249170655860528,
-          "translation_error_m": 0.001639385756436263
+          "rotation_error_deg": 0.27004788682229874,
+          "translation_error_m": 0.0020256333571121543
         },
         {
           "held_out": false,
           "index": 10,
-          "rotation_error_deg": 0.25818474343314646,
-          "translation_error_m": 0.0005301102653085544
+          "rotation_error_deg": 0.17497391283532382,
+          "translation_error_m": 0.0020001368873441543
         },
         {
           "held_out": false,
           "index": 11,
-          "rotation_error_deg": 0.26061265215686313,
-          "translation_error_m": 0.002861107524044164
+          "rotation_error_deg": 0.14579949208454152,
+          "translation_error_m": 0.0010269322228336152
         },
         {
           "held_out": false,
           "index": 12,
-          "rotation_error_deg": 0.3622514130179226,
-          "translation_error_m": 0.0016617140801235902
+          "rotation_error_deg": 0.1594197416347103,
+          "translation_error_m": 0.0004117272902646434
         },
         {
           "held_out": false,
           "index": 13,
-          "rotation_error_deg": 0.24995863751391656,
-          "translation_error_m": 0.001986396548940009
+          "rotation_error_deg": 0.12505049990300784,
+          "translation_error_m": 0.0018295917720159028
         },
         {
           "held_out": false,
           "index": 14,
-          "rotation_error_deg": 0.3747016932316483,
-          "translation_error_m": 0.002033274993818443
+          "rotation_error_deg": 0.18323407051627658,
+          "translation_error_m": 0.0014474786652035909
         },
         {
           "held_out": true,
           "index": 15,
-          "rotation_error_deg": 0.30361196889501824,
-          "translation_error_m": 0.0036155358140650897
+          "rotation_error_deg": 0.31212545707419526,
+          "translation_error_m": 0.003132367805305165
         },
         {
           "held_out": true,
           "index": 16,
-          "rotation_error_deg": 0.13277899787035954,
-          "translation_error_m": 0.0017076426243417106
+          "rotation_error_deg": 0.3459178610029094,
+          "translation_error_m": 0.0020437696486982153
         },
         {
           "held_out": true,
           "index": 17,
-          "rotation_error_deg": 0.46138970009941915,
-          "translation_error_m": 0.002388013662413923
+          "rotation_error_deg": 0.2525692778945559,
+          "translation_error_m": 0.0020351516943365204
         }
       ],
       "training_count": 15
@@ -1577,22 +1339,22 @@
     "right": {
       "T_base_board": [
         [
-          0.99966122113342,
-          0.02599166615242826,
-          -0.0013697637241418244,
-          0.1677012926181658
+          0.073258894750855,
+          -0.9971546327626389,
+          0.01776999436945065,
+          0.46555893504382384
         ],
         [
-          0.02595178675620679,
-          -0.9993804153045057,
-          -0.02377583373835307,
-          0.4182081437629067
+          -0.9971602018420124,
+          -0.0735478891523882,
+          -0.016193821773311263,
+          0.4274120971612324
         ],
         [
-          -0.0019868885725248166,
-          0.023732231172271884,
-          -0.9997163765175533,
-          -0.011379540324146453
+          0.017454689979512734,
+          -0.016533189687267722,
+          -0.999710951943853,
+          -0.0019300092311379084
         ],
         [
           0.0,
@@ -1603,22 +1365,22 @@
       ],
       "T_cam_flange": [
         [
-          -0.00040209522978001955,
-          0.9999998997483638,
-          -0.00019703473944625858,
-          0.03617721122349665
+          0.00841809365106938,
+          0.9995902040030951,
+          0.027359820180932904,
+          0.02634877301844287
         ],
         [
-          -0.999996895319785,
-          -0.0004025785542360327,
-          -0.002459122058518451,
-          -0.06846150094755016
+          -0.9999265527733343,
+          0.008653195350039833,
+          -0.008485945384606314,
+          -0.06108774851910186
         ],
         [
-          -0.002459201133947982,
-          0.0001960453264672245,
-          0.9999969569433764,
-          -0.016553775487982314
+          -0.008719217746925318,
+          -0.027286375195053066,
+          0.9995896302836464,
+          -0.056739041087620276
         ],
         [
           0.0,
@@ -1629,22 +1391,22 @@
       ],
       "T_cam_tcp": [
         [
-          -0.00040209522978001955,
-          0.9999998997483638,
-          -0.00019703473944625858,
-          0.0361433212483119
+          0.00841809365106938,
+          0.9995902040030951,
+          0.027359820180932904,
+          0.03105466208956333
         ],
         [
-          -0.999996895319785,
-          -0.0004025785542360327,
-          -0.002459122058518451,
-          -0.06888446994161533
+          -0.9999265527733343,
+          0.008653195350039833,
+          -0.008485945384606314,
+          -0.06254733112525415
         ],
         [
-          -0.002459201133947982,
-          0.0001960453264672245,
-          0.9999969569433764,
-          0.15544570110627842
+          -0.008719217746925318,
+          -0.027286375195053066,
+          0.9995896302836464,
+          0.1151903753211669
         ],
         [
           0.0,
@@ -1656,14 +1418,14 @@
       "color_model": {
         "K": [
           [
-            925.86962890625,
+            859.2461692140139,
             0.0,
-            646.4573974609375
+            627.638276701003
           ],
           [
             0.0,
-            925.8562622070312,
-            350.99139404296875
+            857.8329288072715,
+            349.8243196792285
           ],
           [
             0.0,
@@ -1672,11 +1434,11 @@
           ]
         ],
         "distortion_coeffs": [
-          0.06563573390881684,
-          -0.1000933890082247,
-          0.0,
-          0.0,
-          0.0
+          0.17972461205670412,
+          -0.5907461332258801,
+          -0.0004857604821720669,
+          -0.0073220059937947725,
+          0.5399744098918601
         ],
         "distortion_model": "brown_conrady",
         "factory_profile": {
@@ -1712,168 +1474,165 @@
         },
         "fps": 6,
         "height": 720,
-        "method": "Training-only radial k1/k2 refinement with factory focal lengths/principal point fixed; depth calibration pending",
+        "method": "Original training-only Brown5 color refinement; depth calibration pending",
         "serial": "752112070450",
         "training_frames": [
-          "/home/jerry/rax-runtime/bimanual-extrinsics-20261103T045627Z/coverage-collection/frames/1793683069864115467",
-          "/home/jerry/rax-runtime/bimanual-extrinsics-20261103T045627Z/coverage-collection/frames/1793683081900980649",
-          "/home/jerry/rax-runtime/bimanual-extrinsics-20261103T045627Z/coverage-collection/frames/1793683088616742868",
-          "/home/jerry/rax-runtime/bimanual-extrinsics-20261103T045627Z/coverage-collection/frames/1793683101170621925",
-          "/home/jerry/rax-runtime/bimanual-extrinsics-20261103T045627Z/coverage-collection/frames/1793683107239964151",
-          "/home/jerry/rax-runtime/bimanual-extrinsics-20261103T045627Z/coverage-collection/frames/1793683115407583299",
-          "/home/jerry/rax-runtime/bimanual-extrinsics-20261103T045627Z/coverage-collection/frames/1793683125455714931",
-          "/home/jerry/rax-runtime/bimanual-extrinsics-20261103T045627Z/coverage-collection/frames/1793683139694536002",
-          "/home/jerry/rax-runtime/bimanual-extrinsics-20261103T045627Z/coverage-collection/frames/1793683147617856037",
-          "/home/jerry/rax-runtime/bimanual-extrinsics-20261103T045627Z/coverage-collection/frames/1793683153153265592",
-          "/home/jerry/rax-runtime/bimanual-extrinsics-20261103T045627Z/coverage-collection/frames/1793683158937358696",
-          "/home/jerry/rax-runtime/bimanual-extrinsics-20261103T045627Z/coverage-collection/frames/1793683164206821085",
-          "/home/jerry/rax-runtime/bimanual-extrinsics-20261103T045627Z/coverage-collection/frames/1793683176062383022",
-          "/home/jerry/rax-runtime/bimanual-extrinsics-20261103T045627Z/coverage-collection/frames/1793683182894574688",
-          "/home/jerry/rax-runtime/bimanual-extrinsics-20261103T045627Z/coverage-collection/frames/1793683192382879364",
-          "/home/jerry/rax-runtime/bimanual-extrinsics-20261103T045627Z/collection/frames/1793682484574894426",
-          "/home/jerry/rax-runtime/bimanual-extrinsics-20261103T045627Z/collection/frames/1793682491943286134",
-          "/home/jerry/rax-runtime/bimanual-extrinsics-20261103T045627Z/collection/frames/1793682504994518502",
-          "/home/jerry/rax-runtime/bimanual-extrinsics-20261103T045627Z/collection/frames/1793682514620215942",
-          "/home/jerry/rax-runtime/bimanual-extrinsics-20261103T045627Z/collection/frames/1793682527570964002",
-          "/home/jerry/rax-runtime/bimanual-extrinsics-20261103T045627Z/collection/frames/1793682538589553469",
-          "/home/jerry/rax-runtime/bimanual-extrinsics-20261103T045627Z/collection/frames/1793682555370099734",
-          "/home/jerry/rax-runtime/bimanual-extrinsics-20261103T045627Z/collection/frames/1793682569118002682",
-          "/home/jerry/rax-runtime/bimanual-extrinsics-20261103T045627Z/collection/frames/1793682601666036123",
-          "/home/jerry/rax-runtime/bimanual-extrinsics-20261103T045627Z/collection/frames/1793682616274101170",
-          "/home/jerry/rax-runtime/bimanual-extrinsics-20261103T045627Z/collection/frames/1793682623023585228",
-          "/home/jerry/rax-runtime/bimanual-extrinsics-20261103T045627Z/collection/frames/1793682640474485763",
-          "/home/jerry/rax-runtime/bimanual-extrinsics-20261103T045627Z/collection/frames/1793682653853089672",
-          "/home/jerry/rax-runtime/bimanual-extrinsics-20261103T045627Z/collection/frames/1793682668999865915"
+          "/home/jerry/rax-runtime/sessions/20261103T073444Z_unscrew_bottle_b1d812/operator/full-recalibration-20261103T100920Z/collection-covered/frames/1793701477182060009",
+          "/home/jerry/rax-runtime/sessions/20261103T073444Z_unscrew_bottle_b1d812/operator/full-recalibration-20261103T100920Z/collection-covered/frames/1793701485794440976",
+          "/home/jerry/rax-runtime/sessions/20261103T073444Z_unscrew_bottle_b1d812/operator/full-recalibration-20261103T100920Z/collection-covered/frames/1793701495802146247",
+          "/home/jerry/rax-runtime/sessions/20261103T073444Z_unscrew_bottle_b1d812/operator/full-recalibration-20261103T100920Z/collection-covered/frames/1793701507194106922",
+          "/home/jerry/rax-runtime/sessions/20261103T073444Z_unscrew_bottle_b1d812/operator/full-recalibration-20261103T100920Z/collection-covered/frames/1793701516338469173",
+          "/home/jerry/rax-runtime/sessions/20261103T073444Z_unscrew_bottle_b1d812/operator/full-recalibration-20261103T100920Z/collection-covered/frames/1793701521275873042",
+          "/home/jerry/rax-runtime/sessions/20261103T073444Z_unscrew_bottle_b1d812/operator/full-recalibration-20261103T100920Z/collection-covered/frames/1793701532886142894",
+          "/home/jerry/rax-runtime/sessions/20261103T073444Z_unscrew_bottle_b1d812/operator/full-recalibration-20261103T100920Z/collection-covered/frames/1793701543981229600",
+          "/home/jerry/rax-runtime/sessions/20261103T073444Z_unscrew_bottle_b1d812/operator/full-recalibration-20261103T100920Z/collection-covered/frames/1793701551567284898",
+          "/home/jerry/rax-runtime/sessions/20261103T073444Z_unscrew_bottle_b1d812/operator/full-recalibration-20261103T100920Z/collection-covered/frames/1793701562298269210",
+          "/home/jerry/rax-runtime/sessions/20261103T073444Z_unscrew_bottle_b1d812/operator/full-recalibration-20261103T100920Z/collection-covered/frames/1793701566946886312",
+          "/home/jerry/rax-runtime/sessions/20261103T073444Z_unscrew_bottle_b1d812/operator/full-recalibration-20261103T100920Z/collection-covered/frames/1793701572111847443",
+          "/home/jerry/rax-runtime/sessions/20261103T073444Z_unscrew_bottle_b1d812/operator/full-recalibration-20261103T100920Z/collection-covered/frames/1793701579620173562",
+          "/home/jerry/rax-runtime/sessions/20261103T073444Z_unscrew_bottle_b1d812/operator/full-recalibration-20261103T100920Z/collection-covered/frames/1793701585536720423",
+          "/home/jerry/rax-runtime/sessions/20261103T073444Z_unscrew_bottle_b1d812/operator/full-recalibration-20261103T100920Z/collection-covered/frames/1793701593263505056",
+          "/home/jerry/rax-runtime/sessions/20261103T073444Z_unscrew_bottle_b1d812/operator/full-recalibration-20261103T100920Z/collection-initial/frames/1793700932550859354",
+          "/home/jerry/rax-runtime/sessions/20261103T073444Z_unscrew_bottle_b1d812/operator/full-recalibration-20261103T100920Z/collection-initial/frames/1793700939938505207",
+          "/home/jerry/rax-runtime/sessions/20261103T073444Z_unscrew_bottle_b1d812/operator/full-recalibration-20261103T100920Z/collection-initial/frames/1793700975327730632",
+          "/home/jerry/rax-runtime/sessions/20261103T073444Z_unscrew_bottle_b1d812/operator/full-recalibration-20261103T100920Z/collection-initial/frames/1793701008678058851",
+          "/home/jerry/rax-runtime/sessions/20261103T073444Z_unscrew_bottle_b1d812/operator/full-recalibration-20261103T100920Z/collection-initial/frames/1793701027167564559",
+          "/home/jerry/rax-runtime/sessions/20261103T073444Z_unscrew_bottle_b1d812/operator/full-recalibration-20261103T100920Z/collection-initial/frames/1793701042743425137",
+          "/home/jerry/rax-runtime/sessions/20261103T073444Z_unscrew_bottle_b1d812/operator/full-recalibration-20261103T100920Z/collection-initial/frames/1793701083582091373",
+          "/home/jerry/rax-runtime/sessions/20261103T073444Z_unscrew_bottle_b1d812/operator/full-recalibration-20261103T100920Z/collection-initial/frames/1793701099877580489",
+          "/home/jerry/rax-runtime/sessions/20261103T073444Z_unscrew_bottle_b1d812/operator/full-recalibration-20261103T100920Z/collection-initial/frames/1793701108399905056",
+          "/home/jerry/rax-runtime/sessions/20261103T073444Z_unscrew_bottle_b1d812/operator/full-recalibration-20261103T100920Z/collection-initial/frames/1793701132356909888",
+          "/home/jerry/rax-runtime/sessions/20261103T073444Z_unscrew_bottle_b1d812/operator/full-recalibration-20261103T100920Z/collection-initial/frames/1793701147558754906"
         ],
-        "training_rms_px": 0.4616466220142308,
+        "training_rms_px": 0.2938568265962101,
         "width": 1280
       },
       "detections": [
         {
-          "charuco_corners": 97,
+          "charuco_corners": 99,
           "held_out": false,
           "index": 0,
-          "reprojection_max_px": 1.1583712100982666,
-          "reprojection_mean_px": 0.40108633041381836
-        },
-        {
-          "charuco_corners": 107,
-          "held_out": false,
-          "index": 1,
-          "reprojection_max_px": 1.126992106437683,
-          "reprojection_mean_px": 0.3093162178993225
+          "reprojection_max_px": 0.5507395267486572,
+          "reprojection_mean_px": 0.25735458731651306
         },
         {
           "charuco_corners": 104,
           "held_out": false,
+          "index": 1,
+          "reprojection_max_px": 0.664698600769043,
+          "reprojection_mean_px": 0.24198229610919952
+        },
+        {
+          "charuco_corners": 97,
+          "held_out": false,
           "index": 2,
-          "reprojection_max_px": 0.8581430315971375,
-          "reprojection_mean_px": 0.33634665608406067
+          "reprojection_max_px": 0.6545621752738953,
+          "reprojection_mean_px": 0.24975278973579407
         },
         {
           "charuco_corners": 108,
           "held_out": false,
           "index": 3,
-          "reprojection_max_px": 1.3781156539916992,
-          "reprojection_mean_px": 0.39295217394828796
+          "reprojection_max_px": 0.5215104222297668,
+          "reprojection_mean_px": 0.2190481275320053
         },
         {
           "charuco_corners": 99,
           "held_out": false,
           "index": 4,
-          "reprojection_max_px": 0.9436377286911011,
-          "reprojection_mean_px": 0.37690404057502747
+          "reprojection_max_px": 1.4665286540985107,
+          "reprojection_mean_px": 0.2754569947719574
         },
         {
           "charuco_corners": 106,
           "held_out": false,
           "index": 5,
-          "reprojection_max_px": 1.1424140930175781,
-          "reprojection_mean_px": 0.3779800236225128
+          "reprojection_max_px": 0.6452689170837402,
+          "reprojection_mean_px": 0.23968516290187836
         },
         {
-          "charuco_corners": 108,
+          "charuco_corners": 91,
           "held_out": false,
           "index": 6,
-          "reprojection_max_px": 1.1896306276321411,
-          "reprojection_mean_px": 0.3338176906108856
-        },
-        {
-          "charuco_corners": 104,
-          "held_out": false,
-          "index": 7,
-          "reprojection_max_px": 1.130195140838623,
-          "reprojection_mean_px": 0.35524383187294006
+          "reprojection_max_px": 0.5490527749061584,
+          "reprojection_mean_px": 0.25612956285476685
         },
         {
           "charuco_corners": 102,
           "held_out": false,
-          "index": 8,
-          "reprojection_max_px": 1.2263768911361694,
-          "reprojection_mean_px": 0.3889177739620209
+          "index": 7,
+          "reprojection_max_px": 0.5766351819038391,
+          "reprojection_mean_px": 0.2316219061613083
         },
         {
-          "charuco_corners": 108,
+          "charuco_corners": 101,
+          "held_out": false,
+          "index": 8,
+          "reprojection_max_px": 0.5488221049308777,
+          "reprojection_mean_px": 0.2272789031267166
+        },
+        {
+          "charuco_corners": 100,
           "held_out": false,
           "index": 9,
-          "reprojection_max_px": 1.4274600744247437,
-          "reprojection_mean_px": 0.4847031235694885
+          "reprojection_max_px": 0.6630647778511047,
+          "reprojection_mean_px": 0.265148401260376
         },
         {
-          "charuco_corners": 104,
+          "charuco_corners": 101,
           "held_out": false,
           "index": 10,
-          "reprojection_max_px": 1.3370846509933472,
-          "reprojection_mean_px": 0.38380926847457886
+          "reprojection_max_px": 0.5718557834625244,
+          "reprojection_mean_px": 0.2537074387073517
         },
         {
-          "charuco_corners": 108,
+          "charuco_corners": 93,
           "held_out": false,
           "index": 11,
-          "reprojection_max_px": 1.1858152151107788,
-          "reprojection_mean_px": 0.37490543723106384
+          "reprojection_max_px": 0.5656352043151855,
+          "reprojection_mean_px": 0.24333195388317108
+        },
+        {
+          "charuco_corners": 98,
+          "held_out": false,
+          "index": 12,
+          "reprojection_max_px": 1.779110074043274,
+          "reprojection_mean_px": 0.26772943139076233
         },
         {
           "charuco_corners": 103,
           "held_out": false,
-          "index": 12,
-          "reprojection_max_px": 1.1970646381378174,
-          "reprojection_mean_px": 0.3759780526161194
-        },
-        {
-          "charuco_corners": 108,
-          "held_out": false,
           "index": 13,
-          "reprojection_max_px": 1.4330285787582397,
-          "reprojection_mean_px": 0.39935433864593506
+          "reprojection_max_px": 0.6197056174278259,
+          "reprojection_mean_px": 0.24783647060394287
         },
         {
           "charuco_corners": 107,
           "held_out": false,
           "index": 14,
-          "reprojection_max_px": 1.0536397695541382,
-          "reprojection_mean_px": 0.35803118348121643
+          "reprojection_max_px": 0.5784871578216553,
+          "reprojection_mean_px": 0.2358478456735611
         },
         {
-          "charuco_corners": 104,
+          "charuco_corners": 95,
           "held_out": true,
           "index": 15,
-          "reprojection_max_px": 1.1181646585464478,
-          "reprojection_mean_px": 0.37868860363960266
+          "reprojection_max_px": 0.6099284291267395,
+          "reprojection_mean_px": 0.26887550950050354
         },
         {
-          "charuco_corners": 102,
+          "charuco_corners": 95,
           "held_out": true,
           "index": 16,
-          "reprojection_max_px": 0.984272301197052,
-          "reprojection_mean_px": 0.27895909547805786
+          "reprojection_max_px": 0.5099698305130005,
+          "reprojection_mean_px": 0.229056254029274
         },
         {
-          "charuco_corners": 106,
+          "charuco_corners": 107,
           "held_out": true,
           "index": 17,
-          "reprojection_max_px": 1.2881349325180054,
-          "reprojection_mean_px": 0.3570946455001831
+          "reprojection_max_px": 0.6425930261611938,
+          "reprojection_mean_px": 0.2439890205860138
         }
       ],
       "held_out_count": 3,
@@ -1882,110 +1641,110 @@
         {
           "held_out": false,
           "index": 0,
-          "rotation_error_deg": 0.24503352068258352,
-          "translation_error_m": 0.0017487284288837212
+          "rotation_error_deg": 0.19508431625706021,
+          "translation_error_m": 0.0031869177584776913
         },
         {
           "held_out": false,
           "index": 1,
-          "rotation_error_deg": 0.21029549659625577,
-          "translation_error_m": 0.002568643600659589
+          "rotation_error_deg": 0.20306823565682278,
+          "translation_error_m": 0.002433169287872273
         },
         {
           "held_out": false,
           "index": 2,
-          "rotation_error_deg": 0.47162647910877525,
-          "translation_error_m": 0.0022015117611404967
+          "rotation_error_deg": 0.05649641077704847,
+          "translation_error_m": 0.0016014373252432228
         },
         {
           "held_out": false,
           "index": 3,
-          "rotation_error_deg": 0.10042929824884551,
-          "translation_error_m": 0.0018402488591108062
+          "rotation_error_deg": 0.18934334449332663,
+          "translation_error_m": 0.001343725800883507
         },
         {
           "held_out": false,
           "index": 4,
-          "rotation_error_deg": 0.40501690414864594,
-          "translation_error_m": 0.0027299727964533033
+          "rotation_error_deg": 0.09570830538632565,
+          "translation_error_m": 0.0012842881402471019
         },
         {
           "held_out": false,
           "index": 5,
-          "rotation_error_deg": 0.2538200620637933,
-          "translation_error_m": 0.0020545675054581074
+          "rotation_error_deg": 0.23268089856412788,
+          "translation_error_m": 0.0012793869015660304
         },
         {
           "held_out": false,
           "index": 6,
-          "rotation_error_deg": 0.21184258101279413,
-          "translation_error_m": 0.000799519419682382
+          "rotation_error_deg": 0.06975500591751434,
+          "translation_error_m": 0.0008229942811647573
         },
         {
           "held_out": false,
           "index": 7,
-          "rotation_error_deg": 0.42173169494370344,
-          "translation_error_m": 0.0033531417304617918
+          "rotation_error_deg": 0.18936258425819233,
+          "translation_error_m": 0.0022772422859462503
         },
         {
           "held_out": false,
           "index": 8,
-          "rotation_error_deg": 0.1504025173791108,
-          "translation_error_m": 0.0007939659050887159
+          "rotation_error_deg": 0.24106422481761505,
+          "translation_error_m": 0.0022206294662629406
         },
         {
           "held_out": false,
           "index": 9,
-          "rotation_error_deg": 0.5532341556722564,
-          "translation_error_m": 0.0010954059879239746
+          "rotation_error_deg": 0.26078950764087927,
+          "translation_error_m": 0.0021760248944679606
         },
         {
           "held_out": false,
           "index": 10,
-          "rotation_error_deg": 0.4811597151246595,
-          "translation_error_m": 0.0031151637322916394
+          "rotation_error_deg": 0.08146563011795757,
+          "translation_error_m": 0.0006754353536467635
         },
         {
           "held_out": false,
           "index": 11,
-          "rotation_error_deg": 0.31492704982185316,
-          "translation_error_m": 0.0010916340764963127
+          "rotation_error_deg": 0.11053850628119732,
+          "translation_error_m": 0.002141272151991411
         },
         {
           "held_out": false,
           "index": 12,
-          "rotation_error_deg": 0.1636975560331579,
-          "translation_error_m": 0.0017951016016326013
+          "rotation_error_deg": 0.25363532757234936,
+          "translation_error_m": 0.0036408319026727627
         },
         {
           "held_out": false,
           "index": 13,
-          "rotation_error_deg": 0.40411199514789126,
-          "translation_error_m": 0.0005347482568122848
+          "rotation_error_deg": 0.211116674590695,
+          "translation_error_m": 0.0019758371963846874
         },
         {
           "held_out": false,
           "index": 14,
-          "rotation_error_deg": 0.46196356400181815,
-          "translation_error_m": 0.001584629550505783
+          "rotation_error_deg": 0.08656560923572465,
+          "translation_error_m": 0.0009665758446381925
         },
         {
           "held_out": true,
           "index": 15,
-          "rotation_error_deg": 0.42387956462103976,
-          "translation_error_m": 0.0025018853439597306
+          "rotation_error_deg": 0.13246609377034055,
+          "translation_error_m": 0.0007691235699840546
         },
         {
           "held_out": true,
           "index": 16,
-          "rotation_error_deg": 0.4137812361608843,
-          "translation_error_m": 0.0014176529568256373
+          "rotation_error_deg": 0.1394385621218174,
+          "translation_error_m": 0.002085725328675266
         },
         {
           "held_out": true,
           "index": 17,
-          "rotation_error_deg": 0.27350926750126037,
-          "translation_error_m": 0.0028470752440381674
+          "rotation_error_deg": 0.15565337450670347,
+          "translation_error_m": 0.003104522866570509
         }
       ],
       "training_count": 15

@@ -30,6 +30,10 @@ class Cancelled(RuntimeError):
     pass
 
 
+class Disarmed(PermissionError):
+    """An operator disarm requests a stop, not a controller fault."""
+
+
 class Trajectory:
     def __init__(self, start, goal, cfg, duration=None):
         self.start, self.goal = target(start, cfg), target(goal, cfg)
@@ -87,6 +91,7 @@ class Controller:
         self.first_command_at = self.last_command_at = None
         self.command_count = self.skipped_slots = 0
         self.max_command_interval = 0.
+        self.timing_delays = {}
         self.mode = 'disconnected'
         self.fault = None
         self.owns_control = False
@@ -186,7 +191,10 @@ class Controller:
                  'command_timing': {'requested_hz': self.cfg['command_hz'], 'commands': self.command_count,
                                     'observed_hz': ((self.command_count-1)/(self.last_command_at-self.first_command_at)
                                                     if self.command_count > 1 and self.last_command_at > self.first_command_at else None),
-                                    'max_interval_s': self.max_command_interval, 'skipped_slots': self.skipped_slots},
+                                    'max_interval_s': self.max_command_interval, 'skipped_slots': self.skipped_slots,
+                                    'warning_threshold_s': min(.05, self.cfg['max_scheduler_gap_s']),
+                                    'stop_threshold_s': self.cfg['max_scheduler_gap_s'],
+                                    'delays': deepcopy(self.timing_delays)},
                  'joint_names': list(JOINT_NAMES), 'profile_revision': self.cfg['profile_revision'],
                  'postures': sorted(self.cfg['postures']), 'owns_control': self.owns_control,
                  'action': self.active['id'] if self.active else None,
@@ -210,7 +218,7 @@ class Controller:
         if epoch != self.epoch:
             raise Cancelled('command cancelled by stop')
         if not self.armed():
-            raise PermissionError('operator has not armed motion')
+            raise Disarmed('operator has not armed motion')
         if not self.parent_alive() or self.clock()-self.parent_seen > self.cfg['parent_timeout_s']:
             raise RuntimeError('backend heartbeat expired')
         state = self.driver.snapshot()
@@ -222,6 +230,23 @@ class Controller:
                 raise RuntimeError('excluded joint is not confirmed disabled')
         return state
 
+    def _check_timing(self, source, seconds):
+        # Short host scheduling delays slow the tick-driven S-curve; they do
+        # not imply a native hand fault. Retain diagnostics, including the
+        # attempted interval when the watchdog prevents the next write.
+        if seconds > min(.05, self.cfg['max_scheduler_gap_s']):
+            previous = self.timing_delays.get(source, {})
+            self.timing_delays[source] = {
+                'count': previous.get('count', 0)+1,
+                'max_s': max(seconds, previous.get('max_s', 0.)),
+                'last_s': seconds, 'last_monotonic': self.clock(),
+            }
+        if seconds > self.cfg['max_scheduler_gap_s']:
+            if not self.armed():
+                raise Disarmed('operator has not armed motion')
+            raise RuntimeError(f'hand {source.replace("_", " ")} {seconds:.3f}s exceeded '
+                               f'host watchdog {self.cfg["max_scheduler_gap_s"]:.3f}s')
+
     def _write(self, fn, epoch):
         self._admit(epoch)
         self.owns_control = True
@@ -230,16 +255,15 @@ class Controller:
         # A stop can arrive while a native SDK call blocks.
         if epoch != self.epoch:
             raise Cancelled('stop arrived during SDK call')
-        if streaming and self.clock()-started > self.cfg['max_scheduler_gap_s']:
-            raise RuntimeError('native hand write exceeded the scheduling deadline')
+        if streaming:
+            self._check_timing('native_write', self.clock()-started)
 
     def _send(self, epoch, *, seed=False):
         def publish():
             # Cover planning, feedback processing and scheduling, not just time
             # spent inside the native send call itself.
-            if (not seed and self.mode in ('holding', 'executing', 'enabling') and self.last_command_at is not None
-                    and self.clock()-self.last_command_at > self.cfg['max_scheduler_gap_s']):
-                raise RuntimeError('hand command gap exceeded the scheduling deadline')
+            if not seed and self.mode in ('holding', 'executing', 'enabling') and self.last_command_at is not None:
+                self._check_timing('command_gap', self.clock()-self.last_command_at)
             if self.cfg['motion_mode'] in ('feedback', 'scurve'):
                 self.driver.send(self.target, self.command_velocity, self.command_effort)
             else:
@@ -271,6 +295,24 @@ class Controller:
                 if self.owns_control:
                     self.stop_request = {'id': None, 'op': 'emergency', 'args': {}, 'epoch': self.epoch}
 
+    def _stop_for_disarm(self):
+        self.command_effort = [0.]*20
+        self.effort_velocity_guard.reset()
+        with self.lock:
+            for job in [*self.pending, self.active]:
+                self._finish(job, 'stopped', ok=False, reason='operator disarmed motion', confirmed=False)
+            self.pending.clear()
+            self.active = None
+            if self.stop_request is not None:
+                # Disarm cannot retain an enabled hold. Preserve the stop's ID
+                # so its caller still receives physical stop confirmation.
+                self.stop_request['op'] = 'emergency'
+            elif self.owns_control and self.stopping is None:
+                self.epoch += 1
+                self.stop_request = {'id': None, 'op': 'emergency', 'args': {}, 'epoch': self.epoch}
+            self.mode = ('stopping' if self.stop_request or self.stopping else
+                         'faulted' if self.fault else 'disabled')
+
     def _start_stop(self, job):
         self.active = self.stopping = None
         state = self.driver.snapshot()
@@ -292,11 +334,13 @@ class Controller:
                     self.mode = 'executing'
                     return
             else:
+                self.active = job
                 self.command_velocity, self.command_acceleration = [0.]*20, [0.]*20
                 self._send(job['epoch'])
                 self.mode = 'holding'
                 self._finish(job, 'held', requested='hold', sdk_returned=True, confirmed=False,
                              target_positions=list(self.target), note='stationary command; physical settling not confirmed')
+                self.active = None
                 return
         self.command_velocity, self.command_acceleration = [0.]*20, [0.]*20
         behavior = 'disable' if job['op'] == 'disable' else 'emergency'
@@ -521,9 +565,8 @@ class Controller:
                 self._start_stop(stop)
             state = self.driver.snapshot()
             if self.mode in ('holding', 'executing', 'enabling'):
-                if now-self.previous_tick > self.cfg['max_scheduler_gap_s']:
-                    raise RuntimeError('hand scheduler delayed')
                 self._admit(self.epoch)
+                self._check_timing('scheduler_gap', now-self.previous_tick)
                 if self.mode != 'enabling' and not control_enabled(state, self.cfg):
                     raise RuntimeError('one or more active hand joints left Enabled state')
             self._check_stop(state)
@@ -534,7 +577,7 @@ class Controller:
                     self._begin(job)
                 except Exception as exc:
                     self._finish(job, 'rejected', reason=str(exc))
-                    if self.active is not None or isinstance(exc, Cancelled):
+                    if self.active is not None or isinstance(exc, (Cancelled, Disarmed)):
                         raise
             job = self.active
             if job and self.mode == 'enabling':
@@ -603,6 +646,12 @@ class Controller:
                         outcome, result = self.active['completion']
                         self._finish(self.active, outcome, **result)
                         self.active, self.mode = None, 'holding'
+        except Cancelled:
+            # submit() has already cancelled the job and queued a priority
+            # stop. Let the next tick deliver it without latching a fault.
+            pass
+        except Disarmed:
+            self._stop_for_disarm()
         except Exception as exc:
             self._fail(exc)
         finally:

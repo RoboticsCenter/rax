@@ -1,14 +1,14 @@
 {
   "K": [
     [
-      905.4855346679688,
+      969.8547226894896,
       0.0,
-      634.0691528320312
+      625.38592477674
     ],
     [
       0.0,
-      905.2677001953125,
-      354.7956237792969
+      961.6903717785926,
+      335.69054706687405
     ],
     [
       0.0,
@@ -17,11 +17,11 @@
     ]
   ],
   "distortion_coeffs": [
-    0.01307073427141763,
-    -0.046301867018765284,
-    0.0,
-    0.0,
-    0.0
+    0.22980426347508337,
+    -0.7073942273403236,
+    0.005019576352612623,
+    -0.01074145442227049,
+    0.7495770476579812
   ],
   "distortion_model": "brown_conrady",
   "factory_profile": {
@@ -57,36 +57,35 @@
   },
   "fps": 6,
   "height": 720,
-  "method": "Training-only radial k1/k2 refinement with factory focal lengths/principal point fixed; depth calibration pending",
+  "method": "Original training-only Brown5 color refinement; depth calibration pending",
   "serial": "108322071838",
   "training_frames": [
-    "/home/jerry/rax-runtime/bimanual-extrinsics-20261103T045627Z/coverage-collection/frames/1793682925067489387",
-    "/home/jerry/rax-runtime/bimanual-extrinsics-20261103T045627Z/coverage-collection/frames/1793682931125976355",
-    "/home/jerry/rax-runtime/bimanual-extrinsics-20261103T045627Z/coverage-collection/frames/1793682937894306463",
-    "/home/jerry/rax-runtime/bimanual-extrinsics-20261103T045627Z/coverage-collection/frames/1793682950827804609",
-    "/home/jerry/rax-runtime/bimanual-extrinsics-20261103T045627Z/coverage-collection/frames/1793682956494318809",
-    "/home/jerry/rax-runtime/bimanual-extrinsics-20261103T045627Z/coverage-collection/frames/1793682970274857067",
-    "/home/jerry/rax-runtime/bimanual-extrinsics-20261103T045627Z/coverage-collection/frames/1793682979565607696",
-    "/home/jerry/rax-runtime/bimanual-extrinsics-20261103T045627Z/coverage-collection/frames/1793682989198654014",
-    "/home/jerry/rax-runtime/bimanual-extrinsics-20261103T045627Z/coverage-collection/frames/1793682996099278182",
-    "/home/jerry/rax-runtime/bimanual-extrinsics-20261103T045627Z/coverage-collection/frames/1793683003667312093",
-    "/home/jerry/rax-runtime/bimanual-extrinsics-20261103T045627Z/coverage-collection/frames/1793683009196210378",
-    "/home/jerry/rax-runtime/bimanual-extrinsics-20261103T045627Z/coverage-collection/frames/1793683013999558140",
-    "/home/jerry/rax-runtime/bimanual-extrinsics-20261103T045627Z/coverage-collection/frames/1793683020360871384",
-    "/home/jerry/rax-runtime/bimanual-extrinsics-20261103T045627Z/coverage-collection/frames/1793683028933878014",
-    "/home/jerry/rax-runtime/bimanual-extrinsics-20261103T045627Z/coverage-collection/frames/1793683035147094052",
-    "/home/jerry/rax-runtime/bimanual-extrinsics-20261103T045627Z/collection/frames/1793682244648740159",
-    "/home/jerry/rax-runtime/bimanual-extrinsics-20261103T045627Z/collection/frames/1793682270444973146",
-    "/home/jerry/rax-runtime/bimanual-extrinsics-20261103T045627Z/collection/frames/1793682280055961982",
-    "/home/jerry/rax-runtime/bimanual-extrinsics-20261103T045627Z/collection/frames/1793682293094561192",
-    "/home/jerry/rax-runtime/bimanual-extrinsics-20261103T045627Z/collection/frames/1793682304081541325",
-    "/home/jerry/rax-runtime/bimanual-extrinsics-20261103T045627Z/collection/frames/1793682320652618936",
-    "/home/jerry/rax-runtime/bimanual-extrinsics-20261103T045627Z/collection/frames/1793682334455019570",
-    "/home/jerry/rax-runtime/bimanual-extrinsics-20261103T045627Z/collection/frames/1793682348990634772",
-    "/home/jerry/rax-runtime/bimanual-extrinsics-20261103T045627Z/collection/frames/1793682381787351451",
-    "/home/jerry/rax-runtime/bimanual-extrinsics-20261103T045627Z/collection/frames/1793682388575452143",
-    "/home/jerry/rax-runtime/bimanual-extrinsics-20261103T045627Z/collection/frames/1793682443214633535"
+    "/home/jerry/rax-runtime/sessions/20261103T073444Z_unscrew_bottle_b1d812/operator/full-recalibration-20261103T100920Z/collection-covered/frames/1793701313632670838",
+    "/home/jerry/rax-runtime/sessions/20261103T073444Z_unscrew_bottle_b1d812/operator/full-recalibration-20261103T100920Z/collection-covered/frames/1793701323588002109",
+    "/home/jerry/rax-runtime/sessions/20261103T073444Z_unscrew_bottle_b1d812/operator/full-recalibration-20261103T100920Z/collection-covered/frames/1793701336293228699",
+    "/home/jerry/rax-runtime/sessions/20261103T073444Z_unscrew_bottle_b1d812/operator/full-recalibration-20261103T100920Z/collection-covered/frames/1793701349086871330",
+    "/home/jerry/rax-runtime/sessions/20261103T073444Z_unscrew_bottle_b1d812/operator/full-recalibration-20261103T100920Z/collection-covered/frames/1793701358480373337",
+    "/home/jerry/rax-runtime/sessions/20261103T073444Z_unscrew_bottle_b1d812/operator/full-recalibration-20261103T100920Z/collection-covered/frames/1793701365816034232",
+    "/home/jerry/rax-runtime/sessions/20261103T073444Z_unscrew_bottle_b1d812/operator/full-recalibration-20261103T100920Z/collection-covered/frames/1793701372995259793",
+    "/home/jerry/rax-runtime/sessions/20261103T073444Z_unscrew_bottle_b1d812/operator/full-recalibration-20261103T100920Z/collection-covered/frames/1793701379197380617",
+    "/home/jerry/rax-runtime/sessions/20261103T073444Z_unscrew_bottle_b1d812/operator/full-recalibration-20261103T100920Z/collection-covered/frames/1793701385269183481",
+    "/home/jerry/rax-runtime/sessions/20261103T073444Z_unscrew_bottle_b1d812/operator/full-recalibration-20261103T100920Z/collection-covered/frames/1793701389955385092",
+    "/home/jerry/rax-runtime/sessions/20261103T073444Z_unscrew_bottle_b1d812/operator/full-recalibration-20261103T100920Z/collection-covered/frames/1793701399197143435",
+    "/home/jerry/rax-runtime/sessions/20261103T073444Z_unscrew_bottle_b1d812/operator/full-recalibration-20261103T100920Z/collection-covered/frames/1793701404253375887",
+    "/home/jerry/rax-runtime/sessions/20261103T073444Z_unscrew_bottle_b1d812/operator/full-recalibration-20261103T100920Z/collection-covered/frames/1793701408790656559",
+    "/home/jerry/rax-runtime/sessions/20261103T073444Z_unscrew_bottle_b1d812/operator/full-recalibration-20261103T100920Z/collection-covered/frames/1793701417518828215",
+    "/home/jerry/rax-runtime/sessions/20261103T073444Z_unscrew_bottle_b1d812/operator/full-recalibration-20261103T100920Z/collection-covered/frames/1793701429450272145",
+    "/home/jerry/rax-runtime/sessions/20261103T073444Z_unscrew_bottle_b1d812/operator/full-recalibration-20261103T100920Z/collection-initial/frames/1793700660997996335",
+    "/home/jerry/rax-runtime/sessions/20261103T073444Z_unscrew_bottle_b1d812/operator/full-recalibration-20261103T100920Z/collection-initial/frames/1793700685979856993",
+    "/home/jerry/rax-runtime/sessions/20261103T073444Z_unscrew_bottle_b1d812/operator/full-recalibration-20261103T100920Z/collection-initial/frames/1793700695768606193",
+    "/home/jerry/rax-runtime/sessions/20261103T073444Z_unscrew_bottle_b1d812/operator/full-recalibration-20261103T100920Z/collection-initial/frames/1793700726504157076",
+    "/home/jerry/rax-runtime/sessions/20261103T073444Z_unscrew_bottle_b1d812/operator/full-recalibration-20261103T100920Z/collection-initial/frames/1793700744689941733",
+    "/home/jerry/rax-runtime/sessions/20261103T073444Z_unscrew_bottle_b1d812/operator/full-recalibration-20261103T100920Z/collection-initial/frames/1793700760191166263",
+    "/home/jerry/rax-runtime/sessions/20261103T073444Z_unscrew_bottle_b1d812/operator/full-recalibration-20261103T100920Z/collection-initial/frames/1793700781694151696",
+    "/home/jerry/rax-runtime/sessions/20261103T073444Z_unscrew_bottle_b1d812/operator/full-recalibration-20261103T100920Z/collection-initial/frames/1793700817654882033",
+    "/home/jerry/rax-runtime/sessions/20261103T073444Z_unscrew_bottle_b1d812/operator/full-recalibration-20261103T100920Z/collection-initial/frames/1793700826240753534",
+    "/home/jerry/rax-runtime/sessions/20261103T073444Z_unscrew_bottle_b1d812/operator/full-recalibration-20261103T100920Z/collection-initial/frames/1793700884678492325"
   ],
-  "training_rms_px": 0.4810036216283479,
+  "training_rms_px": 0.3003008354683318,
   "width": 1280
 }

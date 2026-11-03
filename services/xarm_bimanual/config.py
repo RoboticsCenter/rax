@@ -11,13 +11,36 @@ PAIRED_TOOLS = {
     'xarm_move_joints_both': 'xarm_move_joints',
     'wuji_move_both': 'wuji_move_joints',
 }
+COMBINED_TOOL = 'xarm_move_combined'
+COMBINED_ACTIONS = {
+    'arm': {'pose': 'xarm_move_pose', 'joints': 'xarm_move_joints'},
+    'hand': {'joints': 'wuji_move_joints', 'pose': 'wuji_pose', 'home': 'wuji_home'},
+}
 SHARED_OPTIONS = frozenset({
     'cameras', 'camera_cpus', 'camera_depth_mode', 'stream_enabled', 'stream_fps',
     'stream_window_s', 'stream_depth_hz', 'stream_jpeg_quality', 'stream_archive',
     'robot_log_hz', 'motion_archive_enabled', 'motion_archive_padding_s',
     'motion_archive_codec', 'agent_image_width', 'agent_python', 'protected_paths',
-    'calibration_manifest',
+    'calibration_manifest', 'unverified_camera_extrinsics',
 })
+
+
+def combined_actions(arguments):
+    """One action per requested device; omitted devices retain their targets."""
+    if not isinstance(arguments, dict) or not arguments:
+        raise ValueError('provide at least one of left_arm, right_arm, left_hand or right_hand')
+    actions = {}
+    for device, choice in arguments.items():
+        if device not in {f'{side}_{kind}' for side in SIDES for kind in COMBINED_ACTIONS}:
+            raise ValueError(f'unknown combined device {device}')
+        side, kind = device.split('_')
+        if not isinstance(choice, dict) or len(choice) != 1:
+            raise ValueError(f'{device} requires exactly one of {list(COMBINED_ACTIONS[kind])}')
+        action, payload = next(iter(choice.items()))
+        if action not in COMBINED_ACTIONS[kind] or not isinstance(payload, dict):
+            raise ValueError(f'{device}: expected one supported action with an argument object')
+        actions[device] = (side, COMBINED_ACTIONS[kind][action], deepcopy(payload))
+    return actions
 
 
 def validate_options(options):
@@ -94,6 +117,10 @@ def validate_options(options):
                 raise ValueError(f'camera {key} must be a positive integer')
     if fixed != 2 or sorted(wrists) != list(SIDES):
         raise ValueError('need two fixed cameras and exactly one wrist camera per arm')
+    unverified = options.get('unverified_camera_extrinsics', [])
+    if (not isinstance(unverified, list) or any(not isinstance(name, str) for name in unverified)
+            or len(set(unverified)) != len(unverified) or set(unverified) - names):
+        raise ValueError('unverified_camera_extrinsics must list distinct configured camera names')
     if options.get('calibration_manifest'):
         from .calibration import BimanualCalibration
         BimanualCalibration(options)

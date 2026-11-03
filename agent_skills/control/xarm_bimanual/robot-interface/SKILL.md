@@ -25,7 +25,7 @@ shared arming state. Cameras are `{{ robot.cameras | join('`, `') }}`.
 - The controller TCP is not a fingertip position. Both hands' posture, palm,
   fingers and wrist-mounted cameras contribute to their swept volume.
 
-## Single and paired moves
+## Single, paired and combined moves
 
 Single-arm motion retains the original xArm Cartesian/joint planner, workspace/FK
 checks, speed caps, controller error checks, progress detection and measured
@@ -54,12 +54,45 @@ The controllers start concurrently but are not hardware synchronized. A common
 arrival time, coupled trajectory, mutual collision check, or object-force balance
 is not guaranteed. Check both sweeps, including the other arm and any object or
 lace spanning the hands. Use sequential moves when their interaction is uncertain.
-Use paired tools for concurrency; separate MCP requests are serialized.
+Use paired or combined tools for concurrency; separate MCP requests are serialized.
+
+`xarm_move_combined` moves any subset of `left_arm`, `right_arm`, `left_hand` and
+`right_hand` within one call, including an arm and its own fingers together.
+Give each selected arm exactly one action: `pose` with the ordinary Cartesian
+payload, or `joints` with the ordinary joint/preset payload. Give each selected
+hand exactly one action: `joints` with the twenty-joint move payload, `pose` with
+the named-posture payload, or `home` with the home payload. Omit unused devices;
+their targets remain held. Each arm still uses its own base frame.
+
+```python
+ctx.value("xarm_move_combined",
+          left_arm={"pose": {"position": [0, 0, 0.01], "relative": True}},
+          left_hand={"joints": {"positions": left_target}},
+          right_hand={"joints": {"positions": right_target}})
+```
+
+This is a schema example; establish the hand targets and combined clearance from
+the current scene. Use combined motion when a task phase can happen together,
+such as shaping fingers during a clear-space approach or moving independent arms.
+Keep dependent actions separate: establish bottle retention before lifting or
+applying a cap twist. A healthy hand may be executing while its selected arm
+moves; this is expected during the combined call.
+
+All selected targets are validated before any worker starts. Results are under
+`results.left_arm`, `results.right_arm`, `results.left_hand` and/or
+`results.right_hand`. Inspect every selected device's result, including accepted
+hand shortfalls. `dispatch_skew_s` measures host worker starts; `timing` reports
+each worker's elapsed execution. Neither establishes simultaneous physical start
+or arrival. On execution failure, all four devices are stopped and the error
+reports `completed_devices` and `failed_devices`; do not replay completed targets.
 
 ## Readiness, faults and stop
 
 Both assemblies must have fresh readiness under their loaded profiles before a mutating call. Each
 hand retains its own limits, gains, current bias, warning policy and postures.
+Host scheduling warnings in `command_timing.delays` do not by themselves make
+control unhealthy. Use current mode, freshness and blocking faults; a stopped
+controller reports its specific reason and hand state in the fault response.
 Use each hand's loaded profile. The operator may explicitly share tested gains
 and the exact encoder-warning allowance; saved postures remain hand-specific.
 Configured passive joints and isolated diagnostic codes do not by themselves
@@ -81,6 +114,9 @@ Do not replay both targets just because only one side failed.
 four stops are confirmed. This disables the hands and may release an object. It
 does not clear errors, ready the arms or prepare the hands. Operator direct
 stop/disarm bypasses the MCP queue; another MCP hold waits behind the active call.
+An intentional disarm with fresh feedback and confirmed disabled hands is a normal
+stop, not lost healthy control. Request preparation when motion should resume;
+do not diagnose a native hand fault from the disarmed state alone.
 
 `wuji_hold(hand=...)` retains that hand's healthy commanded posture and current
 bias; it is not an assembly emergency stop. Read its result and current health.
@@ -91,9 +127,16 @@ bias; it is not an assembly emergency stop. Read its result and current health.
 `xarm_stream` reviews the rolling history. Wrist camera metadata identifies its
 owning arm. {% if robot.rgb_calibrated %}RGB models and transforms are loaded.
 `xarm_observe(arm="left" | "right", project=[[x,y,z], ...])` projects points in
-the selected base. Saved metadata supplies camera poses in both bases; arm
+the selected base. Saved metadata supplies verified camera poses in both bases; arm
 motion tools still require targets in their own base. Depth calibration remains
 pending and no depth pixel-to-position tool is exposed.
+After a full operator calibration, refresh observations before reusing metric
+targets: both wrist transforms and the inter-base alignment may have changed.
+Read the current bundle identifier and per-camera status rather than retaining
+an earlier session's camera restrictions or transforms.
+If a camera mount may have shifted, the operator can mark only that view's
+extrinsics unverified. Its image stays available; use the other verified views
+for geometry. This does not itself disarm or block either assembly.
 {% else %}Factory intrinsics and optional depth do not provide a camera-to-arm
 transform. Pixel-to-base lookup and projected base-frame points are unavailable.
 {% endif %}

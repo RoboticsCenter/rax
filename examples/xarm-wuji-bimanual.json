@@ -16,7 +16,7 @@
         "serial": "WH2JA01260811007",
         "handedness": "left",
         "address": "192.168.1.110:50001",
-        "profile_revision": "left-hand2-partial-v13-home-20261103",
+        "profile_revision": "left-hand2-partial-v15-hosttiming-20261103",
         "lower_rad": [
           -1.186824,
           -1.48353,
@@ -67,7 +67,7 @@
         "command_hz": 200,
         "max_velocity_rad_s": 0.15,
         "max_acceleration_rad_s2": 0.5,
-        "max_step_rad": 0.2,
+        "max_step_rad": 2.1,
         "max_tracking_error_rad": 0.1,
         "max_feedback_age_s": 0.25,
         "postures": {
@@ -104,7 +104,7 @@
         "settle_s": 0.4,
         "settle_position_range_rad": 0.004,
         "settle_timeout_s": 1.0,
-        "max_scheduler_gap_s": 0.05,
+        "max_scheduler_gap_s": 0.25,
         "max_temperature_c": 65.0,
         "allow_encoder_warning": true,
         "allow_init_current_calib_failed": {},
@@ -141,7 +141,7 @@
         "serial": "WH2KA01260823017",
         "handedness": "right",
         "address": "192.168.1.111:50001",
-        "profile_revision": "right-hand2-scurve-20261028-v13",
+        "profile_revision": "right-hand2-scurve-v14-bimanual-200hz-20261103",
         "lower_rad": [
           -1.186824,
           -1.48353,
@@ -252,7 +252,7 @@
           0.15,
           0.15
         ],
-        "command_hz": 1000,
+        "command_hz": 200,
         "max_velocity_rad_s": 0.6,
         "max_acceleration_rad_s2": 3.0,
         "max_step_rad": 2.1,
@@ -316,7 +316,7 @@
         "settle_s": 0.4,
         "settle_position_range_rad": 0.004,
         "settle_timeout_s": 8.0,
-        "max_scheduler_gap_s": 0.05,
+        "max_scheduler_gap_s": 0.25,
         "max_temperature_c": 65.0,
         "allow_encoder_warning": true
       },

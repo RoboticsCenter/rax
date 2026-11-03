@@ -31,6 +31,7 @@ class BimanualCalibration:
         raw = self.path.read_bytes()
         self.manifest = data = json.loads(raw)
         self.digest = hashlib.sha256(raw).hexdigest()
+        self.unverified = frozenset(options.get('unverified_camera_extrinsics', []))
         if not data.get('ok') or not data.get('fresh_verification', {}).get('ok'):
             raise ValueError('bimanual calibration needs a passing fit and fresh physical verification')
         specs = {c['name']: c for c in options['cameras']}
@@ -100,6 +101,8 @@ class BimanualCalibration:
                 raise ValueError(f'{side}: TCP offset differs from the verified camera calibration')
 
     def poses(self, spec, states):
+        if spec['name'] in self.unverified:
+            return None
         camera = self.models[spec['name']]
         if camera.mount == 'fixed':
             left = camera.base_from_camera()
@@ -110,6 +113,13 @@ class BimanualCalibration:
             left = own if side == 'left' else self.left_from_right@own
         return {'left': left, 'right': self.right_from_left@left}
 
+    @property
+    def status(self):
+        return 'rgb_extrinsics_partial' if self.unverified else 'rgb_extrinsics_verified'
+
+    def camera_status(self, name):
+        return 'extrinsics_unverified' if name in self.unverified else 'rgb_extrinsics_verified'
+
     def summary(self):
         planes = {}
         for side in ('left', 'right'):
@@ -117,7 +127,10 @@ class BimanualCalibration:
             normal = board[:3, 2]
             planes[side] = {'normal': normal.tolist(), 'offset_m': float(-normal@board[:3, 3]),
                             'meaning': 'original calibration-board plane; confirm scene support before using it'}
-        return {'status': 'rgb_extrinsics_verified', 'manifest': str(self.path), 'sha256': self.digest,
+        return {'status': self.status, 'manifest': str(self.path), 'sha256': self.digest,
+                'unverified_camera_extrinsics': sorted(self.unverified),
+                'camera_status': {name: self.camera_status(name) for name in self.models},
                 'reference_base_frame': 'left_base', 'T_left_base_right_base': self.left_from_right.tolist(),
                 'reference_board_planes': planes, 'depth_metric_validation': 'pending',
-                'verification': self.manifest['fresh_verification']['cameras']}
+                'verification': {name: value for name, value in self.manifest['fresh_verification']['cameras'].items()
+                                 if name not in self.unverified}}

@@ -74,7 +74,9 @@ command the robot: subagents never call motion tools.
 For every episode, use each side's commissioned reset procedure. Support/release
 objects spanning the hands, retreat with clearance for both assemblies, then use
 `wuji_home(hand="left" | "right")` and `xarm_move_joints(arm="left" | "right",
-preset="home")` sequentially, only where those homes and paths are established.
+preset="home")` only where those homes and paths are established. Use
+`xarm_move_combined` for independent returns with established combined clearance;
+keep release and clearance-dependent retreat steps sequential.
 An absent hand home requires an operator-defined reset, not copied joint targets.
 Verify all four devices before the next episode. Read the return-home procedure
 in [hand-control](.agents/skills/hand-control/SKILL.md).

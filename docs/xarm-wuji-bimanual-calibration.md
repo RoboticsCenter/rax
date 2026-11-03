@@ -6,7 +6,11 @@ It uses the existing bimanual MCP owner for motion and separate read-only SDK
 connections for precise pose snapshots. It never opens another Wuji owner or
 changes finger targets. Only one arm moves at a time.
 
-The board must remain fixed across both passes. This installation uses
+The board may be placed differently from an earlier calibration. This full
+workflow solves its new pose and the alignment between the arm bases; it does
+not compare current observations to the old board placement. Keep the board
+fixed across both passes, any coverage-guided follow-up, and fresh verification.
+This installation uses
 `calibration/xarm-wuji/board.json`: 10×13 physical squares, 20 mm squares,
 15 mm markers, `DICT_4X4_100`, with the verified legacy 14-row marker layout
 and the final physical row absent. A standard 13-row layout does not match
@@ -25,8 +29,11 @@ extrinsics are not reused.
 
 For a sweep with limited optical diversity, `--refine-wrist-distortion` fits
 only radial coefficients k1/k2, keeping factory focal lengths and principal
-point fixed and the other distortion terms zero. This avoids the large focal
-drift observed with a free intrinsic fit on this rig's inward-facing sweep.
+point fixed and the other distortion terms zero. This limits focal drift when
+the sweep cannot constrain a fuller model. It does not guarantee an adequate
+fit: the November 3 recalibration needed Brown5/K refinement to pass fresh home
+and sweep verification. Select the model using training data and verify the
+frozen result with new captures before installation.
 It uses OpenCV's [fixed-intrinsic-parameter calibration flags](https://docs.opencv.org/4.13.0/d9/d0c/group__calib3d.html).
 Both refinement modes use training images only; neither changes acceptance
 limits. After choosing a model from diagnostic fits, verify it on fresh images.
@@ -115,9 +122,9 @@ Candidates are written only when all four camera checks pass. This script does
 not install them into the running backend or claim depth/pixel-to-base support;
 those runtime capabilities require an explicit configuration integration step.
 
-## Recalibrating one bumped fixed camera
+## Recalibrating moved fixed cameras
 
-When only one fixed mount moved, preserve the other three camera transforms,
+When one or both fixed mounts moved, preserve the unchanged camera transforms,
 both wrist models and the inter-base transform. The board can be in a new
 position. Place it flat and stationary with at least twelve noncollinear
 ChArUco corners visible in each camera. Use the existing board definition,
@@ -129,18 +136,26 @@ With a running bimanual MCP backend and stationary arms:
 .venv/bin/python scripts/xarm-bimanual-fixed-camera-calibrate \
   --session SESSION --mcp-socket MCP_SOCKET --target side_a \
   --output NEW_CALIBRATION_DIRECTORY --install
+
+# If both side mounts moved, neither side camera may be an anchor:
+.venv/bin/python scripts/xarm-bimanual-fixed-camera-calibrate \
+  --session SESSION --mcp-socket MCP_SOCKET --target side_a side_b \
+  --output NEW_CALIBRATION_DIRECTORY --install
 ```
 
 This command only calls `xarm_observe`; it does not prepare or move any robot.
-It fits the selected fixed camera from twelve captures using the three unchanged
-camera poses with equal weights. It freezes the fit before eight fresh captures
-and checks each against all three reference cameras. It retains the 5 mm / 1°
+It fits the selected fixed cameras from twelve captures using unchanged camera
+poses with equal weights. A single target uses the other three cameras; two side
+targets use only the two wrist cameras. Both moved side cameras are excluded from
+the reference set. It freezes the fits before eight fresh captures and checks
+each target against every reference camera. It retains the 5 mm / 1°
 consistency limits and 1-pixel mean reprojection limit. Detector selection uses
 decoded corner count, never geometric residual. No failed observation is silently
 discarded. Omit `--install` to retain a candidate without updating the bundle.
 
-Installation replaces only the selected fixed camera's two base-transform files
-and its manifest entries, and adds a dedicated verification report. The original
+Installation requires every selected target to pass and replaces only their
+base-transform files and manifest entries, with a dedicated report for each.
+Both target entries are included in one atomic manifest replacement. The original
 verification report remains historical evidence for the unchanged calibration.
 Restart the backend after installation: an already running backend retains its
 previous manifest. Fresh stationary observations establish local board-pose

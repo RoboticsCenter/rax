@@ -12,6 +12,7 @@ from copy import deepcopy
 from pathlib import Path
 
 from services.json_io import write_private_json
+from services.xarm import arming
 
 from .config import validate_config
 from .partial import control_enabled
@@ -136,8 +137,13 @@ class WujiClient:
             try:
                 value = request(self.path, 'heartbeat')
                 previously_owned = previously_owned or value.get('owns_control', False)
-                bad = previously_owned and (value.get('mode') in ('faulted', 'uncertain', 'disconnected', 'disabled', 'stopping')
+                expected_stop = (not arming.read(self.root)['armed'] and value.get('fresh')
+                                 and not value.get('fault') and not value.get('faults')
+                                 and value.get('mode') in ('disabled', 'stopping'))
+                bad = previously_owned and not expected_stop and (value.get('mode') in ('faulted', 'uncertain', 'disconnected', 'disabled', 'stopping')
                                              or not value.get('fresh'))
+                if expected_stop and value.get('mode') == 'disabled' and not value.get('owns_control'):
+                    previously_owned = False
                 self.cached, self.received = value, time.monotonic()
             except Exception as exc:
                 bad = previously_owned
@@ -171,15 +177,18 @@ class WujiClient:
             value['fresh'] = value['enabled'] = value['active_enabled'] = False
         return value
 
-    def require_ready(self):
+    def require_ready(self, *, allow_executing=False):
         # The supervisor polls at 20 Hz. Immediately after a completed move its
         # cache can still say "executing", or miss a more recent stop/fault.
         # Admission needs the owner's current snapshot; this read never enables
         # the hand and the owner independently validates every submitted move.
         state = request(self.path, 'status')
+        modes = ('holding', 'executing') if allow_executing else ('holding',)
         if (not control_enabled(state, self.cfg) or state.get('fault') or state.get('faults')
-                or state.get('mode') != 'holding'):
-            raise RuntimeError('Wuji hand is not prepared and holding with fresh fault-free feedback; ask the operator')
+                or state.get('mode') not in modes
+                or (allow_executing and not state.get('owns_control'))):
+            required = 'holding or executing its combined move' if allow_executing else 'holding'
+            raise RuntimeError(f'Wuji hand is not prepared and {required} with fresh fault-free feedback; ask the operator')
         return state
 
     def move(self, positions, duration_s=None, completion='position'):

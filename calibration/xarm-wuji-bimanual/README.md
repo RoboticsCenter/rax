@@ -1,107 +1,86 @@
 # Verified bimanual RGB extrinsics
 
-Captured and verified 2026-11-02 Pacific time (2026-11-03 UTC).
-Status: **verified RGB bundle, integrated into the bimanual backend**.
-`examples/xarm-wuji-bimanual.json` selects this manifest. Live MCP observations
-have verified all four camera profiles, wrist rectification, both arm identities
-and equal image projections for equivalent points in the left/right bases.
-Depth scale and RGB-depth registration remain separate work; there is no depth
-pixel-to-position endpoint. The historical manifest records its export state;
-live `xarm_status.calibration_status` reports whether a session has loaded it.
+Full calibration captured and verified on November 3, 2026, after both side
+camera mounts were adjusted. This bundle replaces all four camera extrinsics,
+both wrist RGB models, and the alignment between the two arm bases.
+`examples/xarm-wuji-bimanual.json` selects it with every camera verified.
 
 | Role | Serial | Fresh maximum position residual | Fresh maximum angle residual |
 | --- | --- | ---: | ---: |
-| Left wrist | 108322071838 | 4.75 mm | 0.444° |
-| Right wrist | 752112070450 | 3.49 mm | 0.518° |
-| Side A | 263322070113 | 4.50 mm | 0.723° |
-| Side B | 262422074331 | 2.22 mm | 0.268° |
+| Left wrist | 108322071838 | 4.06 mm | 0.402° |
+| Right wrist | 752112070450 | 4.48 mm | 0.430° |
+| Side A | 263322070113 | 1.81 mm | 0.432° |
+| Side B | 262422074331 | 0.62 mm | 0.153° |
 
-These are board-pose consistency residuals, not independently measured absolute
-robot positioning accuracy. The original 76 fresh checks passed the unchanged
-5 mm / 1° limits and the 1-pixel mean reprojection limit. Maximum mean reprojection
-error was 0.772 pixels. Original verification used a frozen fit, one home capture, and three
-new poses per arm with three captures per pose. All four cameras were checked
-in every capture, including the stationary wrist. Both arms returned to their
-starting poses. Finger targets were unchanged throughout calibration.
+All 76 fresh checks passed the existing 5 mm / 1° pose-consistency limits and
+1-pixel mean reprojection limit. The largest mean reprojection error was
+0.743 pixels. These are board-pose consistency residuals, not independently
+measured absolute robot positioning accuracy. Depth scale and RGB-depth
+registration remain unqualified; no depth pixel-to-position endpoint is exposed.
 
-## Side A update after a camera bump
+## Collection and verification
 
-On 2026-11-03 at 06:40 UTC, the lower/right side view (`side_a`, serial
-`263322070113`) was refitted after the operator reported bumping it. Estimated
-camera-center displacement was 8.79 mm and orientation change was 5.65°.
-The old transform displaced the reconstructed board by about 63 mm; that was
-a board-position error, not a measurement of the camera's translation.
+The board stayed fixed throughout two sequential 18-pose sweeps per arm and
+fresh verification. The initial sweep had clipped wrist views. Its usable
+non-reserved images supplied additional optical training and preliminary
+geometry for planning the second sweep. All 36 second-sweep observations were
+accepted: 15 training poses and three reserved poses per wrist.
 
-Both arms and both hands were first commanded home through MCP. With the arms
-then stationary, 12 new four-camera observations transferred the current board
-pose from the three untouched calibrated cameras with equal camera weights.
-The board was allowed to occupy a different position than the original sweep.
-The fitted Side A transform was frozen before eight fresh observations, yielding
-24 comparisons against the three references. All passed: maximum translation
-4.498 mm, angle 0.723°, and Side A mean reprojection 0.674 pixels. These checks
-measure consistency at the current board placement, not accuracy across a new
-arm sweep or independently measured world coordinates.
+The constrained k1/k2 model passed the collection checks but failed fresh home
+verification and was not installed. A fuller Brown5/K refinement used only
+non-reserved optical training images from both sweeps. Hand-eye fitting used
+only the second sweep's 15 training poses per arm. The resulting fit was frozen
+before a new home capture and six newly seeded verification poses, three per
+arm. Three fresh captures per pose checked all four cameras, including the
+stationary wrist. No verification image was fitted or discarded. Both arms
+returned to their starting home poses; finger targets were unchanged.
 
-Only Side A's transforms from the two bases were replaced. Both wrist fits,
-Side B, all RGB models, and the inter-base transform remain unchanged. The
-original `verification-report.json` applies to the original bundle; Side A's
-current evidence is in `side_a-recalibration-report.json`. The manifest points
-to that replacement report without attributing the original Side A checks to
-the updated transform. Its historical `T_cam_board` field still refers to the
-original board frame; the report separately records the board pose used now.
+The installed wrists require their matching fitted RGB models. The backend
+rectifies their images and supplies the corresponding K and zero distortion
+for those saved images. Side cameras retain their factory RGB models. Use each
+observation's saved metadata rather than substituting factory wrist intrinsics.
 
-New captures and home-command records are under
-`/home/jerry/rax-runtime/camera-maintenance-20261103T063615Z/`.
+After installation, fresh MCP observations in both arm base frames passed all
+eight camera checks with the normal runtime image pipeline. Equivalent points
+projected to the same reported pixels from either base. All four views reported
+`rgb_extrinsics_verified`; the resumed session has no unverified-camera overrides.
+That evidence is saved as `runtime-verification.json` in the capture directory.
 
 ## Files and conventions
 
 `T_A_B` maps column-vector points from B to A, with translations in metres.
 
-- `wrist_*_T_cam_tcp.yaml`: each wrist camera from its owning arm's TCP.
-- `wrist_*_T_cam_flange.yaml`: equivalent transforms from each flange.
-- `side_*_T_cam_{left,right}_base.yaml`: each fixed camera from either arm base.
+- `wrist_*_T_cam_tcp.yaml` and `wrist_*_T_cam_flange.yaml`: each wrist camera
+  relative to its owning arm's TCP and flange.
+- `side_*_T_cam_{left,right}_base.yaml`: each side camera relative to both bases.
 - `T_left_base_right_base.yaml`: right base into left base.
-- `*_color_model.json`: the exact 1280×720 @ 6 FPS RGB models used by these fits.
-  Wrist files include the recorded factory profile and fitted radial distortion;
-  side views retain factory intrinsics. Runtime profile conversion must be
-  validated before applying them at a different resolution.
-- `board.json`: 10×13 physical squares, 20 mm squares, 15 mm markers, with the
-  verified legacy 14-row ID layout and its final physical row absent.
-- `manifest.json`: camera/arm identities, TCP offsets, models, fit residuals,
-  source images and fresh-verification summary.
-- `verification-report.json`: every fresh observation, residual, source-fit hash
-  and measured return pose from the original sweep.
-- `side_a-recalibration-report.json`: the subsequent fixed-camera update and its
-  fresh verification against all three unchanged cameras.
+- `*_color_model.json`: matching 1280×720 @ 6 FPS RGB models.
+- `board.json`: 10×13 physical squares, 20 mm squares and 15 mm markers,
+  retaining the verified legacy 14-row ID layout with the final row absent.
+- `fit-result.json`: exact frozen fit used for fresh verification.
+- `verification-report.json`: all 76 fresh checks, fit hash and return poses.
+- `manifest.json`: identities, models, geometry, fit and verification summaries.
 
 Left arm: `192.168.2.205`, serial `XI130510J56A06`.
 Right arm: `192.168.1.241`, serial `XI130505F56A0A`.
-Both controller TCP offsets were `[0, 0, 172, 0, 0, 0]` in mm/radians.
-Moving a mount, replacing a camera, changing TCP offsets or moving an arm base
-requires checking the corresponding transforms again.
+Both TCP offsets were `[0, 0, 172, 0, 0, 0]` in mm/radians.
 
-## Method and provenance
+The board may be removed or moved after calibration. Its saved reference plane
+is historical and is not automatically the task's support surface. Arm motion
+updates wrist poses using telemetry; changing a camera mount, camera identity,
+TCP offset or arm base requires checking the affected geometry.
 
-The original single-arm 18-pose workflow was adapted to sequential bimanual
-sweeps against one stationary board. The initial sweep clipped the board in
-some wrist views. A second sweep selected fully framed views within the same
-translation/rotation bounds; all 18 views per arm were accepted. Each hand-eye
-fit used 15 training poses, reserving three poses per arm.
+## Provenance and earlier calibrations
 
-Free RGB intrinsic refinement shifted focal lengths substantially. A constrained
-radial k1/k2 fit retained factory focal lengths and principal points. Lens
-training combined non-reserved images from the initial and well-framed sweeps
-to cover image edges as well as the center; no reserved or verification images
-were included. All other distortion coefficients are zero. Hand-eye fitting
-used only the second sweep's training poses. Fresh verification followed model
-selection and did not alter the fitted parameters or discard observations.
+Current captures, diagnostic failures, the passing fit and fresh verification:
+`/home/jerry/rax-runtime/sessions/20261103T073444Z_unscrew_bottle_b1d812/operator/full-recalibration-20261103T100920Z`.
+The accepted fit is `full-intrinsic-diagnostic/result.json`; verification is
+`verification-full-optics/verification.json`. The frozen fit SHA-256 is
+`b4099e8d08dbe4ef43029088bbb425562bc3594f6e3c2b2e305e45fbd92041df`.
 
-The original captures and diagnostic fits were recorded under:
-`/home/jerry/rax-runtime/bimanual-extrinsics-20261103T045627Z`.
-The accepted fit is `pooled-distortion-fit/result.json`; independent verification
-was `verification-pooled/verification.json`. Those runtime capture directories
-were subsequently deleted during the operator-requested cleanup. The exported
-bundle and original verification report remain self-contained.
+The prior bundle and README are preserved under `bundle-before/` and
+`README-before.md` in that directory. Repository `side_a-recalibration-report*.json`
+and `side_b-recalibration-report.json` are historical evidence for earlier
+side-only adjustments; they do not describe this new full calibration.
 
-See [the operator workflow](../../docs/xarm-wuji-bimanual-calibration.md) for
-collection, fitting, optical-training and verification commands.
+See [the operator workflow](../../docs/xarm-wuji-bimanual-calibration.md).

@@ -134,10 +134,18 @@ initial 0.3/0.5 A trials encountered Stall at their current caps. The original
 Its cleared-Stall recovery is retained: the active native warning must clear
 before an operator reconnect. In partial mode, exact configured isolated codes
 may remain on the disabled joints, so they do not block unrelated Stall recovery.
-The partial profile requests 200 Hz: the observed 1,000 Hz configuration delivered
-only about 340 commands/s on this laptop, stretching the tick-based reference and
-causing its wall-time deadline to expire. Keep the rate within the host's measured
-capacity instead of discarding the scheduling guard.
+Both bimanual hand profiles now request 200 Hz. The former 1,000 Hz setting
+delivered about 340 commands/s on this laptop, stretching the tick-based reference.
+It also tripped a 50 ms host command-gap check while the right hand held still
+with no native faults. The bimanual profiles now use a 250 ms host watchdog,
+matching their unchanged 250 ms feedback-age limit. Host delays over 50 ms are
+recorded in `command_timing.delays` without stopping otherwise healthy control;
+the status includes the soft and hard thresholds and actual measured delay.
+S-curve advancement remains one reference step per command, without wall-time
+catch-up jumps. Gains, damping, current caps and motion limits are unchanged.
+Fault notifications include the controller's specific reason and hand snapshot.
+See the [real host-timing validation](wuji-bimanual-host-timing-2026-11-03.md) for
+the induced delay, right-finger movement and four-camera holding checks.
 See the [physical movement record](wuji-left-partial-live-test-2026-11-02.md) for
 the measured eighteen-joint movements and the later native ring-S1 stall warning
 that stopped the grouped finger sequence.
@@ -151,8 +159,28 @@ opposing fingers and both alternating five-finger configurations, returning to
 that saved home. The profile now also preserves the original branch's exact
 `Enc1BitRate (0x0003 / Warning / AutoClear)` allowance. That warning recurred
 during the successful repeat and remained visible without stopping movement.
-The tested per-call step cap is 0.2 rad; the physical sequence staged moves at
-no more than 0.18 rad per active joint.
+Those early tests used a 0.2-rad per-call cap and staged moves at no more than
+0.18 rad per active joint. The current left profile uses a 2.1-rad distance cap,
+matching the original right profile, so a saved-home move can be submitted in
+one call. Its 0.15-rad/s velocity, 0.5-rad/s² acceleration, 0.5-rad/s³ jerk,
+gains, current cap and two disabled joints remain unchanged.
+
+Intentional disarm and stop cancellation are normal stop transitions, not hand
+faults. The service still verifies the physical stop and reports native faults,
+missing feedback or an unconfirmed stop.
+The November 3 live MCP check completed the left saved-home reference in 5.06 s,
+with `ok: true`, `holding: true` and a nonfatal 0.01774-rad measured shortfall.
+Both the four-device MCP stop and a direct operator disarm completed without
+new fault requests. The right profile was unchanged; neither arm received a
+movement target. The session's `operator/harness-fix-20261103/` contains the raw
+responses, configuration backups, camera check and validation summary.
+
+`unverified_camera_extrinsics: ["side_b"]` keeps the replugged Side B image
+available while withholding its old base transform and projection marks. The
+other three views retain their calibrated geometry. Status reports
+`rgb_extrinsics_partial`, with a separate status for every camera. After verifying
+or recalibrating the moved camera, the operator can remove its name from this
+list and reload the session backend.
 
 The left fragment now includes the operator-selected measured `home`, and
 `wuji_home`/`wuji_pose` preserve disabled references during both admission and
@@ -271,6 +299,7 @@ remains unchanged; the operator starts the Claude Code session manually.
 | `xarm_move_both` | `left` and `right`: ordinary pose payloads |
 | `xarm_move_joints_both` | `left` and `right`: ordinary joint payloads |
 | `wuji_move_both` | `left` and `right`: ordinary hand move payloads, including optional contact completion |
+| `xarm_move_combined` | Any subset of `left_arm`, `right_arm`, `left_hand`, `right_hand`; one action per device |
 | `xarm_hold` | Disarm, stop and verify all four devices; reports each independently |
 | `xarm_observe`, `xarm_stream` | Shared camera names; calibrated observe accepts `arm` and `project`, and supplies both base transforms |
 
@@ -280,6 +309,27 @@ serialized MCP request. Each side uses its original limits and motion monitor.
 Results are per side, with dispatch skew reported; a clean result is not proof
 of grasp, collision clearance, or synchronized motion. On a partial failure, do
 not replay the pair blindly.
+
+The combined tool accepts arm actions `{"pose": {<Cartesian payload>}}` or
+`{"joints": {<joint/preset payload>}}`, and hand actions
+`{"joints": {<20-joint payload>}}`, `{"pose": {"name": "home"}}` or
+`{"home": {}}`. Optional hand duration/completion fields remain in the inner
+payload and obey that hand's existing policy. Empty requests or multiple actions
+for one device are rejected before dispatch. Omitted devices retain their targets.
+All selected targets pass the original admission checks before workers start.
+During same-side arm/hand execution, only that arm's worker accepts its healthy
+hand in `executing` as well as `holding`; ordinary admission still requires a hold.
+The original xArm planner, Wuji trajectory implementation, joint isolation, gains,
+speed limits and continuous health checks remain in use.
+
+Combined results are keyed by device, with host dispatch skew and per-worker
+execution timing. This does not synchronize controller clocks or arrival times.
+Execution failure requests stops across the rig and reports completed and failed
+devices. The combined MCP call produces one motion clip through the existing
+recording implementation. Separate concurrent MCP calls still queue serially.
+See the [real combined-motion validation](xarm-wuji-combined-motion-2026-11-03.md)
+for four-device motion, subset dispatch, preflight refusals, interruption handling
+and the final return home.
 
 Both Wuji processes read the same arming file but have different socket, config,
 snapshot and log paths (`wuji-left-*`, `wuji-right-*`). Either owned-hand fault or

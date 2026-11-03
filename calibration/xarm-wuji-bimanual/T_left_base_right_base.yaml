@@ -1,22 +1,22 @@
 matrix:
-- - 0.9998172206171106
-  - -0.015389756691579123
-  - -0.011343753631400442
-  - 0.008919900986559204
-- - 0.01535122851591445
-  - 0.9998761219347997
-  - -0.0034757111038977453
-  - -0.6368836458092716
-- - 0.01139583873736768
-  - 0.0033009352613432128
-  - 0.9999296168660438
-  - 0.009967027918948273
+- - 0.9997382303342455
+  - 0.0151304019121447
+  - 0.01716221856663991
+  - 0.0017067309110735396
+- - -0.014888822441762465
+  - 0.9997894840481611
+  - -0.014117738948216428
+  - -0.6213249719665342
+- - -0.01737221271023993
+  - 0.013858518127465322
+  - 0.9997530433566392
+  - 0.01693699220834443
 - - 0.0
   - 0.0
   - 0.0
   - 1.0
 source:
-  result: /home/jerry/rax-runtime/bimanual-extrinsics-20261103T045627Z/pooled-distortion-fit/result.json
+  result: /home/jerry/rax-runtime/sessions/20261103T073444Z_unscrew_bottle_b1d812/operator/full-recalibration-20261103T100920Z/full-intrinsic-diagnostic/result.json
   board:
     dictionary: DICT_4X4_100
     dimension_source: Operator supplied a new accurately printed 10 x 13 board on
@@ -94,6 +94,6 @@ source:
       - 0.0
       - 0.0
   method: Coverage-guided 18-pose sweep inside original envelope; original hand-eye
-    fit; three reserved views per arm; stationary shared board; training-only radial
-    distortion refinement with factory K fixed
+    fit; three reserved views per arm; stationary shared board; original training-only
+    Brown5 wrist color refinement
   quality_check_passed: true

@@ -29,7 +29,7 @@ ROBOT_FACTS['xarm_bimanual'] = {
     'pixel': None, 'cameras': ('side_a', 'side_b', 'wrist_left', 'wrist_right'),
     'overview_camera': 'side_a', 'overview': 'side A camera',
     'tools': ('xarm_status', 'xarm_observe', 'xarm_move_pose', 'xarm_move_joints',
-              'xarm_move_both', 'xarm_move_joints_both', 'xarm_stream', 'xarm_hold',
+              'xarm_move_both', 'xarm_move_joints_both', 'xarm_move_combined', 'xarm_stream', 'xarm_hold',
               'wuji_status', 'wuji_move_joints', 'wuji_pose', 'wuji_home', 'wuji_hold',
               'wuji_set_effort', 'wuji_set_impedance', 'wuji_move_both'),
 }

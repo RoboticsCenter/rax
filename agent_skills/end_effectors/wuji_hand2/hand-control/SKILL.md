@@ -14,12 +14,23 @@ do not infer a posture by mirroring or copying the other hand.
 hand, validates both, then starts them concurrently. It does not guarantee exact
 synchronization or mutual collision clearance. An execution fault stops all four
 devices; a healthy `wuji_hold(hand=...)` applies only to that hand.
+For arm and finger motion together, use `xarm_move_combined` with optional
+`left_arm`, `right_arm`, `left_hand` and `right_hand` actions. Hand actions are
+`{"joints": {...}}`, `{"pose": {"name": "..."}}` or `{"home": {}}`, containing
+the ordinary tool payload. The same partial-joint, completion and motion policies
+apply. See [robot-interface](../robot-interface/SKILL.md) for the combined schema.
 {% endif %}
 
 Read `wuji_status` before moving. Confirm the configured side, `profile_revision`,
 fresh state, no faults, and `mode: holding`. The operator prepares/enables the hand
 and arms the session. Request help if it is unprepared; agent tools do not enable,
 clear faults, raise the operator's parameter ceilings, or recalibrate joint origins.
+
+`command_timing` separates host timing from native diagnostics. Its `delays` and
+`skipped_slots` are informational while feedback is fresh and control remains
+holding/executing without faults. Do not stop or request recovery solely because
+a soft timing warning was recorded. Read `warning_threshold_s`, `stop_threshold_s`
+and the current `fault`; a host watchdog trip is distinct from a native hand error.
 
 ## This session's hand profiles
 
@@ -195,7 +206,8 @@ posture in its own status. Use the session profile table above; do not substitut
 the other hand's values or zeros. Get an operator-defined reset only if a home
 is actually absent.
 Release/support anything spanning the hands before homing either side. Order
-the returns so neither arm crosses the other; do not home all devices concurrently.
+the returns so neither arm crosses the other. Independent returns may use the
+combined tool only when the whole arm-and-finger sweeps have established clearance.
 In this setup `xarm_hold` stops both arms and both hands, not only the selected side.
 {% endif %}
 
@@ -210,7 +222,11 @@ failed attempts when recovery is supported by fresh, fault-free state.
    with `wuji_set_effort` after release. Skip this tool for a partial hand, whose
    bias remains zero. Keep the commissioned gains/damping and caps.
 3. Call `wuji_home({% if robot.bimanual %}hand="left"{% endif %})` and inspect completion and measured active joints. Check
-   `wuji_status` for fresh holding with no blocking faults. For a partial hand,
+   the live profile's `max_step_rad`; this is a per-command distance cap, not a
+   speed setting. A saved-home command may span the full configured distance
+   while retaining its trajectory velocity, acceleration and jerk limits. Do not
+   impose a smaller historical cap or split a valid saved-home move unnecessarily.
+   Check `wuji_status` for fresh holding with no blocking faults. For a partial hand,
    a completed-reference shortfall with `ok: true`, `holding: true` can continue
    through the reset sequence; record that shortfall instead of claiming exact
    home convergence or requiring an extra precision test.
@@ -219,8 +235,12 @@ failed attempts when recovery is supported by fresh, fault-free state.
 5. Only then call `request_operator(kind="reset", ...)` for the next layout.
    After the operator replies, check status and observations again before starting.
 
-Run these moves sequentially. If a return is refused, faults, times out, or the
-path cannot be established, stop and request specific operator help; do not start
+Keep dependent release, retreat and return steps sequential; combine only returns
+whose complete sweeps are established as independent. A validation refusal with `no_action_executed: true`
+and certain control leaves the existing holds intact; resolve the reported input
+or profile issue without automatically calling an assembly stop. Ask the operator
+for configuration changes if needed. An execution fault, uncertain control or an
+unclear physical path requires stopping and specific operator help; do not start
 another episode or run homing unconditionally in an exception/finally handler.
 Record reset completion or the reason it was blocked with each episode result.
 

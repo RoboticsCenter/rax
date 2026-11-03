@@ -1,8 +1,8 @@
 """Bimanual orchestration over the existing xArm and Wuji controllers.
 
-Like upstream real/rainbow, tools select an arm explicitly and paired calls admit
-all targets before dispatch. Independent xArm controllers do not share a clock:
-paired moves start concurrently, but do not promise synchronized trajectories.
+Like upstream real/rainbow, tools select devices explicitly and concurrent calls
+admit all targets before dispatch. Independent xArm controllers do not share a
+clock: combined moves do not promise synchronized trajectories or arrival times.
 """
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from copy import deepcopy
@@ -19,11 +19,12 @@ import numpy as np
 
 from services.xarm import arming
 from services.xarm.backend import XArmBackend, CameraService, DEFAULTS, _schema, _validate_arguments
-from services.xarm.faults import ControllerFault
-from services.xarm.sdk import XArmDriver
+from services.xarm.faults import ControllerFault, check_controller
+from services.xarm.sdk import XArmDriver, MotionStopped
 from services.wuji.client import WujiClient
 from services.wuji.config import MUTATING_TOOLS, TOOL_NAMES
-from .config import SIDES, PAIRED_TOOLS, validate_options, arm_options
+from .config import (SIDES, PAIRED_TOOLS, COMBINED_TOOL, COMBINED_ACTIONS,
+                     combined_actions, validate_options, arm_options)
 from .calibration import BimanualCalibration
 from services.xarm.calibration import project as project_to_pixel
 
@@ -37,7 +38,35 @@ class _Assembly(XArmBackend):
     """Keep the single-arm motion implementation, with whole-rig fault handling."""
     def __init__(self, owner, side, config, arm, hand):
         self.owner, self.side = owner, side
+        self._combined_context = threading.local()
         super().__init__(config, arm=arm, hand=hand, cameras=_NoCameras(), camera_models={})
+
+    def _require_hand_ready(self):
+        # Only the arm worker sharing this combined action may observe its
+        # own hand executing. Ordinary admission still requires a healthy hold.
+        if getattr(self._combined_context, 'hand_motion', False):
+            return self.end_effector.require_ready(allow_executing=True)
+        return super()._require_hand_ready()
+
+    def call_combined(self, name, arguments, *, hand_motion):
+        self._combined_context.hand_motion = hand_motion
+        try:
+            return self.call(name, arguments)
+        finally:
+            self._combined_context.hand_motion = False
+
+    def _motion_state(self):
+        try:
+            return super()._motion_state()
+        except ControllerFault as exc:
+            if (exc.fault_category == 'state' and exc.robot_state.get('state') == 4
+                    and not arming.read(self.config.root)['armed']):
+                # A peer may deliver the shared stop between this worker's
+                # arming check and telemetry read. Preserve every other health
+                # check, but classify the commanded stop as cancellation.
+                check_controller({**exc.robot_state, 'state': 2})
+                raise MotionStopped('the operator disarmed motion; the arm is stopped') from exc
+            raise
 
     def _stop_assembly(self, **kwargs):
         return self.owner._stop_assembly(**kwargs)
@@ -48,7 +77,7 @@ class _Assembly(XArmBackend):
 
 
 class XArmBimanualBackend(XArmBackend):
-    mutating = frozenset({'xarm_move_pose', 'xarm_move_joints', *MUTATING_TOOLS, *PAIRED_TOOLS})
+    mutating = frozenset({'xarm_move_pose', 'xarm_move_joints', *MUTATING_TOOLS, *PAIRED_TOOLS, COMBINED_TOOL})
     recovery_tools = frozenset({'xarm_hold'})
 
     def __init__(self, config, *, arms=None, hands=None, cameras=None):
@@ -113,8 +142,12 @@ class XArmBimanualBackend(XArmBackend):
     def _hand_fault(self, side):
         if self._closed:
             return
-        self.handle_control_fault(ControllerFault(f'{side} Wuji hand lost healthy control',
-                                                  category='hand', state={'hand': side}))
+        assembly = self.arms.get(side)
+        hand = assembly.end_effector.status() if assembly else {}
+        reason = (hand.get('fault') or ('feedback is stale' if not hand.get('fresh') else
+                  f'control ended in mode {hand.get("mode", "unknown")}'))
+        self.handle_control_fault(ControllerFault(f'{side} Wuji controller stopped: {reason}',
+            category='hand', state={'hand': side, 'hand_state': hand}))
 
     def tools(self):
         definitions = []
@@ -162,6 +195,27 @@ class XArmBimanualBackend(XArmBackend):
                 'frame. This is not synchronized interpolation or collision planning; verify both sweeps. '
                 'Any execution failure disarms and requests stops on all four devices. Results are per side.',
                 'inputSchema': _schema({side: deepcopy(singles[side][single]['inputSchema']) for side in SIDES}, SIDES)})
+        combined = {}
+        for side in SIDES:
+            for kind, actions in COMBINED_ACTIONS.items():
+                combined[f'{side}_{kind}'] = {
+                    **_schema({action: deepcopy(singles[side][single]['inputSchema'])
+                               for action, single in actions.items()}),
+                    'minProperties': 1, 'maxProperties': 1,
+                    'description': f'Exactly one action for the {side} {kind}. Omit this device to retain its target.',
+                }
+        definitions.append({'name': COMBINED_TOOL,
+            'description': 'Move any subset of left_arm, right_arm, left_hand and right_hand concurrently. '
+                'Each arm takes exactly one of pose (ordinary xarm_move_pose payload) or joints '
+                '(ordinary xarm_move_joints payload). Each hand takes exactly one of joints '
+                '(ordinary wuji_move_joints payload), pose (wuji_pose payload) or home (wuji_home payload). '
+                'Omitted devices retain their targets. Arm targets use that arm\'s own base frame. '
+                'All selected targets and both assemblies are validated before any start. '
+                'Same-side arm and finger motion is supported with live health monitoring. '
+                'Workers start together; arrival times and trajectories are not synchronized. '
+                'Check the combined sweeps and object interaction. Execution failure stops all four devices; '
+                'inspect results/failed_devices before recovery. Returns per-device results and dispatch timing.',
+            'inputSchema': {**_schema(combined), 'minProperties': 1}})
         camera_list = {'type': 'array', 'items': {'type': 'string', 'enum': list(self.models)}, 'minItems': 1,
                        'maxItems': 4}
         observe_properties = {'cameras': camera_list}
@@ -179,7 +233,9 @@ class XArmBimanualBackend(XArmBackend):
             {'name': 'xarm_observe', 'inputSchema': _schema(observe_properties), 'description':
                 'Capture the two side and two wrist RealSense views, plus state of both assemblies. '
                 'Saves RGB, optional camera depth, and metadata with camera identities and wrist owners. '
-                + ('RGB calibration supplies camera transforms in both arm bases. arm selects the observation '
+                + ('Verified views supply camera transforms in both arm bases. Cameras with unverified '
+                   'extrinsics remain available as images, without transforms or projected marks. '
+                   'Read each camera calibration_status. arm selects the observation '
                    'and projection base (default left); project marks up to 16 points in that base, in metres. '
                    'Saved images and K use native pixels; preview_scale maps them into displayed previews. '
                    'Depth metric validation is pending; no depth pixel-to-position tool is exposed.'
@@ -201,6 +257,8 @@ class XArmBimanualBackend(XArmBackend):
             try:
                 arm._motion_state()
                 arm.end_effector.require_ready()
+            except MotionStopped:
+                raise
             except Exception as exc:
                 if getattr(exc, 'operator_required', False):
                     exc.robot_state = {**getattr(exc, 'robot_state', {}), 'arm': side}
@@ -213,9 +271,13 @@ class XArmBimanualBackend(XArmBackend):
         if definition is None:
             raise ValueError(f'unknown tool {name}')
         _validate_arguments(arguments, definition['inputSchema'])
+        actions = combined_actions(arguments) if name == COMBINED_TOOL else None
         if name in self.mutating:
             self._ready()
-        if name in PAIRED_TOOLS:
+        if actions is not None:
+            for side, single, payload in actions.values():
+                self.arms[side].validate(single, payload)
+        elif name in PAIRED_TOOLS:
             for side in SIDES:
                 self.arms[side].validate(PAIRED_TOOLS[name], arguments[side])
         elif name in {'xarm_move_pose', 'xarm_move_joints', *TOOL_NAMES}:
@@ -240,7 +302,9 @@ class XArmBimanualBackend(XArmBackend):
             raise
         started = time.time()
         try:
-            if name in PAIRED_TOOLS:
+            if name == COMBINED_TOOL:
+                result = self._combined(arguments), []
+            elif name in PAIRED_TOOLS:
                 value = self._paired(PAIRED_TOOLS[name], arguments)
                 result = value, []
             elif name in {'xarm_move_pose', 'xarm_move_joints', *TOOL_NAMES}:
@@ -295,6 +359,45 @@ class XArmBimanualBackend(XArmBackend):
         return {'results': results, 'dispatch_skew_s': abs(starts['left'] - starts['right']),
                 'synchronized_trajectory': False}
 
+    def _combined(self, arguments):
+        actions = combined_actions(arguments)
+        gate = threading.Barrier(len(actions))
+        results, failures, starts, finishes = {}, {}, {}, {}
+
+        def run(device):
+            side, single, payload = actions[device]
+            gate.wait(timeout=5)
+            self._require_armed()
+            starts[device] = time.monotonic()
+            try:
+                value, _ = self.arms[side].call_combined(single, payload,
+                    hand_motion=device.endswith('_arm') and f'{side}_hand' in actions)
+                return {'tool': single, 'base_frame': f'{side}_base', **value}
+            finally:
+                finishes[device] = time.monotonic()
+
+        with ThreadPoolExecutor(max_workers=len(actions), thread_name_prefix='bimanual-combined') as pool:
+            futures = {pool.submit(run, device): device for device in actions}
+            for future in as_completed(futures):
+                device = futures[future]
+                try:
+                    results[device] = future.result()
+                except Exception as exc:
+                    failures[device] = exc
+                    if len(failures) == 1:
+                        self._stop_assembly()  # Stop peers before waiting for their results.
+        if failures:
+            exc = next(iter(failures.values()))
+            exc.robot_state = {**getattr(exc, 'robot_state', {}), 'completed_devices': results,
+                               'failed_devices': {d: str(e) for d, e in failures.items()},
+                               'requested_devices': list(actions)}
+            raise exc
+        first = min(starts.values())
+        return {'results': results, 'dispatch_skew_s': max(starts.values())-first,
+                'timing': {device: {'dispatch_offset_s': starts[device]-first,
+                                    'execution_s': finishes[device]-starts[device]} for device in actions},
+                'synchronized_trajectory': False}
+
     def _stop_assembly(self, *, verify_arm=False, require_healthy=True):
         # Disarm before any potentially blocked transport and fan out across devices.
         disarm_error = None
@@ -332,7 +435,7 @@ class XArmBimanualBackend(XArmBackend):
                                  'xarm_ip': arm.options['xarm_ip']}
         return {'robot': 'xarm6_wuji_bimanual', 'motion': arming.read(self.config.root), 'arms': reports,
                 'cameras': deepcopy(self.options['cameras']), 'depth': self.depth,
-                'calibration_status': 'rgb_extrinsics_verified' if self.calibration else 'pending',
+                'calibration_status': self.calibration.status if self.calibration else 'pending',
                 'shared_base_frame': bool(self.calibration),
                 'calibration': self.calibration.summary() if self.calibration else None,
                 'control_uncertain': self.control_uncertain, 'last_controller_fault': self._last_control_fault,
@@ -350,6 +453,8 @@ class XArmBimanualBackend(XArmBackend):
                 if arming.read(self.config.root)['armed']:
                     try:
                         arm._motion_state()
+                    except MotionStopped:
+                        pass  # A concurrent operator/peer stop is not a new controller fault.
                     except ControllerFault as exc:
                         exc.robot_state = {**getattr(exc, 'robot_state', {}), 'arm': side}
                         self.handle_control_fault(exc)
@@ -374,7 +479,7 @@ class XArmBimanualBackend(XArmBackend):
         after = self.status()
         if self.calibration:
             self.calibration.validate_offsets(self.arms)
-        calibration_status = 'rgb_extrinsics_verified' if self.calibration else 'pending'
+        calibration_status = self.calibration.status if self.calibration else 'pending'
         meta = {'frame_id': frame_id, 'time': time.time(), 'calibration_status': calibration_status,
                 'base_frame': f'{arm}_base',
                 'calibration': self.calibration.summary() if self.calibration else None,
@@ -389,7 +494,7 @@ class XArmBimanualBackend(XArmBackend):
             meta['cameras'][name] = {**entry, 'rgb': Path(entry['rgb']).name,
                 'depth': Path(entry['depth']).name if entry.get('depth') else None,
                 'serial': spec['serial'], 'mount': spec['mount'], 'arm': spec.get('arm'),
-                'calibration_status': calibration_status}
+                'calibration_status': self.calibration.camera_status(name) if self.calibration else 'pending'}
             transforms = self.calibration.poses(spec, after['arms']) if self.calibration else None
             if transforms:
                 meta['cameras'][name].update(base_frame=f'{arm}_base', T_base_cam=transforms[arm].tolist(),
@@ -399,7 +504,7 @@ class XArmBimanualBackend(XArmBackend):
                 raise RuntimeError(f'{name}: captured RGB could not be read')
             marks = []
             for point in project or []:
-                uv = project_to_pixel(point, transforms[arm], entry['K'])
+                uv = project_to_pixel(point, transforms[arm], entry['K']) if transforms else None
                 marks.append(None if uv is None else [round(uv[0], 2), round(uv[1], 2)])
                 if uv is not None and np.isfinite(uv).all() and 0 <= uv[0] < image.shape[1] and 0 <= uv[1] < image.shape[0]:
                     cv.drawMarker(image, (int(round(uv[0])), int(round(uv[1]))), (0, 0, 255), cv.MARKER_CROSS, 24, 2)
@@ -412,6 +517,9 @@ class XArmBimanualBackend(XArmBackend):
             report[name] = {'preview_scale': scale, 'width': entry['width'], 'height': entry['height'],
                             'serial': spec['serial'], 'mount': spec['mount'], 'arm': spec.get('arm'),
                             'captured_ms': entry['timestamp_ns']//1_000_000,
+                            'calibration_status': meta['cameras'][name]['calibration_status'],
+                            **({'projection_unavailable_reason': 'camera extrinsics are unverified'}
+                               if project and not transforms else {}),
                             **({'base_frame': f'{arm}_base', 'T_base_cam': transforms[arm].tolist()} if transforms else {}),
                             **({'projected_pixels': marks} if project else {})}
         (out_dir/'meta.json').write_text(json.dumps(meta, indent=2))

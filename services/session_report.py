@@ -105,7 +105,8 @@ def export_report(root, destination=None):
     (destination/'timeline.csv').chmod(0o600)
     write_private_json(destination/'timeline.json', timeline)
     write_private_json(destination/'motion-clips.json', clips)
-    attachments = [e for e in events if e['event'] in ('attachment_archived', 'attachment_unavailable', 'context_staged')]
+    attachments = [e for e in events if e['event'] in (
+        'attachment_archived', 'attachment_unavailable', 'context_staged', 'context_unstaged')]
     write_private_json(destination/'attachments.json', attachments)
     counts = Counter(e['event'] for e in events)
     artifacts = [str(p.relative_to(root)) for name in (

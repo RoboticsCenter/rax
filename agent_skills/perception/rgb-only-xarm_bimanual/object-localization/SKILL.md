@@ -11,9 +11,12 @@ has its serial, mount, image dimensions and capture timestamp; a wrist entry als
 identifies its `arm`. Both arms' capture-adjacent states are recorded separately.
 
 {% if robot.rgb_calibrated %}
-Verified RGB extrinsics and matching color models are loaded. Wrist images are
-rectified; their saved `K` describes the saved image. Metadata contains
-`T_left_base_cam` and `T_right_base_cam` for every view, and `T_base_cam` in the
+RGB extrinsics and matching color models are loaded. Read each view's
+`calibration_status`: only `rgb_extrinsics_verified` supplies calibrated geometry.
+Use the saved image's `K` and `distortion_coeffs`; the backend applies the loaded
+color model and may rectify wrist images. Do not substitute factory intrinsics
+for a rectified image. Metadata contains
+`T_left_base_cam` and `T_right_base_cam` for each verified view, and `T_base_cam` in the
 selected observation base (`xarm_observe(arm="left" | "right")`, default left).
 Each wrist transform uses its owning arm's measured pose immediately after capture.
 Camera exposures and arm telemetry are not hardware synchronized. Use settled
@@ -26,14 +29,22 @@ Triangulate the same visible object point across two views using their saved
 intrinsics and transforms in the same base. Alternatively intersect a camera
 ray with a known support plane. The supplied `reference_board_planes` describe
 the original calibration board; confirm that the current support surface matches
-before using them. A bottle's cap is elevated above its supporting surface.
+before using them. A tilted calibration board does not define the tabletop.
+Moving or removing the board after calibration does not change the camera-to-arm
+transforms. A bottle's cap is elevated above its supporting surface.
 
 Check estimates with fresh `xarm_observe(arm=..., project=[[x,y,z], ...])` views;
 compare the red crosses against the object in all useful cameras. Coordinates
 in `projected_pixels` and saved images are native pixels. Divide displayed
 preview coordinates by that view's `preview_scale` before using saved `K`.
-Avoid triangulating mismatched features or nearly parallel rays. The calibration
-has millimetre-scale residuals; do not treat an estimated surface as exact contact.
+Avoid triangulating mismatched features or nearly parallel rays. Read the loaded
+bundle's verification summary for its measured residuals; these are consistency
+checks, not a guarantee of absolute positioning accuracy or exact contact.
+
+After operator recalibration, read fresh status and observations and record the
+new `calibration.sha256`. Re-localize task objects with the newly supplied camera
+models and base alignment. Previous frame metadata remains valid for its original
+capture; do not mix it with images or targets computed under the new bundle.
 
 Depth scale and RGB-depth alignment have not been qualified. The backend does
 not expose `xarm_pixel_to_position`; use RGB geometry for this session.
@@ -52,13 +63,20 @@ transform. If the next action requires metric localization unavailable here,
 request calibration or a specific operator-provided measurement.
 {% endif %}
 
-`xarm_status.calibration_status` must report `rgb_extrinsics_verified` before
-using calibrated transforms. Its calibration summary identifies the loaded bundle.
+`xarm_status.calibration_status` reports `rgb_extrinsics_verified` when all views
+are verified, or `rgb_extrinsics_partial` when an operator has invalidated specific
+camera extrinsics. Its calibration summary lists per-camera status and the bundle.
+An `extrinsics_unverified` view remains useful for visual inspection but supplies
+no base transform or projected marks. Use two suitable verified views for metric
+localization; an unverified side view does not require stopping otherwise supported
+work. Do not recover its old transform from earlier captures after the mount moved.
 The operator owns recalibration and depth-alignment validation; calibration files
 outside the workspace are not agent tools.
 
-Keep object/hand observations separate by side and serial in memory. Moving one
-wrist invalidates that view's previous pose relationship; a different camera or
-mount also invalidates calibration. See [wrist-camera-inspection](../wrist-camera-inspection/SKILL.md)
+Keep object/hand observations separate by side and serial in memory. Moving an
+arm changes its wrist camera's pose in the base, while the rigid camera-to-TCP
+calibration remains applicable. Read that wrist's fresh capture-adjacent transform.
+A physical camera-mount or robot-base shift requires the affected geometry to be
+checked. See [wrist-camera-inspection](../wrist-camera-inspection/SKILL.md)
 for bounded viewpoint changes and [robot-interface](../robot-interface/SKILL.md)
 for the two independent arm base frames.

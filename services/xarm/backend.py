@@ -518,7 +518,7 @@ class XArmBackend:
         if name in self.mutating:
             self._require_armed()
             if self.has_hand:
-                self.end_effector.require_ready()
+                self._require_hand_ready()
 
     def call(self, name, arguments):
         try:
@@ -539,7 +539,7 @@ class XArmBackend:
         if handler is None or name not in {tool['name'] for tool in self.tools()}:
             raise ValueError(f'unknown tool {name}')
         if self.has_hand and name in self.mutating:
-            self.end_effector.require_ready()
+            self._require_hand_ready()
             try:
                 return handler(**arguments)
             except Exception as exc:
@@ -727,13 +727,16 @@ class XArmBackend:
         self.control_uncertain = not certain
         return {'assembly_stop': outcome, 'held': certain, 'control_certain': certain}, []
 
+    def _require_hand_ready(self):
+        return self.end_effector.require_ready()
+
     def _guard(self, state):
         if not arming.read(self.config.root)['armed']:
             self._stop_arm()
             raise MotionStopped('the operator disarmed motion; the arm holds')
         check_controller(state)
         if self.has_hand:
-            self.end_effector.require_ready()
+            self._require_hand_ready()
         self._check_box(state['tcp_position'], margin=self.options['workspace_guard_margin_m'], what='measured TCP')
 
     def _monitor_pose(self, goal_p, goal_q, *, tolerance_m, tolerance_rad, timeout_s):

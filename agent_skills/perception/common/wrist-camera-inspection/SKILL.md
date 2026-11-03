@@ -20,8 +20,10 @@ adjusting the viewing angle can reveal details that are unclear in
   camera. Check the other arm, hand, attached camera and any object spanning the
   hands before repositioning.
 {% if robot.rgb_calibrated %}
-  The four-camera RGB calibration is loaded; each wrist uses its owning arm's
-  measured pose. Obtain a fresh observation after repositioning.
+  Read the view's current calibration status; each calibrated wrist uses its
+  owning arm's measured pose. Obtain a fresh observation after repositioning.
+  After operator recalibration, use the new observation's model and transform;
+  discard previously computed inspection targets that depended on the old bundle.
 {% else %}
   Extrinsics are pending; a clearer view alone does not establish metric geometry.
 {% endif %}
