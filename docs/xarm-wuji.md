@@ -1,5 +1,9 @@
 # xArm + Wuji Hand 2
 
+For the two-arm/two-hand setup on `real/xarmwujibimanual`, use
+[the bimanual guide](xarm-wuji-bimanual.md). This guide and `examples/xarm-wuji.json`
+describe the retained single-arm backend and its previously calibrated camera layout.
+
 The `real/xarmwuji` branch retains the xArm native motion planner, camera service,
 recordings and session MCP. Select `end_effector.type: "wuji_hand2"` to replace the
 G2 tool with twenty-joint hand control. Existing G2 configurations continue to work.
@@ -30,6 +34,14 @@ export RAX_PYTHON=/path/to/robot-env/bin/python
 "$RAX_PYTHON" -m pip install -r requirements-wuji.txt
 ```
 
+For the complete pinned xArm/Wuji/RealSense runtime in one environment, use
+`requirements-xarm-wuji.txt` instead. This host's `.venv` is managed with `uv`:
+
+```bash
+uv pip install --python .venv/bin/python -r requirements-xarm-wuji.txt
+export RAX_PYTHON="$PWD/.venv/bin/python"
+```
+
 Python 3.12 with `wuji-sdk==2026.10.12` matches the successful local hand deployment.
 The backend checks the SDK version at connection. It does not import or connect
 the SDK when generating workspaces or validating configuration.
@@ -41,9 +53,9 @@ Use it as `RAX_PYTHON` for the commands below. Installing these packages did not
 connect to either device.
 
 Video recording requires FFmpeg with `libx264`. The recorder searches PATH, then
-the directory containing the active Python interpreter. This host uses FFmpeg
-7.0.2 from `imageio-ffmpeg==0.6.0`, linked at `.venv/bin/ffmpeg`. If system FFmpeg
-is unavailable, the equivalent environment-local installation is:
+the directory containing the active Python interpreter. This host has system
+FFmpeg with `libx264`. If system FFmpeg is unavailable, an environment-local
+installation is:
 
 ```bash
 "$RAX_PYTHON" -m pip install imageio-ffmpeg==0.6.0

@@ -96,6 +96,29 @@ def test_seed_precedes_enable_and_all_twenty_must_confirm():
     assert ('emergency',) in rig.driver.writes
 
 
+def test_stop_result_never_precedes_disabled_status(monkeypatch):
+    rig = Rig()
+    rig.prepare()
+    finish = rig.engine._finish
+    observed = []
+
+    def observe_completion(job, outcome, **extra):
+        if job is not None and job['id'] == 'stop' and extra.get('confirmed'):
+            state = rig.engine.status()
+            observed.append(state)
+            assert state['mode'] == 'disabled'
+            assert not state['enabled'] and not state['owns_control']
+            assert state['command_effort_a'] == [0.]*20
+            assert state['stop'] is None
+        return finish(job, outcome, **extra)
+
+    monkeypatch.setattr(rig.engine, '_finish', observe_completion)
+    rig.engine.submit('stop', 'emergency')
+    rig.step()
+    rig.step()
+    assert observed and rig.engine.result('stop')['ok']
+
+
 def test_trajectory_respects_velocity_acceleration_and_never_overshoots():
     cfg = hand_config()
     path = Trajectory([0.]*20, [.3]*20, cfg)

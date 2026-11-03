@@ -2,6 +2,7 @@
 import math
 
 from .config import number, target, vector
+from .partial import disabled_indices, validate_isolated_targets
 
 RUCKIG_VERSION = '0.19.4'
 
@@ -29,9 +30,12 @@ class SCurvePath:
         self.cfg, self.dt, self.brake = cfg, 1/cfg['command_hz'], brake
         self.start = target(start, cfg)
         self.goal = target(goal, cfg)
+        validate_isolated_targets(self.start, self.goal, cfg)
         self.positions = list(self.start)
         self.velocity = vector(velocity if velocity is not None else [0.]*20, 'reference velocity')
         self.acceleration = vector(acceleration if acceleration is not None else [0.]*20, 'reference acceleration')
+        if any(self.velocity[i] != 0. or self.acceleration[i] != 0. for i in disabled_indices(cfg)):
+            raise ValueError('excluded joints cannot have reference velocity or acceleration')
         if not brake and max(abs(b-a) for a, b in zip(self.start, self.goal)) > cfg['max_step_rad']:
             raise ValueError(f'hand move exceeds max_step_rad={cfg["max_step_rad"]}')
         inp = ruckig.InputParameter(20)

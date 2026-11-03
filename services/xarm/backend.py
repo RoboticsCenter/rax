@@ -466,6 +466,9 @@ class XArmBackend:
         return waypoints
 
     def validate(self, name, arguments):
+        if (self.has_hand and self.hand_config['disabled_joints']
+                and name in ('xarm_move_pose', 'xarm_move_joints')):
+            raise ValueError('arm movement is unavailable in partial-hand diagnostic mode')
         if self.has_hand and name.startswith('wuji_'):
             from services.wuji.config import validate_tool, MOTION_TOOLS, MUTATING_TOOLS, effort
             from services.wuji.controller import Trajectory, EffortRamp
@@ -531,6 +534,9 @@ class XArmBackend:
             raise
 
     def _call(self, name, arguments):
+        if (self.has_hand and self.hand_config['disabled_joints']
+                and name in ('xarm_move_pose', 'xarm_move_joints')):
+            self.validate(name, arguments)
         if self.has_hand and name.startswith('wuji_'):
             self.validate(name, arguments)
             return self._hand_call(name, arguments)

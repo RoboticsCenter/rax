@@ -24,6 +24,27 @@ def make_wuji(make_backend, *, hand_options=None, **kwargs):
     return backend, arm, hand, root
 
 
+def test_partial_mode_mcp_allows_active_target_and_blocks_arm_and_excluded_targets(make_backend):
+    backend, arm, hand, root = make_wuji(make_backend, hand_options={'disabled_joints': ['thumb_S3', 'middle_S1']})
+    arming.write(root, True)
+    front = Frontend(Session(backend.config), backend)
+    try:
+        q = [0.]*20; q[4] = .02
+        response = front.call('wuji_move_joints', {'positions': q})
+        assert not response.get('isError') and hand.moves == [q]
+        q[2] = .03
+        response = front.call('wuji_move_joints', {'positions': q})
+        assert response.get('isError') and len(hand.moves) == 1
+        assert json.loads(response['content'][0]['text'])['error']['no_action_executed']
+        for name, args in [('xarm_move_joints', {'preset': 'home'}),
+                           ('xarm_move_pose', {'position': [.4, 0, .4]})]:
+            with pytest.raises(ValueError, match='partial-hand'):
+                backend.call(name, args)
+        assert arm.commands == 0
+    finally:
+        front.close()
+
+
 def test_wuji_tools_replace_gripper_and_status_has_real_hand_shape(make_backend):
     backend, arm, hand, root = make_wuji(make_backend)
     names = {t['name'] for t in backend.tools()}

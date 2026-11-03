@@ -21,6 +21,8 @@ DEFAULTS = {
     'feedback_transition_s': 1., 'feedback_slow_error_rad': .06,
     'feedback_pause_error_rad': .10, 'settle_position_range_rad': .004,
     'allow_encoder_warning': False, 'max_temperature_c': 65.,
+    'allow_init_current_calib_failed': {},
+    'disabled_joints': [], 'isolated_joint_faults': {},
     'max_effort_slew_a_s': .5,
     'effort_velocity_grace_s': 0.,
     'postures': {}, 'lock_paths': [],
@@ -62,6 +64,28 @@ def validate_config(value):
         raise ValueError('motion_mode must be timed, feedback or scurve')
     if type(cfg['allow_encoder_warning']) is not bool:
         raise ValueError('allow_encoder_warning must be a boolean')
+    exceptions = cfg['allow_init_current_calib_failed']
+    if (not isinstance(exceptions, dict) or any(
+            joint not in JOINT_NAMES or not isinstance(firmware, str)
+            or not re.fullmatch(r'[0-9]+\.[0-9]+\.[0-9]+', firmware)
+            for joint, firmware in exceptions.items())):
+        raise ValueError('allow_init_current_calib_failed must map exact joint names to firmware versions')
+    excluded = cfg['disabled_joints']
+    if (not isinstance(excluded, list) or len(excluded) >= 20
+            or any(not isinstance(name, str) or name not in JOINT_NAMES for name in excluded)
+            or len(set(excluded)) != len(excluded)):
+        raise ValueError('disabled_joints must be distinct joint names and leave at least one active joint')
+    from .partial import ISOLATABLE
+    policy = cfg['isolated_joint_faults']
+    if (not isinstance(policy, dict) or any(
+            joint not in excluded or not isinstance(rule, dict) or set(rule) != {'code', 'firmware'}
+            or type(rule['code']) is not int or rule['code'] not in ISOLATABLE
+            or not isinstance(rule['firmware'], str)
+            or not re.fullmatch(r'[0-9]+\.[0-9]+\.[0-9]+', rule['firmware'])
+            for joint, rule in policy.items())):
+        raise ValueError('isolated_joint_faults requires disabled joints, supported exact codes and firmware versions')
+    if excluded and exceptions:
+        raise ValueError('partial-hand mode cannot combine isolation with the current-calibration admission exception')
     if not isinstance(cfg['profile_revision'], str) or not re.fullmatch(r'[A-Za-z0-9_.-]{1,80}', cfg['profile_revision']):
         raise ValueError('profile_revision must identify the operator control profile')
     if cfg['address'] is not None:
@@ -159,6 +183,11 @@ def validate_tool(name, args, cfg):
                'wuji_set_impedance': {'kp', 'kd', 'current_limit_a'}}.get(name, set())
     if set(args) - allowed:
         raise ValueError(f'unknown arguments for {name}: {sorted(set(args)-allowed)}')
+    if cfg['disabled_joints']:
+        if name not in ('wuji_status', 'wuji_move_joints', 'wuji_hold'):
+            raise ValueError('partial-hand mode supports status, explicit joint moves and hold only')
+        if args.get('completion', 'position') != 'position':
+            raise ValueError('partial-hand mode requires position completion on active joints')
     if name == 'wuji_set_impedance':
         return impedance(args, cfg)
     if name == 'wuji_set_effort':
@@ -196,7 +225,11 @@ def tools(cfg):
     return [
         tool('wuji_status', 'Right/left Wuji Hand 2 measured and commanded joints (rad), effort (A), '
              'freshness, faults, current action, limits and commissioned postures. Does not enable or move.'),
-        tool('wuji_move_joints', 'Move all 20 joints with bounded interpolation and wait for measured settling. '
+        tool('wuji_move_joints', 'Move configured active joints with bounded interpolation and wait for measured settling. '
+             'In partial-hand mode, copy target_positions and leave disabled_joints entries unchanged; '
+             'completion covers active_joints only. Disabled joints are passive, not position-held. '
+             'In partial-hand mode, a completed reference that misses position tolerance returns '
+             'target_not_reached with reached=false and holding=true without disabling the hand. '
              'Configured S-curve mode limits jerk and publishes matching position/velocity references. '
              'Configured feedback mode slows progress when measured joints lag and requires stable final positions. '
              'Order: thumb S1..S4, index S1..S4, middle S1..S4, ring S1..S4, pinky S1..S4. '

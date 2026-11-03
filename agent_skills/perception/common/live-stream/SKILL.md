@@ -21,7 +21,7 @@ The files are:
 - `robot/<UTC minute>.jsonl`: TCP pose, arm joints and end-effector feedback at the
   configured robot logging rate (typically 10 Hz); use record timestamps for timing.
 {% if robot.has_hand %}
-  `hand` contains measured/target finger joints, measured and commanded effort in A,
+  {% if robot.bimanual %}`arms.left.hand` and `arms.right.hand`{% else %}`hand`{% endif %} contain measured/target finger joints, measured and commanded effort in A,
   active and baseline gains/current caps, diagnostics, source
   timestamps and freshness. These are sampled alongside the arm state, not exactly
   synchronized with each camera exposure. Missing or stale state is not a zero pose.
@@ -65,6 +65,10 @@ Older data is deleted as time goes by; copy what you need to keep into `output/`
 {% if camera_geometry %}
 Metric geometry comes from `{{ robot.observe }}` frames and `{{ robot.pixel }}`
 ([object-localization](../object-localization/SKILL.md)).
+{% elif robot.bimanual %}
+Camera-to-arm calibration is pending, even if camera depth is recorded. Use
+[object-localization](../object-localization/SKILL.md) for the current limits;
+neither pixel-to-base lookup nor calibrated RGB triangulation is available.
 {% else %}
 Metric geometry requires the calibrated RGB methods in
 [object-localization](../object-localization/SKILL.md); depth lookup is unavailable.

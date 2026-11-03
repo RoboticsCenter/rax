@@ -4,7 +4,12 @@ from pathlib import Path
 
 
 def describe(setup) -> str:
-    if setup.camera_geometry:
+    if setup.robot == 'xarm_bimanual':
+        geometry = ('Four camera views and both assemblies’ state are supplied. Camera-to-arm and inter-arm '
+                    'calibration are pending; optional depth stays in camera coordinates. '
+                    'Arm tools require arm=left|right, hand tools require hand=left|right. '
+                    'Each arm uses its own base frame; no pixel-to-base tool is exposed.')
+    elif setup.camera_geometry:
         geometry = 'RGB images, depth and camera calibration are supplied.'
     else:
         geometry = 'Only RGB images and measured robot state are supplied.'

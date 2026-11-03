@@ -5,6 +5,17 @@ description: Shape, grasp and release with the twenty-joint Wuji Hand 2 through 
 
 # Wuji Hand 2 control
 
+{% if robot.bimanual %}
+Every single-hand tool requires `hand="left"` or `hand="right"`. Read each hand's
+status separately. Examples below apply to the explicitly selected hand; targets,
+joint signs/limits, home postures, current bias, impedance and encoder-warning
+policy are independent and must not be mirrored or copied across sides.
+`wuji_move_both(left={...}, right={...})` takes the usual move payload for each
+hand, validates both, then starts them concurrently. It does not guarantee exact
+synchronization or mutual collision clearance. An execution fault stops all four
+devices; a healthy `wuji_hold(hand=...)` applies only to that hand.
+{% endif %}
+
 Read `wuji_status` before moving. Confirm the configured side, `profile_revision`,
 fresh state, no faults, and `mode: holding`. The operator prepares/enables the hand
 and arms the session. Request help if it is unprepared; agent tools do not enable,
@@ -25,7 +36,7 @@ omitting it lets the backend choose. A rejection calls for revising the target,
 not retrying the same command.
 
 For a deliberate grasp closure where object contact is expected, call
-`wuji_move_joints(positions=closure_target, completion="contact")`. The reference
+`wuji_move_joints({% if robot.bimanual %}hand="left", {% endif %}positions=closure_target, completion="contact")`. The reference
 must finish and measured joints must remain stable for the configured settling
 window, with low measured velocity and error within `max_tracking_error_rad`.
 An endpoint shortfall can then return `outcome: held_short_of_target`, `ok: true`,
@@ -50,11 +61,11 @@ round up to a control tick; measured settling can take extra time. Status expose
 motion progress, reference derivatives and actual `command_timing`. These are
 reference limits, not measured tracking guarantees.
 
-`wuji_pose(name=...)` uses an operator-configured posture listed in `postures`.
+`wuji_pose({% if robot.bimanual %}hand="left", {% endif %}name=...)` uses an operator-configured posture listed in `postures`.
 The list can be empty. A saved home or fist is not automatically a qualified grasp
 or collision-free preshape for this scene. Never invent names; use bounded
 `wuji_move_joints` experiments to develop task-specific postures and record the evidence.
-`wuji_home()` moves to the configured `home` posture through the same custom
+`wuji_home({% if robot.bimanual %}hand="left"{% endif %})` moves to the configured `home` posture through the same custom
 controller as `wuji_move_joints` and `wuji_pose`. It retains active gains, damping,
 current limits and current bias; S-curve mode uses the same bounded jerk and
 position/velocity references. Omit `duration_s` to let the controller choose the
@@ -91,7 +102,7 @@ motor current, a stalled finger or a settled joint target as proof of contact or
 
 ## Current bias and compliant contact
 
-`wuji_set_effort(effort_a=[...], duration_s=...)` ramps twenty signed feed-forward
+`wuji_set_effort({% if robot.bimanual %}hand="left", {% endif %}effort_a=[...], duration_s=...)` ramps twenty signed feed-forward
 currents in amperes, in the same joint order. It retains the position reference and
 MIT gains. Omit `duration_s` to choose a ramp that respects `max_slew_a_s`; a shorter
 requested ramp is rejected. The tool reports completion of the command ramp, not
@@ -112,7 +123,7 @@ does not change reference speed or grant permission to increase force through a
 fault. `last_trip` retains the triggering feedback as history after recovery;
 use current `fault`, `mode`, freshness and diagnostics to assess readiness.
 
-`wuji_set_impedance(kp=[...], kd=[...], current_limit_a=[...])` accepts one or more
+`wuji_set_impedance({% if robot.bimanual %}hand="left", {% endif %}kp=[...], kd=[...], current_limit_a=[...])` accepts one or more
 twenty-element arrays; omitted parameters retain their active values. First clear
 the feed-forward bias and verify the measured hand is stationary. Values cannot
 exceed `profile_control_parameters`; kp and current limits must remain positive.
@@ -150,8 +161,18 @@ without these parameters no longer fully specifies the control state.
 
 ## Return home between episodes
 
-Begin training episodes from both home positions and finish each episode by
-returning both devices home before requesting the next scene reset. This includes
+{% if robot.bimanual %}
+Apply the procedure below to each side with explicit `hand` and `arm` selectors.
+Before starting, verify that each hand actually lists a commissioned `home`
+posture. The replacement left hand may have no saved posture; do not substitute
+the right hand's values or zeros. Get an operator-defined reset when needed.
+Release/support anything spanning the hands before homing either side. Order
+the returns so neither arm crosses the other; do not home all devices concurrently.
+In this setup `xarm_hold` stops both arms and both hands, not only the selected side.
+{% endif %}
+
+Begin training episodes from the commissioned reset state and finish each episode by
+returning {% if robot.bimanual %}each assembly{% else %}both devices{% endif %} home before requesting the next scene reset. This includes
 failed attempts when recovery is supported by fresh, fault-free state.
 
 1. Support and release any held object with a verified release posture. Confirm
@@ -159,9 +180,9 @@ failed attempts when recovery is supported by fresh, fault-free state.
    sweep and arm return path have clearance. Home is not a release command.
 2. If a task applied feed-forward current bias, ramp it to zero with
    `wuji_set_effort` after release. Keep the commissioned gains/damping and caps.
-3. Call `wuji_home()` and require measured completion. Check `wuji_status` for
+3. Call `wuji_home({% if robot.bimanual %}hand="left"{% endif %})` and require measured completion. Check `wuji_status` for
    fresh, fault-free holding at the settled home target.
-4. Call `xarm_move_joints(preset="home")` and require measured completion. Check
+4. Call `xarm_move_joints({% if robot.bimanual %}arm="left", {% endif %}preset="home")` and require measured completion. Check
    `xarm_status`, `wuji_status` and fresh images before reporting the reset complete.
 5. Only then call `request_operator(kind="reset", ...)` for the next layout.
    After the operator replies, check status and observations again before starting.
@@ -178,7 +199,7 @@ It also retains the active current bias and impedance; it is not a force-off com
 If an S-curve is still moving when dispatched, it brakes smoothly to a nearby
 bounded rest target and reports that target; physical settling is not confirmed.
 It requests emergency stop if bounded braking is unavailable, the session is disarmed or state
-is unreliable. `xarm_hold` requests stops on both the arm and hand. These calls
+is unreliable. `xarm_hold` requests stops on {% if robot.bimanual %}both arms and both hands{% else %}both the arm and hand{% endif %}. These calls
 report request, SDK return and confirmation separately. Grip retention after an
 emergency stop, disable, session end or lost connection is not guaranteed.
 
@@ -189,8 +210,15 @@ rely on a second MCP client as an emergency interrupt.
 
 A fault, stale feedback, unexpected enabled state or `control_uncertain` means stop
 and request operator help. A timeout/target-not-reached is not grasp success. The
-backend can stop both devices after a failed motion; check status again before
+backend can stop {% if robot.bimanual %}all four devices{% else %}both devices{% endif %} after a failed motion; check status again before
 planning recovery. Reconnection never resumes an interrupted trajectory.
+
+`Stall` (`0x0007`, Warning/AutoClear) is distinct from an accepted position
+shortfall. The backend records it and stops; operator recovery can reconnect once
+the native Stall has cleared and the hand is disabled and stationary. In partial
+mode the exact configured isolated faults may remain on excluded joints; they do
+not block recovery from an unrelated cleared Stall. Do not interpret a raised
+current cap as commanded current or proof that it fixed the stall.
 
 After recovery, `xarm_hold` can verify a stopped assembly and clear
 `control_uncertain` without a movement probe. It requests hand disable and does
@@ -201,6 +229,38 @@ dashboard help request; a subsequent help call waits on that existing request.
 An operator may configure the specific auto-clearing encoder warning to be logged
 under `warnings`/`warning_history`. This does not waive other faults or establish
 encoder accuracy. Agent tools cannot change that policy or clear latched faults.
+
+An operator may separately allow `InitCurrentCalibFailed` (`0x3208`) for an exact
+joint and firmware in `diagnostics_policy.allow_init_current_calib_failed`.
+These remain labelled with their original SDK severity under
+`diagnostic_exceptions` and `diagnostic_exception_history`; they are not evidence
+of healthy current sensing. Read them alongside native joint states and error
+codes. In full-hand mode all joints must still confirm enabled control before motion. Other faults
+and all feedback/thermal/tracking/current guards remain active. Agent tools cannot
+add exceptions or change their scope; a native enable refusal requires operator
+help, not another bypass or automatic retry.
+
+When `partial_hand` is true, the operator has explicitly excluded joints from
+control. Require `active_enabled: true`, fresh feedback and `mode: holding`; native
+`enabled` still means all twenty joints and is therefore false. Read `active_joints`,
+`disabled_joints`, `isolated_faults` and their native states. The excluded joints
+must remain Ready/Stopped with zero configured gains and current limits. Their
+faults remain visible and do not establish that the hand is healthy.
+
+Partial mode supports `wuji_move_joints`, status and hold. Copy `target_positions`
+before changing active entries; leave excluded entries exactly unchanged even if
+their measured positions drift. They are passive and are not held at those entries.
+Movement completion and tracking apply only to active joints.
+For partial-hand moves, `target_not_reached` with `holding: true` means the bounded
+reference finished and the position shortfall is informational. It does not
+disable the hand or require another preparation. Inspect fresh holding status and
+the measured result, then continue the authorized finger sequence; do not invent
+a mandatory precision sweep or stop solely because `reached` is false. A real
+fault, incomplete reference, loss of feedback or isolation violation still stops.
+Saved poses/home, contact completion, current/impedance tools and arm moves are refused. A disabled
+joint changes the finger geometry; do not infer usable grasping or retention from
+an active-joint motion result. Stop on any new fault or isolation violation. Agent
+tools cannot change the exclusion mask, isolated-fault policy or enable motors.
 
 Record successful postures with the side, profile revision, serial, firmware,
 mount/TCP and camera-calibration context, and decisive before/after frames in

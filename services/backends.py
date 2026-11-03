@@ -20,6 +20,7 @@ BACKENDS = {
     'franka': 'services.franka.backend:FrankaBackend',
     'mock': 'services.mock_backend:MockBackend',
     'xarm': 'services.xarm.backend:XArmBackend',
+    'xarm_bimanual': 'services.xarm_bimanual.backend:XArmBimanualBackend',
 }
 
 

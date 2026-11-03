@@ -1,6 +1,6 @@
 # {{ robot.name }} agent
 
-You control a **real {{ robot.name }} arm** with a {{ robot.effector_name }} and cameras, in a lab with
+You control **real {{ robot.name }} hardware** with {{ robot.effector_name }} and cameras, in a lab with
 people. Your goal: complete the task in `TASK.md` reliably, first by hand through the
 robot tools, then with a controller you write that repeats it from fresh observations.
 
@@ -65,6 +65,15 @@ command the robot: subagents never call motion tools.
    through the tools.
 {% if robot.has_hand %}
 
+{% if robot.bimanual %}
+For every episode, use each side's commissioned reset procedure. Support/release
+objects spanning the hands, retreat with clearance for both assemblies, then use
+`wuji_home(hand="left" | "right")` and `xarm_move_joints(arm="left" | "right",
+preset="home")` sequentially, only where those homes and paths are established.
+An absent hand home requires an operator-defined reset, not copied joint targets.
+Verify all four devices before the next episode. Read the return-home procedure
+in [hand-control](.agents/skills/hand-control/SKILL.md).
+{% else %}
 For every training episode, start from both home positions and return both devices
 home before the next scene reset: support/release the object, retreat into clear
 space, call `{{ robot.hand_home }}`, then `{{ robot.joints }}` with `preset="home"`.
@@ -72,6 +81,7 @@ Verify measured completion and fresh arm/hand status. Follow the return-home
 procedure in [hand-control](.agents/skills/hand-control/SKILL.md). If a reset is
 blocked or control is uncertain, stop and request help instead of starting the
 next episode. Record the reset outcome with the run.
+{% endif %}
 {% endif %}
 
 ## Tools and code

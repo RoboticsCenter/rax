@@ -5,8 +5,9 @@ description: Solve the task on the real {{ robot.name }} by choosing robot actio
 
 # Manual robot control
 
-This is a real robot with people nearby. Every motion is physical and cannot be
-undone; move slowly, in small inspectable steps, and stop when unsure. First learn how
+This is real hardware with people nearby. Use complete supported moves through
+verified clear space, and smaller, slower steps near contact or uncertain geometry.
+Inspect meaningful results and stop when the next action cannot be bounded. First learn how
 to complete the task yourself through the robot tools, then automate what worked.
 
 ## First look

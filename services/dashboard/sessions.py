@@ -168,7 +168,8 @@ class Sessions:
             'running': bool(process), 'process': process,
             'motion': arming.read(root),
             'requests': operator.pending(root),
-            'prepare_on_reply': (config.get('backend_options', {}).get('end_effector') or {}).get('type') == 'wuji_hand2',
+            'prepare_on_reply': config.get('robot') == 'xarm_bimanual' or
+                (config.get('backend_options', {}).get('end_effector') or {}).get('type') == 'wuji_hand2',
             'model': config.get('agent_model') or 'provider default',
             'provider': config.get('agent_provider'), 'effort': config.get('agent_effort'),
             'session_hours': round(config.get('session_seconds', 0) / 3600, 2),
@@ -204,6 +205,8 @@ class Sessions:
                    '--subagents', str(int(form.get('subagents') or 0))]
         if form.get('model'):
             command += ['--agent-model', str(form['model'])]
+        if form.get('robot'):
+            command += ['--robot', str(form['robot'])]
         result = subprocess.run(command, cwd=self.project, capture_output=True, text=True, timeout=60)
         if result.returncode != 0:
             raise ValueError((result.stderr or result.stdout).strip().splitlines()[-1] if
@@ -288,7 +291,7 @@ class Sessions:
             if not prepare:
                 return operator.reply(root, request_id, text, done=done, by='dashboard')
             options = (read_json(root/'operator-input.json', {}) or {}).get('backend_options', {})
-            if (options.get('end_effector') or {}).get('type') != 'wuji_hand2':
+            if 'arms' not in options and (options.get('end_effector') or {}).get('type') != 'wuji_hand2':
                 raise ValueError('combined preparation requires an xArm + Wuji session')
             try:
                 self.prepare_for_reply(root, generation)
@@ -381,9 +384,11 @@ class Sessions:
         elif self.roots():
             options.update((read_json(self.roots()[0]/'operator-input.json', {}) or {}).get('backend_options') or {})
         from services.xarm.backend import DEFAULTS
-        return {**DEFAULTS, **options}
+        return options if 'arms' in options else {**DEFAULTS, **options}
 
     def xarm_driver(self):
+        if 'arms' in self.backend_options():
+            raise ValueError('bimanual configuration requires explicit left/right arm selection')
         if self.robot_driver is not None:
             return self.robot_driver()
         from services.xarm.sdk import XArmDriver
@@ -393,13 +398,25 @@ class Sessions:
         from services.wuji.client import request, socket_path
         import uuid
         hand_reports = []
+        bimanual_roots = []
         for root in self.roots():
+            options = (read_json(root/'operator-input.json', {}) or {}).get('backend_options', {})
+            if 'arms' in options:
+                from services.xarm_bimanual.operator import stop
+                bimanual_roots.append(root)
+                hand_reports.append(f'{root.name}: {json.dumps(stop(root, options))}')
+                continue
             if socket_path(root).exists():
                 try:
                     request(socket_path(root), 'emergency', id=uuid.uuid4().hex)
                     hand_reports.append(f'{root.name}: hand stop queued (confirmation pending)')
                 except Exception as exc:
                     hand_reports.append(f'{root.name}: hand stop failed: {exc}')
+        if 'arms' in self.backend_options():
+            if not bimanual_roots:
+                from services.xarm_bimanual.operator import stop
+                hand_reports.append(json.dumps(stop(None, self.backend_options())))
+            return '; '.join(hand_reports)
         arm = None
         try:
             arm = self.xarm_driver()
@@ -420,6 +437,12 @@ class Sessions:
         value = {'time': time.time()}
         from services.xarm.end_effectors import kind
         options = self.backend_options()
+        if 'arms' in options:
+            from services.xarm_bimanual.operator import status
+            candidates = [root for root in self.roots() if
+                ((read_json(root/'operator-input.json', {}) or {}).get('backend_options', {}).get('arms'))
+                == options['arms']]
+            return {**value, **status(candidates[0] if candidates else None, options)}
         has_hand = kind(options) == 'wuji_hand2'
         if has_hand:
             from services.wuji.client import recorded_status

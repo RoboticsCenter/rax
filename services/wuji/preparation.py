@@ -9,6 +9,7 @@ from services.xarm import arming
 
 from .client import operation, request, socket_path
 from .config import DEFAULTS, JOINT_NAMES
+from .partial import DISABLED_STATES, isolated_diagnostic
 
 
 class PreparationBlocked(RuntimeError):
@@ -19,6 +20,16 @@ def preparation_action(state, cfg):
     """Preflight without enabling, clearing faults, or issuing a robot command."""
     if state.get('fresh') is not True:
         raise PreparationBlocked('Hand feedback is stale or unavailable. Check hand connectivity before preparing.')
+    excluded = cfg.get('disabled_joints', [])
+    if excluded:
+        reported = state.get('disabled_joints')
+        if (state.get('partial_hand') is not True or not isinstance(reported, list)
+                or sorted(reported) != sorted(excluded)):
+            raise PreparationBlocked('The requested partial-hand profile is not loaded by the hand owner. '
+                                     'Stop and restart the disarmed session with the matching configuration.')
+        states = state.get('diagnostics', {}).get('states', [])
+        if len(states) != 20 or any(s not in DISABLED_STATES for s in states):
+            raise PreparationBlocked('Partial-hand preparation requires all twenty native joints confirmed disabled.')
     faults = state.get('faults') or []
     if not faults:
         return 'prepare'
@@ -43,6 +54,26 @@ def _recoverable_fault(fault):
     return None
 
 
+def _recovery_codes_clear(state, cfg):
+    """Active codes must clear; exact disabled-joint isolation may remain."""
+    diag = state.get('diagnostics', {})
+    codes = diag.get('error_code_current', [])
+    states = diag.get('states', [])
+    if len(codes) != 20 or any(type(code) is not int for code in codes):
+        return False
+    isolated = {item.get('joint'): item for item in state.get('isolated_faults', [])
+                if isinstance(item, dict)}
+    for i, code in enumerate(codes):
+        if code == 0:
+            continue
+        detail = isolated.get(JOINT_NAMES[i], {})
+        if (len(states) != 20 or detail.get('code') != code
+                or not isolated_diagnostic(cfg, JOINT_NAMES[i], code, detail,
+                                           state.get('firmware'), states[i])):
+            return False
+    return True
+
+
 def _require_disabled_feedback(state, cfg, kind):
     """Require the device itself to be healthy before discarding retained evidence."""
     label = f'{kind.capitalize()} recovery'
@@ -55,13 +86,13 @@ def _require_disabled_feedback(state, cfg, kind):
     temperatures = diag.get('mcu_temp_c_fb')
     velocities = state.get('velocity_rad_s')
     names = diag.get('state_names', [])
-    codes = diag.get('error_code_current', [])
     if (not all(isinstance(v, list) and len(v) == 20
                 and all(type(x) in (int, float) and math.isfinite(x) for x in v)
                 for v in (temperatures, velocities))
             or len(names) != 20 or not all(str(n).lower() in ('ready', 'stopped', 'disabled') for n in names)
-            or len(codes) != 20 or any(type(c) is not int or c != 0 for c in codes)):
-        raise PreparationBlocked(f'{label} needs complete disabled feedback and zero native error codes. '
+            or not _recovery_codes_clear(state, cfg)):
+        raise PreparationBlocked(f'{label} needs complete disabled feedback and zero native error codes '
+                                 'outside the exact configured joint isolation. '
                                  'A current device fault must clear before recovery.')
     if max(map(abs, velocities)) > cfg.get('stopped_velocity_rad_s', DEFAULTS['stopped_velocity_rad_s']):
         raise PreparationBlocked(f'Hand is still moving; {kind} recovery requires measured standstill.')
@@ -79,20 +110,25 @@ def _require_disabled_feedback(state, cfg, kind):
             f'then click Prepare again; it will reconnect once before preparing. The {limit:g} C limit is unchanged.')
 
 
-def recover_cooled_thermal(root):
-    return _recover_retained_fault(root, 'thermal', 'reconnect')
+def recover_cooled_thermal(root, *, side=None):
+    return _recover_retained_fault(root, 'thermal', 'reconnect', side=side)
 
 
-def recover_cleared_stall(root):
+def recover_cleared_stall(root, *, side=None):
     """Clear the software latch only after the device's AutoClear stall has cleared."""
-    return _recover_retained_fault(root, 'stall', 'reconnect-stall')
+    return _recover_retained_fault(root, 'stall', 'reconnect-stall', side=side)
 
 
-def _recover_retained_fault(root, kind, expected_action):
+def _recover_retained_fault(root, kind, expected_action, *, side=None):
     """One explicit operator reconnect, never an automatic motion retry."""
     root = Path(root)
-    cfg = json.loads((root/'operator-input.json').read_text())['backend_options']['end_effector']
-    path = socket_path(root)
+    options = json.loads((root/'operator-input.json').read_text())['backend_options']
+    # A standalone hand session may also use an explicit left/right service
+    # socket. Side selection must not imply that it owns two arm assemblies.
+    cfg = (options['arms'][side] if side and 'arms' in options else options)['end_effector']
+    if side and cfg.get('handedness') != side:
+        raise PreparationBlocked('Recovery side does not match the configured hand.')
+    path = socket_path(root, side) if side else socket_path(root)
 
     def ready_sample():
         if arming.read(root)['armed']:
@@ -107,12 +143,12 @@ def _recover_retained_fault(root, kind, expected_action):
     while time.monotonic() < deadline:
         time.sleep(.1)
         ready_sample()
-    evidence = root/'operator'/f'{kind}-recovery-{time.time_ns()}.json'
+    evidence = root/'operator'/f'{kind}-recovery-{side + "-" if side else ""}{time.time_ns()}.json'
     record = {'before': before, 'source': 'explicit_operator_prepare', 'time': time.time()}
     write_private_json(evidence, record)
     try:
         ready_sample()  # Check arming/health again immediately before the one reconnect.
-        result = operation(root, 'connect')
+        result = operation(root, 'connect', **({'side': side} if side else {}))
         deadline = time.monotonic()+3.
         while True:
             after = request(path, 'status')

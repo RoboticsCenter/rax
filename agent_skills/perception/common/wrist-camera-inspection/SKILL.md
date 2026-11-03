@@ -12,8 +12,13 @@ adjusting the viewing angle can reveal details that are unclear in
 - Do this with an empty end effector. Do not release a held object just to obtain a view.
 - Use the exterior cameras to choose a clear approach and keep the end effector well clear
   of the table and objects; move in small steps and stop if clearance is uncertain.
-- Inspect the fresh `wrist` image after each move. Adjust distance and angle until the
+- Inspect the fresh `{{ robot.wrist_cameras | join('` or `') }}` image after each move. Adjust distance and angle until the
   relevant detail is clear, avoiding end-effector occlusion.
+{% if robot.bimanual %}
+- Select `arm="left"` or `arm="right"` explicitly, and inspect that arm's wrist
+  camera. Check the other arm, hand, attached camera and any object spanning the
+  hands before repositioning. The four cameras' extrinsics are still uncalibrated.
+{% endif %}
 {% if camera_geometry %}
 - Use [object-localization](../object-localization/SKILL.md) on the new observation.
   Use the new frame's pixels and capture-time `T_base_cam`. Moving the arm changes

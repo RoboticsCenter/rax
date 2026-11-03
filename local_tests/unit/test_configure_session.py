@@ -39,6 +39,17 @@ def test_the_mock_robot_needs_no_options(tmp_path):
     assert json.loads(Path(result.stdout.strip()).read_text())['backend_options'] == {}
 
 
+def test_bimanual_example_selects_backend_and_preserves_confirmed_camera_owners(tmp_path):
+    example = PROJECT/'examples/xarm-wuji-bimanual.json'
+    result = configure(tmp_path, RAX_BACKEND_OPTIONS=str(example))
+    assert result.returncode == 0, result.stderr
+    saved = json.loads(Path(result.stdout.strip()).read_text())
+    assert saved['robot'] == 'xarm_bimanual'
+    assert saved['backend_options'] == json.loads(example.read_text())
+    wrists = {c['arm']: c['serial'] for c in saved['backend_options']['cameras'] if c['mount'] == 'tcp'}
+    assert wrists == {'left': '108322071838', 'right': '752112070450'}
+
+
 def test_medium_effort_is_saved_for_a_fresh_session(tmp_path):
     result = configure(tmp_path, '--robot', 'mock', '--agent-effort', 'medium')
     assert result.returncode == 0, result.stderr

@@ -138,6 +138,15 @@ There is no formal evaluation: you judge the controller by running it end to end
 the real scene.
 
 {% if robot.has_hand %}
+{% if robot.bimanual %}
+1. Support/release objects spanning the hands and establish clearance for both
+   assemblies. Follow [hand-control](../hand-control/SKILL.md) for each side's
+   commissioned reset, using explicit `hand` and `arm` arguments and sequential
+   returns. Missing home postures require an operator-defined reset; do not copy
+   the other hand's targets. Verify all four devices, request the scene reset,
+   then recheck both assemblies and fresh views after the reply. Do not execute
+   home moves unconditionally in an exception/finally handler.
+{% else %}
 1. Support and release any held object with a commissioned hand posture, then
    retreat into clear space. Follow the [hand-control](../hand-control/SKILL.md)
    return-home procedure: `{{ robot.hand_home }}()`, then `{{ robot.joints }}` with
@@ -147,6 +156,7 @@ the real scene.
    Wait for the answer and recheck both devices and the scene before starting.
    A blocked or uncertain reset requires operator help; do not force home in an
    exception/finally handler or proceed to the next episode without a verified reset.
+{% endif %}
 {% else %}
 1. Bring the robot to a neutral state (gripper open, `{{ robot.joints }}` preset
    `home`), then call `request_operator` with kind `reset` and say what you need, e.g.
@@ -160,7 +170,7 @@ the real scene.
    duration, failure step and cause.
 {% if robot.has_hand %}
    Include active hand gains/caps, current bias, posture and decisive observation or
-   motion-clip references, plus whether both devices returned home. Include the
+   motion-clip references, plus whether {% if robot.bimanual %}all four devices completed their reset{% else %}both devices returned home{% endif %}. Include the
    verified return-home sequence as the final stage of a completed controller run;
    a clean current-ramp return is not grasp success.
 {% endif %}

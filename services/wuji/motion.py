@@ -1,6 +1,7 @@
 """Feedback-paced straight joint paths; no SDK or hardware dependencies."""
 import math
 from collections import deque
+from .partial import max_error
 
 
 def blend(u):
@@ -75,7 +76,7 @@ class FeedbackPath:
             cursor = end
             if cursor >= boundary:
                 reference = self.path.sample(self.clock_s)
-                error = max(abs(q-m) for q, m in zip(reference, measured))
+                error = max_error(self.cfg, reference, measured)
                 slow, pause = self.cfg['feedback_slow_error_rad'], self.cfg['feedback_pause_error_rad']
                 self.scale_from = self.scale_to
                 self.scale_to = min(1., max(0., (pause-error)/(pause-slow)))
@@ -89,7 +90,7 @@ class FeedbackPath:
         rate = 30*phase**2*(1-phase)**2/self.path.duration*self.scale
         self.velocity = [d*rate for d in self.path.delta]
         self.max_reference_error_rad = max(self.max_reference_error_rad,
-                                          max(abs(q-m) for q, m in zip(self.positions, measured)))
+                                          max_error(self.cfg, self.positions, measured))
         return list(self.positions), list(self.velocity)
 
     def status(self):
@@ -103,9 +104,10 @@ class FeedbackPath:
 
 class SettlingWindow:
     """Require fresh, in-tolerance positions with low motion over a full window."""
-    def __init__(self, goal, tolerance, span, position_range):
+    def __init__(self, goal, tolerance, span, position_range, *, indices=tuple(range(20))):
         self.goal, self.tolerance = tuple(goal), tolerance
         self.span, self.position_range = span, position_range
+        self.indices = tuple(indices)
         self.rows = deque()
         self.last = -math.inf
 
@@ -113,7 +115,7 @@ class SettlingWindow:
         if received <= self.last:
             return False
         self.last = received
-        if max(abs(a-b) for a, b in zip(self.goal, positions)) > self.tolerance:
+        if max(abs(self.goal[i]-positions[i]) for i in self.indices) > self.tolerance:
             self.rows.clear()
             return False
         self.rows.append((received, tuple(positions)))
@@ -122,4 +124,4 @@ class SettlingWindow:
         if len(self.rows) < 2 or received-self.rows[0][0] < self.span:
             return False
         return all(max(q[j] for _, q in self.rows)-min(q[j] for _, q in self.rows)
-                   <= self.position_range for j in range(20))
+                   <= self.position_range for j in self.indices)

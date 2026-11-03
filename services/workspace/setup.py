@@ -24,6 +24,16 @@ ROBOT_FACTS = {
 }
 CLIS = ('claude',)
 
+ROBOT_FACTS['xarm_bimanual'] = {
+    **ROBOT_FACTS['xarm'], 'name': 'two UFactory xArm 6 arms with left/right Wuji Hand 2',
+    'pixel': None, 'cameras': ('side_a', 'side_b', 'wrist_left', 'wrist_right'),
+    'overview_camera': 'side_a', 'overview': 'side A camera',
+    'tools': ('xarm_status', 'xarm_observe', 'xarm_move_pose', 'xarm_move_joints',
+              'xarm_move_both', 'xarm_move_joints_both', 'xarm_stream', 'xarm_hold',
+              'wuji_status', 'wuji_move_joints', 'wuji_pose', 'wuji_home', 'wuji_hold',
+              'wuji_set_effort', 'wuji_set_impedance', 'wuji_move_both'),
+}
+
 
 @dataclass(frozen=True)
 class Setup:
@@ -45,6 +55,9 @@ class Setup:
         if self.robot == 'xarm':
             from services.xarm.end_effectors import kind
             kind(self.backend_options)
+        elif self.robot == 'xarm_bimanual':
+            from services.xarm_bimanual.config import validate_options
+            validate_options(self.backend_options)
 
     @classmethod
     def from_config(cls, config, *, gemini=True):
@@ -53,6 +66,8 @@ class Setup:
 
     @property
     def end_effector(self):
+        if self.robot == 'xarm_bimanual':
+            return 'wuji_hand2'
         if self.robot == 'xarm':
             from services.xarm.end_effectors import kind
             return kind(self.backend_options)
@@ -61,6 +76,7 @@ class Setup:
     @property
     def robot_facts(self):
         facts = dict(ROBOT_FACTS[self.robot])
+        facts['bimanual'] = self.robot == 'xarm_bimanual'
         cameras = self.backend_options.get('cameras')
         if cameras:
             facts['cameras'] = tuple(camera['name'] for camera in cameras)
@@ -69,15 +85,15 @@ class Setup:
             facts['overview_camera'] = (facts['fixed_cameras'] or facts['cameras'])[0]
             facts['overview'] = f"{facts['overview_camera']} camera"
         else:
-            facts['fixed_cameras'] = tuple(name for name in facts['cameras'] if name != 'wrist')
-            facts['wrist_cameras'] = tuple(name for name in facts['cameras'] if name == 'wrist')
+            facts['fixed_cameras'] = tuple(name for name in facts['cameras'] if not name.startswith('wrist'))
+            facts['wrist_cameras'] = tuple(name for name in facts['cameras'] if name.startswith('wrist'))
         facts.update(has_hand=self.end_effector == 'wuji_hand2', end_effector=self.end_effector,
                      effector_name='gripper', effector_tool=facts['gripper'])
         if self.robot == 'xarm':
             from services.xarm.end_effectors import tool_names
             facts['tools'] = tuple(t for t in facts['tools'] if t != 'xarm_gripper') + tool_names(self.backend_options)
         if facts['has_hand']:
-            side = self.backend_options['end_effector'].get('handedness', 'right')
+            side = 'left and right' if facts['bimanual'] else self.backend_options['end_effector'].get('handedness', 'right')
             facts.update(effector_name=f'{side} Wuji Hand 2', effector_tool='wuji_move_joints',
                          hand_status='wuji_status', hand_pose='wuji_pose', hand_home='wuji_home',
                          hand_hold='wuji_hold')
@@ -86,7 +102,7 @@ class Setup:
 
     @property
     def camera_geometry(self):
-        return self.observation_profile == 'rgbd'
+        return self.observation_profile == 'rgbd' and self.robot != 'xarm_bimanual'
 
     @property
     def tools(self):

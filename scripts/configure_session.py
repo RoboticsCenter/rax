@@ -25,7 +25,7 @@ def main():
     parser.add_argument('--task', required=True, help='Short task id, e.g. stack_cups')
     parser.add_argument('--task-file', type=Path, help='Markdown task description (TASK.md body)')
     parser.add_argument('--task-text', help='Task description text, instead of --task-file')
-    parser.add_argument('--robot', default='xarm')
+    parser.add_argument('--robot', help='Backend key; defaults to xarm_bimanual for an arms config, otherwise xarm')
     parser.add_argument('--backend-options', type=Path, default=os.environ.get('RAX_BACKEND_OPTIONS') or None,
                         help='JSON file of backend settings (default: $RAX_BACKEND_OPTIONS)')
     parser.add_argument('--observation-profile', choices=PROFILES, default='rgbd')
@@ -42,6 +42,7 @@ def main():
         parser.error('use --task-file or --task-text, not both')
     description = args.task_file.read_text() if args.task_file else (args.task_text or '')
     options = json.loads(args.backend_options.read_text()) if args.backend_options else {}
+    args.robot = args.robot or ('xarm_bimanual' if 'arms' in options else 'xarm')
     if args.robot in ('franka', 'xarm') and not options.get('cameras'):
         article = 'an' if args.robot in ('xarm',) or args.robot[0].lower() in 'aeiou' else 'a'
         parser.error(f'{article} {args.robot} session needs its cameras: pass --backend-options FILE or set '

@@ -56,6 +56,8 @@ def options():
 
 
 def driver():
+    if 'arms' in options():
+        sys.exit('Bimanual setup: select an arm through MCP; prepare with scripts/xarm-wuji-ready --session SESSION')
     return XArmDriver(options())
 
 
@@ -77,6 +79,8 @@ def alive(root):
 if action == 'ready':
     from xarm.wrapper import XArmAPI
     opts = options()
+    if 'arms' in opts:
+        sys.exit('Use scripts/xarm-wuji-ready --session SESSION to prepare both configured assemblies')
     arm = XArmAPI(opts['xarm_ip'], is_radian=True)
     print(f"xArm SDK connected to {opts['xarm_ip']}")
     # --yes is for a trusted operator frontend that already confirmed readiness.
@@ -100,6 +104,11 @@ elif action == 'disarm':
     from services.wuji.client import request, socket_path
     import uuid
     for root in sessions:
+        opts = json.loads((root/'operator-input.json').read_text()).get('backend_options', {})
+        if 'arms' in opts:
+            from services.xarm_bimanual.operator import stop
+            print(root.name, json.dumps(stop(root, opts)))
+            continue
         if socket_path(root).exists():
             try:
                 request(socket_path(root), 'emergency', id=uuid.uuid4().hex)
@@ -107,6 +116,11 @@ elif action == 'disarm':
             except Exception as exc:
                 print(f'{root.name}: hand stop request failed ({exc})')
     try:
+        if 'arms' in options():
+            if not sessions:
+                from services.xarm_bimanual.operator import stop
+                print(json.dumps(stop(None, options())))
+            sys.exit(0)
         driver().hold()
         print('all sessions disarmed; arm holding')
     except Exception as exc:
@@ -127,6 +141,13 @@ elif action == 'status':
         for request in operator.pending(root):
             print(f"   OPEN {request['kind'].upper()} {request['id']}: {request['message']}")
     try:
+        if 'arms' in options():
+            from services.xarm_bimanual.operator import status
+            opts = options()
+            matching = [root for root in sessions if
+                json.loads((root/'operator-input.json').read_text()).get('backend_options', {}).get('arms') == opts['arms']]
+            print(json.dumps(status(matching[-1] if matching else None, opts), indent=2))
+            sys.exit(0)
         state = driver().state()
         print('robot', {'tcp_position': np.round(state['tcp_position'], 4).tolist(),
                         'joints': np.round(state['joints'], 4).tolist(),

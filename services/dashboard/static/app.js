@@ -134,6 +134,38 @@ async function act(action) {
 }
 
 function renderRobot(value) {
+  if (value.bimanual) {
+    const rows = [];
+    let ok = true, exceptions = false, partial = false;
+    for (const side of ['left', 'right']) {
+      const { arm, hand } = value.arms[side];
+      ok = ok && arm.ok && hand.ok && !arm.error_code;
+      rows.push([`${side} xArm`, arm.xarm_ip || 'unavailable']);
+      if (arm.ok) {
+        rows.push([`${side} TCP (m)`, arm.tcp_position.map(v => v.toFixed(4)).join(', ')]);
+        rows.push([`${side} joints`, arm.joints.map(v => v.toFixed(3)).join(', ')]);
+        rows.push([`${side} controller`, `state ${arm.state} · mode ${arm.mode} · error ${arm.error_code}`]);
+      } else rows.push([`${side} arm error`, arm.error]);
+      rows.push([`${side} Wuji`, `${hand.serial || ''} · ${hand.mode} · ${hand.fresh ? 'fresh' : 'STALE'}`]);
+      rows.push([`${side} hand profile`, hand.profile_revision || 'unavailable']);
+      if (hand.partial_hand) {
+        partial = true;
+        rows.push([`${side} partial hand`, `${hand.active_joints?.length || 0}/20 controlled · ${hand.active_enabled ? 'active joints enabled' : 'not enabled'}`]);
+        rows.push([`${side} excluded joints`, (hand.disabled_joints || []).join(', ')]);
+      }
+      if (hand.isolated_faults?.length) rows.push([`${side} isolated faults`, JSON.stringify(hand.isolated_faults)]);
+      if (hand.fault || hand.faults?.length) rows.push([`${side} hand fault`, hand.fault || JSON.stringify(hand.faults)]);
+      if (hand.warnings?.length) rows.push([`${side} hand warnings`, JSON.stringify(hand.warnings)]);
+      if (hand.diagnostic_exceptions?.length) {
+        exceptions = true;
+        rows.push([`${side} diagnostic exceptions`, JSON.stringify(hand.diagnostic_exceptions)]);
+      }
+    }
+    $('robot-badge').textContent = ok ? (partial ? 'connected · partial hand' : exceptions ? 'connected · diagnostic exception' : 'both assemblies connected') : 'assembly needs attention';
+    $('robot-badge').className = ok ? (exceptions || partial ? 'badge warn' : 'badge ok') : 'badge bad';
+    $('robot').replaceChildren(el('table', { class: 'kv' }, rows.map(([k, v]) => el('tr', {}, el('td', {}, k), el('td', {}, v)))));
+    return;
+  }
   const arm = value.arm, grip = value.gripper, hand = value.hand;
   const ok = arm.ok && (hand ? hand.ok : grip.ok);
   $('robot-badge').textContent = arm.ok ? (ok ? 'robot connected' : 'end-effector problem') : 'ARM UNAVAILABLE';
@@ -156,6 +188,23 @@ function renderRobot(value) {
     if (hand.fault || hand.faults?.length) {
       rows.push(['hand fault', el('span', { style: 'color:var(--bad)' }, hand.fault || JSON.stringify(hand.faults))]);
     }
+    if (hand.warnings?.length) rows.push(['hand warnings', JSON.stringify(hand.warnings)]);
+    if (hand.diagnostic_exceptions?.length) {
+      rows.push(['diagnostic exceptions', JSON.stringify(hand.diagnostic_exceptions)]);
+      if (ok) {
+        $('robot-badge').textContent = 'connected · diagnostic exception';
+        $('robot-badge').className = 'badge warn';
+      }
+    }
+    if (hand.partial_hand) {
+      rows.push(['partial hand', `${hand.active_joints?.length || 0}/20 controlled · ${hand.active_enabled ? 'active joints enabled' : 'not enabled'}`]);
+      rows.push(['excluded joints', (hand.disabled_joints || []).join(', ')]);
+      if (ok) {
+        $('robot-badge').textContent = 'connected · partial hand';
+        $('robot-badge').className = 'badge warn';
+      }
+    }
+    if (hand.isolated_faults?.length) rows.push(['isolated faults', JSON.stringify(hand.isolated_faults)]);
   } else if (grip.ok || grip.width !== undefined) {
     rows.push(['gripper', `${(grip.width * 1000).toFixed(1)} mm / ${(grip.max_width * 1000).toFixed(1)} mm` +
       `${grip.is_grasped ? ' · grasped' : ''}${grip.is_moving ? ' · moving' : ''}` +
@@ -236,18 +285,18 @@ function renderRequests(value) {
       const buttons = [];
       const send = async (text, prepare = r.prepare) => {
         if (submittingRequests.has(key)) return;
-        if (prepare && !confirm(`Ready the arm, arm for 60 minutes, prepare the hand, then send this reply?\n\nSession: ${r.session}\n\nConfirm a person is at the emergency stop and the arm workspace and whole-hand sweep are clear. The agent may move after receiving the reply.`)) return;
+        if (prepare && !confirm(`Ready every configured arm, arm the session for 60 minutes, prepare its hand(s), then send this reply?\n\nSession: ${r.session}\n\nConfirm a person is at the emergency stop and every arm workspace and whole-hand sweep is clear. The agent may move after receiving the reply.`)) return;
         submittingRequests.add(key);
         requestDrafts.set(key, input.value);
         input.disabled = true;
         buttons.forEach((button) => { button.disabled = true; });
-        if (prepare) toast('Preparing arm and hand… Reply will be sent after success.');
+        if (prepare) toast('Preparing configured arms and hands… Reply will be sent after success.');
         try {
           await api(`/api/session/${r.session}/${prepare ? 'prepare-reply' : 'reply'}`, {
             request_id: r.id, text, done: true, estop_confirmed: !!prepare,
           });
           requestDrafts.delete(key);
-          toast(prepare ? 'Arm and hand ready; reply sent.' : 'Reply sent.');
+          toast(prepare ? 'Arms and hands ready; reply sent.' : 'Reply sent.');
         } catch (error) { toast(error.message, true); }
         finally {
           submittingRequests.delete(key);

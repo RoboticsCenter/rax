@@ -25,14 +25,19 @@ skill, and an absent layer is skipped:
 | `perception/<mode>/` | perception for one observation mode, any robot (none yet) |
 | `perception/<mode>-<robot>/` | `object-localization` for that mode and robot (`depth-franka`, `rgb-only-franka`, `depth-xarm`, `rgb-only-xarm`) |
 | `control/common/` | control for any robot (none yet) |
-| `control/<robot>/` | the robot's `robot-interface` and motion skills (`franka`, `xarm`) |
+| `control/<robot>/` | the robot's `robot-interface` and motion skills (`franka`, `xarm`, `xarm_bimanual`) |
 | `end_effectors/<type>/` | hand-specific guidance selected by backend configuration (`wuji_hand2`) |
 | `auto-research/` | `gemini` |
 
 `<mode>` is `depth` or `rgb-only` (from the observation profile) and `<robot>` is the
-backend key (`franka`, `xarm`). Agents see one flat `.agents/skills/` with stable, robot-neutral
+backend key (`franka`, `xarm`, `xarm_bimanual`). Agents see one flat `.agents/skills/` with stable, robot-neutral
 names, so task skills link to `robot-interface` or `object-localization` without
 branching on the robot or the observation mode.
+
+`xarm_bimanual` currently selects `rgb-only-xarm_bimanual/object-localization`
+even for rgbd capture: camera depth can be recorded, but camera-to-arm and inter-arm
+calibration are pending. Its robot-interface requires explicit `arm`/`hand` selectors;
+the shared hand, wrist inspection, stream and task skills render the same convention.
 
 Robot-specific facts a shared source needs come from `robot.*` (`ROBOT_FACTS` in
 `services/workspace/setup.py`): tool names, cameras, the overview camera.

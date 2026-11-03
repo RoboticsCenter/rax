@@ -14,12 +14,24 @@ from pathlib import Path
 from services.json_io import write_private_json
 
 from .config import validate_config
+from .partial import control_enabled
 
 PROJECT = Path(__file__).resolve().parents[2]
 
 
-def socket_path(root):
-    return Path(f'/tmp/rax-wuji-{os.getuid()}')/(hashlib.sha256(str(Path(root).resolve()).encode()).hexdigest()[:16]+'.sock')
+def side_suffix(side):
+    if side not in (None, 'left', 'right'):
+        raise ValueError('hand side must be left or right')
+    return '' if side is None else f'-{side}'
+
+
+def socket_path(root, side=None):
+    return Path(f'/tmp/rax-wuji-{os.getuid()}')/(hashlib.sha256(str(Path(root).resolve()).encode()).hexdigest()[:16]
+                                               + side_suffix(side) + '.sock')
+
+
+def state_path(root, side=None):
+    return Path(root)/'operator'/f'wuji{side_suffix(side)}-state.json'
 
 
 def request(path, op, *, timeout=.5, **payload):
@@ -45,9 +57,9 @@ class HandError(RuntimeError):
         self.robot_state = {'hand': state, 'hand_result': result}
 
 
-def operation(root, op, args=None, *, timeout=10.):
+def operation(root, op, args=None, *, timeout=10., side=None):
     """Operator access to the existing owner; does not create a second SDK client."""
-    path = socket_path(root)
+    path = socket_path(root, side) if side is not None else socket_path(root)
     ident = uuid.uuid4().hex
     request(path, op, id=ident, args=args or {})
     deadline = time.monotonic()+timeout
@@ -71,14 +83,14 @@ def operation(root, op, args=None, *, timeout=10.):
     raise HandError({'outcome': 'uncertain', 'reason': f'{op} timed out; emergency stop requested'})
 
 
-def recorded_status(root, max_age_s=.5):
+def recorded_status(root, max_age_s=.5, *, side=None):
     """Dashboard snapshot with explicit age; never opens a hand connection."""
     try:
-        value = json.loads((Path(root)/'operator'/'wuji-state.json').read_text())
+        value = json.loads(state_path(root, side).read_text())
         age = max(0., time.time()-value['recorded_unix'])
         value['record_age_s'] = age
         if age > max_age_s:
-            value['fresh'] = value['enabled'] = False
+            value['fresh'] = value['enabled'] = value['active_enabled'] = False
             value['fault'] = value.get('fault') or 'hand service snapshot is stale'
         return value
     except (OSError, ValueError, KeyError) as exc:
@@ -86,9 +98,10 @@ def recorded_status(root, max_age_s=.5):
 
 
 class WujiClient:
-    def __init__(self, session, on_fault=None):
+    def __init__(self, session, on_fault=None, *, side=None):
         self.cfg = validate_config(session.backend_options['end_effector'])
-        self.root, self.path = session.root, socket_path(session.root)
+        self.side = side
+        self.root, self.path = session.root, socket_path(session.root, side)
         self.on_fault = on_fault
         self.stop_event = threading.Event()
         self.cached = {'connected': False, 'fresh': False, 'enabled': False, 'mode': 'starting'}
@@ -96,15 +109,16 @@ class WujiClient:
         self.process = self.thread = None
         from .sdk import private_directory
         private_directory()
-        config_path = self.root/'operator'/'wuji-configuration.json'
+        config_path = self.root/'operator'/f'wuji{side_suffix(side)}-configuration.json'
         config_path.parent.mkdir(parents=True, exist_ok=True)
         write_private_json(config_path, session.to_dict())
         if self.path.exists():
             raise RuntimeError('hand service socket already exists; stop its owner before restarting this session')
-        with open(self.root/'wuji-controller.log', 'ab') as log:
+        with open(self.root/f'wuji{side_suffix(side)}-controller.log', 'ab') as log:
             self.process = subprocess.Popen(
                 [sys.executable, '-m', 'services.wuji.controller', '--config', str(config_path),
-                 '--socket', str(self.path), '--parent-pid', str(os.getpid())], cwd=PROJECT,
+                 '--socket', str(self.path), '--parent-pid', str(os.getpid()),
+                 *(['--side', side] if side else [])], cwd=PROJECT,
                 env={**os.environ, 'PYTHONPATH': str(PROJECT), 'WUJI_TELEMETRY_DISABLE': '1'},
                 stdout=log, stderr=subprocess.STDOUT, start_new_session=True)
         deadline = time.monotonic()+5
@@ -127,7 +141,8 @@ class WujiClient:
                 self.cached, self.received = value, time.monotonic()
             except Exception as exc:
                 bad = previously_owned
-                self.cached = {**self.cached, 'fresh': False, 'enabled': False, 'mode': 'uncertain', 'fault': str(exc)}
+                self.cached = {**self.cached, 'fresh': False, 'enabled': False, 'active_enabled': False,
+                               'mode': 'uncertain', 'fault': str(exc)}
             if bad and not notified:
                 notified = True
                 if not self.cached.get('fresh'):
@@ -153,7 +168,7 @@ class WujiClient:
                 value['age_s'][key] = v + age
         if age > self.cfg['max_feedback_age_s'] or any(
                 v is None or v > self.cfg['max_feedback_age_s'] for v in value.get('age_s', {}).values()):
-            value['fresh'] = value['enabled'] = False
+            value['fresh'] = value['enabled'] = value['active_enabled'] = False
         return value
 
     def require_ready(self):
@@ -162,30 +177,36 @@ class WujiClient:
         # Admission needs the owner's current snapshot; this read never enables
         # the hand and the owner independently validates every submitted move.
         state = request(self.path, 'status')
-        if not state.get('fresh') or not state.get('enabled') or state.get('fault') or state.get('mode') != 'holding':
+        if (not control_enabled(state, self.cfg) or state.get('fault') or state.get('faults')
+                or state.get('mode') != 'holding'):
             raise RuntimeError('Wuji hand is not prepared and holding with fresh fault-free feedback; ask the operator')
         return state
 
     def move(self, positions, duration_s=None, completion='position'):
-        result = operation(self.root, 'move', {'positions': positions, 'duration_s': duration_s,
+        result = self._operation('move', {'positions': positions, 'duration_s': duration_s,
                                               'completion': completion},
                            timeout=self.cfg['max_duration_s']+self.cfg['settle_timeout_s']+2)
         return result
 
     def hold(self):
-        return operation(self.root, 'hold', timeout=self.cfg['stop_timeout_s']+2)
+        return self._operation('hold', timeout=self.cfg['stop_timeout_s']+2)
 
     def set_effort(self, effort_a, duration_s=None):
         args = {'effort_a': effort_a}
         if duration_s is not None:
             args['duration_s'] = duration_s
-        return operation(self.root, 'set_effort', args, timeout=self.cfg['max_duration_s']+2)
+        return self._operation('set_effort', args, timeout=self.cfg['max_duration_s']+2)
 
     def set_impedance(self, **parameters):
-        return operation(self.root, 'set_impedance', parameters)
+        return self._operation('set_impedance', parameters)
 
     def stop(self):
-        return operation(self.root, 'emergency', timeout=self.cfg['stop_timeout_s']+2)
+        return self._operation('emergency', timeout=self.cfg['stop_timeout_s']+2)
+
+    def _operation(self, op, args=None, **kwargs):
+        if getattr(self, 'side', None) is not None:
+            kwargs['side'] = self.side
+        return operation(self.root, op, args, **kwargs)
 
     def close(self):
         if self.process is not None:

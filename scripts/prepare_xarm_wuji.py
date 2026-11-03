@@ -13,12 +13,14 @@ sys.path.insert(0, str(PROJECT))
 
 from services.xarm import arming  # noqa: E402
 from services.wuji.preparation import PreparationBlocked, preparation_action  # noqa: E402
+from services.wuji.partial import control_enabled  # noqa: E402
 
 
 def hand_ready(state):
     """Only reuse a fresh, fault-free hold controlled by this session's owner."""
     return (state.get('mode') == 'holding' and state.get('fresh') is True
-            and state.get('enabled') is True and state.get('owns_control') is True
+            and control_enabled(state, state)
+            and state.get('owns_control') is True
             and state.get('target_positions') is not None
             and not state.get('fault') and not state.get('faults'))
 
@@ -41,10 +43,17 @@ def main(argv=None):
         root = root.parent
     try:
         options = json.loads((root / 'operator-input.json').read_text())['backend_options']
-        if options.get('end_effector', {}).get('type') != 'wuji_hand2' or not options.get('xarm_ip'):
+        if 'arms' in options:
+            from services.xarm_bimanual.config import validate_options
+            validate_options(options)
+        elif options.get('end_effector', {}).get('type') != 'wuji_hand2' or not options.get('xarm_ip'):
             raise ValueError('session must configure xArm and wuji_hand2')
     except (OSError, ValueError, KeyError, TypeError, AttributeError) as exc:
         parser.error(f'invalid session: {exc}')
+
+    if 'arms' in options:
+        from services.xarm_bimanual.operator import prepare
+        return prepare(root, options, minutes=args.minutes, confirmed=args.yes)
 
     env = {**os.environ, 'RAX_PYTHON': sys.executable}
 

@@ -9,6 +9,8 @@ from importlib.metadata import version
 from pathlib import Path
 
 from .config import JOINT_NAMES, effort, impedance, vector
+from .partial import (DISABLED_STATES, active_indices, control_enabled, disabled_indices,
+                      effective_parameters, isolated_diagnostic, validate_isolated_targets)
 
 SDK_VERSION = '2026.10.12'
 
@@ -66,6 +68,9 @@ class WujiDriver:
         self.frames, self.received, self.headers, self.errors, self.offsets = {}, {}, {}, {}, {}
         self.error_details, self.warning_history, self.latched_faults = {}, {}, {}
         self.warnings = []
+        self.diagnostic_exceptions, self.diagnostic_exception_history = [], {}
+        self.isolated_faults, self.isolated_fault_history = [], {}
+        self.disabled_reference = None
         self.identity = {'serial': config['serial'], 'handedness': config['handedness'], 'sdk_version': SDK_VERSION}
         self.profile = None
 
@@ -104,7 +109,7 @@ class WujiDriver:
         with self.lock:
             self.errors[stream] = str(error)
 
-    def _save(self, stream, frame, data, *, warnings=(), faults=()):
+    def _save(self, stream, frame, data, *, warnings=(), faults=(), exceptions=(), isolated=()):
         now = self.clock()
         sequence, timestamp = int(frame.header.seq), int(frame.header.timestamp_us)
         with self.lock:
@@ -126,10 +131,15 @@ class WujiDriver:
             self.errors.pop(stream, None)
             if stream == 'diagnostics':
                 self.warnings = list(warnings)
-                for warning in warnings:
-                    key = (warning['joint'], warning['code'])
-                    record = self.warning_history.setdefault(key, {**warning, 'frames': 0, 'first_seen': now})
-                    record.update(frames=record['frames']+1, last_seen=now)
+                self.diagnostic_exceptions = list(exceptions)
+                self.isolated_faults = list(isolated)
+                for events, history in ((warnings, self.warning_history),
+                                        (exceptions, self.diagnostic_exception_history),
+                                        (isolated, self.isolated_fault_history)):
+                    for event in events:
+                        key = (event['joint'], event['code'])
+                        record = history.setdefault(key, {**event, 'frames': 0, 'first_seen': now})
+                        record.update(frames=record['frames']+1, last_seen=now)
                 # A brief device fault must not disappear between controller ticks.
                 # Only explicit reconnect clears this history, after disable confirmation.
                 for fault in faults:
@@ -157,7 +167,7 @@ class WujiDriver:
                     raise ValueError('nonfinite diagnostics')
                 data[key] = values
             data['error_code_current'] = [int(v) for v in data['error_code_current']]
-            warnings, faults = [], []
+            warnings, faults, exceptions, isolated = [], [], [], []
             for i, code in enumerate(data['error_code_current']):
                 if not code:
                     continue
@@ -171,12 +181,30 @@ class WujiDriver:
                 permitted = (self.cfg['allow_encoder_warning'] and code == 3
                              and detail.get('name') == 'Enc1BitRate' and detail.get('severity') == 'Warning'
                              and detail.get('clear_policy') == 'AutoClear')
-                (warnings if permitted else faults).append(record)
+                current_calibration_exception = (
+                    code == 0x3208 and detail.get('name') == 'InitCurrentCalibFailed'
+                    and detail.get('severity') == 'Fatal' and detail.get('clear_policy') == 'NonClearable'
+                    and self.cfg['allow_init_current_calib_failed'].get(JOINT_NAMES[i])
+                    == self.identity.get('firmware') and self.identity.get('firmware') is not None)
+                if isolated_diagnostic(self.cfg, JOINT_NAMES[i], code, detail,
+                                       self.identity.get('firmware'), data['states'][i]):
+                    isolated.append({**record, 'isolated': True, 'native_state': data['state_names'][i]})
+                elif current_calibration_exception:
+                    # An operator-scoped exception to host admission, not a device
+                    # fault clear. Preserve the SDK severity and native state/code.
+                    exceptions.append({**record, 'allowed_by': 'allow_init_current_calib_failed'})
+                else:
+                    (warnings if permitted else faults).append(record)
             for i, temperature in enumerate(data['mcu_temp_c_fb']):
                 if temperature >= self.cfg['max_temperature_c']:
                     faults.append({'joint': JOINT_NAMES[i], 'reason': 'temperature limit exceeded',
                                    'temperature_c': temperature})
-            self._save('diagnostics', frame, data, warnings=warnings, faults=faults)
+            for i in disabled_indices(self.cfg):
+                if data['states'][i] not in DISABLED_STATES:
+                    faults.append({'joint': JOINT_NAMES[i], 'reason': 'excluded joint is not disabled',
+                                   'native_state': data['state_names'][i]})
+            self._save('diagnostics', frame, data, warnings=warnings, faults=faults,
+                       exceptions=exceptions, isolated=isolated)
         except Exception as exc:
             self._error('diagnostics', exc)
 
@@ -194,27 +222,46 @@ class WujiDriver:
             faults = [dict(v) for v in self.latched_faults.values()]
             warnings = [dict(v) for v in self.warnings]
             warning_history = [dict(v) for v in self.warning_history.values()]
+            exceptions = [dict(v) for v in self.diagnostic_exceptions]
+            exception_history = [dict(v) for v in self.diagnostic_exception_history.values()]
+            isolated = [dict(v) for v in self.isolated_faults]
+            isolated_history = [dict(v) for v in self.isolated_fault_history.values()]
         fresh = self.hand is not None and not errors and all(
             age is not None and age <= self.cfg['max_feedback_age_s'] for age in ages.values())
-        return {**deepcopy(self.identity), 'connected': self.hand is not None,
+        result = {**deepcopy(self.identity), 'connected': self.hand is not None,
                 'positions': state.get('position'), 'velocity_rad_s': state.get('velocity'),
                 'effort_a': state.get('effort'), 'diagnostics': diag,
                 'fresh': fresh, 'age_s': ages, 'stream_errors': errors, 'faults': faults,
                 'warnings': warnings, 'warning_history': warning_history,
+                'diagnostic_exceptions': exceptions, 'diagnostic_exception_history': exception_history,
+                'isolated_faults': isolated, 'isolated_fault_history': isolated_history,
+                'partial_hand': bool(self.cfg['disabled_joints']),
+                'disabled_joints': list(self.cfg['disabled_joints']),
+                'active_joints': [JOINT_NAMES[i] for i in active_indices(self.cfg)],
                 'enabled': fresh and diag.get('states') == [2]*20,
                 'received_monotonic': received, 'source_headers': headers,
                 'parameters': None if self.profile is None else {k: list(v) for k, v in self.profile.items()}}
+        result['active_enabled'] = control_enabled(result, self.cfg)
+        return result
 
     def apply_profile(self):
-        self.hand.effort_limit().set(self.cfg['current_limit_a'])
-        self.hand.mit_params().set(list(zip(self.cfg['kp'], self.cfg['kd'])))
+        desired = effective_parameters(self.cfg)
+        if self.cfg['disabled_joints']:
+            state = self.snapshot()
+            if (not state['fresh'] or len(state['diagnostics'].get('states', [])) != 20
+                    or any(s not in DISABLED_STATES for s in state['diagnostics']['states'])):
+                raise RuntimeError('joint isolation requires complete fresh disabled feedback before profile writes')
+        self.disabled_reference = None
+        self.profile = None  # Never reuse an older readback after a partial parameter-write failure.
+        self.hand.effort_limit().set(desired['current_limit_a'])
+        self.hand.mit_params().set(list(zip(desired['kp'], desired['kd'])))
         limits = list(self.hand.effort_limit().get())
         gains = list(self.hand.mit_params().get())
         if len(limits) != 20 or len(gains) != 20 or any(x is None for x in [*limits, *gains]):
             raise RuntimeError('incomplete control-parameter readback')
         actual = {'current_limit_a': limits, 'kp': [p.kp for p in gains], 'kd': [p.kd for p in gains]}
         for key, values in actual.items():
-            if any(not math.isfinite(v) or abs(v-expected) > 1e-5 for v, expected in zip(values, self.cfg[key])):
+            if any(not math.isfinite(v) or abs(v-expected) > 1e-5 for v, expected in zip(values, desired[key])):
                 raise RuntimeError(f'{key} readback mismatch; hand remains unprepared')
         self.profile = actual
 
@@ -226,6 +273,8 @@ class WujiDriver:
         return list(values)
 
     def set_current_limits(self, values):
+        if self.cfg['disabled_joints']:
+            raise ValueError('partial-hand mode requires operator profile parameters')
         values = impedance({'current_limit_a': values}, self.cfg)['current_limit_a']
         if self.profile is None:
             raise RuntimeError('hand profile has not been prepared')
@@ -234,6 +283,8 @@ class WujiDriver:
         self.profile = {**self.profile, 'current_limit_a': actual}
 
     def set_impedance(self, kp, kd):
+        if self.cfg['disabled_joints']:
+            raise ValueError('partial-hand mode requires operator profile parameters')
         values = impedance({'kp': kp, 'kd': kd}, self.cfg)
         if self.profile is None:
             raise RuntimeError('hand profile has not been prepared')
@@ -250,13 +301,47 @@ class WujiDriver:
             raise ValueError('command velocity exceeds configured reference limit')
         currents = effort([0.]*20 if effort_a is None else effort_a,
                           (self.profile or self.cfg)['current_limit_a'])
+        excluded = disabled_indices(self.cfg)
+        if excluded:
+            if self.profile is None or any(self.profile[key][i] != 0.
+                    for key in ('kp', 'kd', 'current_limit_a') for i in excluded):
+                raise RuntimeError('excluded joints require verified zero gains and current limits')
+            if any(v[i] != 0. or currents[i] != 0. for i in excluded):
+                raise ValueError('excluded joints cannot receive velocity or effort commands')
+            if self.disabled_reference is None:
+                self.disabled_reference = list(q)
+            validate_isolated_targets(self.disabled_reference, q, self.cfg)
         if self.publisher is None:
             self.publisher = self.hand.joint_command().publish()
         self.publisher.send([self.sdk.JointCommand(position, velocity, current)
                              for position, velocity, current in zip(q, v, currents)])
 
-    def enable(self):
-        self.hand.enable()
+    def enable(self, *, check=None):
+        excluded = disabled_indices(self.cfg)
+        if not excluded:
+            self.hand.enable()
+            return
+        if (self.profile is None or self.disabled_reference is None
+                or any(self.profile[key][i] != 0. for key in ('kp', 'kd', 'current_limit_a') for i in excluded)):
+            raise RuntimeError('partial-hand enable requires a verified profile and disabled seed')
+        mask = [int(i in excluded) for i in range(20)]
+        self.hand.disable(mask)
+        since, deadline = self.clock(), time.monotonic()+self.cfg['stop_timeout_s']
+        while time.monotonic() < deadline:
+            if check is not None:
+                check()  # A priority stop/disarm must cancel the wait before any enable.
+            state = self.snapshot()
+            if state['faults']:
+                raise RuntimeError('blocking hand fault before selective enable')
+            states = state['diagnostics'].get('states', [])
+            if (state['fresh'] and len(states) == 20 and all(s in DISABLED_STATES for s in states)
+                    and all(state['received_monotonic'].get(k, -1) > since for k in ('state', 'diagnostics'))):
+                if check is not None:
+                    check()
+                self.hand.enable([1-v for v in mask])
+                return
+            time.sleep(.005)
+        raise RuntimeError('excluded joint disable was not confirmed by fresh feedback')
 
     def stop(self, behavior='emergency'):
         if self.hand is None:
@@ -300,8 +385,13 @@ class WujiDriver:
             self.errors.clear()
             self.error_details.clear()
             self.warning_history.clear()
+            self.diagnostic_exception_history.clear()
+            self.isolated_fault_history.clear()
             self.latched_faults.clear()
             self.warnings.clear()
+            self.diagnostic_exceptions.clear()
+            self.isolated_faults.clear()
+        self.disabled_reference = None
         self.profile = None
         if errors:
             raise RuntimeError('; '.join(errors))
