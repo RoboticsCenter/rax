@@ -1,4 +1,4 @@
-"""Load the verified four-camera RGB bundle and express views in either base."""
+"""Load verified RGB geometry while allowing additional uncalibrated fixed views."""
 from copy import deepcopy
 import hashlib
 import json
@@ -35,9 +35,14 @@ class BimanualCalibration:
         if not data.get('ok') or not data.get('fresh_verification', {}).get('ok'):
             raise ValueError('bimanual calibration needs a passing fit and fresh physical verification')
         specs = {c['name']: c for c in options['cameras']}
+        self.camera_names = tuple(specs)
         recorded = {c['name']: c for c in data['camera_specs']}
-        if set(specs) != set(recorded) or set(specs) != set(data['camera_models']):
+        if not set(recorded) <= set(specs) or set(recorded) != set(data['camera_models']):
             raise ValueError('configured cameras differ from the verified calibration')
+        additional = set(specs) - set(recorded)
+        if (not additional <= self.unverified or not self.unverified <= set(specs)
+                or any(specs[name]['mount'] != 'fixed' for name in additional)):
+            raise ValueError('additional cameras must be fixed views explicitly marked extrinsics unverified')
         self.models = {}
         self.left_from_right = rigid(data['T_left_base_right_base'], 'inter-base transform')
         self.right_from_left = np.linalg.inv(self.left_from_right)
@@ -45,10 +50,18 @@ class BimanualCalibration:
             if options['arms'][side]['xarm_ip'] != data['arm_identity'][side]['ip']:
                 raise ValueError(f'{side}: arm IP differs from calibration')
         for name, spec in specs.items():
-            if any(spec.get(k) != recorded[name].get(k) for k in ('serial', 'mount', 'arm')):
-                raise ValueError(f'{name}: camera serial, mount or owning arm changed')
             if spec.get('intrinsics') or spec.get('extrinsics') or spec.get('calibration_raw_color'):
                 raise ValueError('the verified bundle supplies camera models; omit per-camera calibration overrides')
+            if name in additional:
+                continue
+            if any(spec.get(k) != recorded[name].get(k) for k in ('mount', 'arm')):
+                raise ValueError(f'{name}: camera mount or owning arm changed')
+            if spec.get('serial') != recorded[name].get('serial'):
+                if spec['mount'] == 'fixed' and name in self.unverified:
+                    # A replacement fixed camera can supply images, but neither
+                    # its predecessor's optical model nor its poses are reusable.
+                    continue
+                raise ValueError(f'{name}: camera serial changed; fixed replacements must be explicitly unverified')
             color = data['camera_models'][name]
             if (spec.get('width', 640) != color['width'] or spec.get('height', 480) != color['height']
                     or options.get('stream_fps', 6) != color['fps']):
@@ -65,7 +78,11 @@ class BimanualCalibration:
         """Adapt the bundle to the existing xArm rectification implementation."""
         specs = deepcopy(options['cameras'])
         for spec in specs:
-            model = self.manifest['camera_models'][spec['name']]
+            if spec['name'] not in self.models:
+                continue  # New/replacement views use their live factory RGB model.
+            model = self.manifest['camera_models'].get(spec['name'])
+            if model is None:
+                continue  # Additional uncalibrated views retain their live factory RGB model.
             factory = model.get('factory_profile', model)
             key = f"{model['width']}x{model['height']}@{model['fps']}"
             value = {'serial': model['serial'], 'color_profiles': {key: factory},
@@ -118,7 +135,8 @@ class BimanualCalibration:
         return 'rgb_extrinsics_partial' if self.unverified else 'rgb_extrinsics_verified'
 
     def camera_status(self, name):
-        return 'extrinsics_unverified' if name in self.unverified else 'rgb_extrinsics_verified'
+        return ('extrinsics_unverified' if name in self.unverified or name not in self.models
+                else 'rgb_extrinsics_verified')
 
     def summary(self):
         planes = {}
@@ -129,7 +147,7 @@ class BimanualCalibration:
                             'meaning': 'original calibration-board plane; confirm scene support before using it'}
         return {'status': self.status, 'manifest': str(self.path), 'sha256': self.digest,
                 'unverified_camera_extrinsics': sorted(self.unverified),
-                'camera_status': {name: self.camera_status(name) for name in self.models},
+                'camera_status': {name: self.camera_status(name) for name in self.camera_names},
                 'reference_base_frame': 'left_base', 'T_left_base_right_base': self.left_from_right.tolist(),
                 'reference_board_planes': planes, 'depth_metric_validation': 'pending',
                 'verification': {name: value for name, value in self.manifest['fresh_verification']['cameras'].items()

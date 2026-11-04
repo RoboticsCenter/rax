@@ -14,6 +14,10 @@ shared arming state. Cameras are `{{ robot.cameras | join('`, `') }}`.
 - `xarm_move_pose(arm="left" | "right", position=[...], ...)` and
   `xarm_move_joints(arm="left" | "right", positions=[...] | preset="home")`
   require an explicit arm. There is no default side.
+- Arm `preset="home"` uses that arm's saved `home_joints`, reported under
+  `arms.<side>` in `xarm_status`. Read this live value instead of reusing joint
+  angles from an earlier session. The operator can update each arm's home;
+  Wuji hand homes remain separate saved finger postures.
 - Every `wuji_*` single-hand tool requires `hand="left" | "right"`, including
   `wuji_status`, `wuji_hold` and `wuji_home`. Read [hand-control](../hand-control/SKILL.md).
 - Metres, radians and quaternions `[x,y,z,w]`. Each arm uses its **own base frame**:
@@ -121,7 +125,7 @@ do not diagnose a native hand fault from the disarmed state alone.
 `wuji_hold(hand=...)` retains that hand's healthy commanded posture and current
 bias; it is not an assembly emergency stop. Read its result and current health.
 
-## Four views and coordinate frames
+## Camera views and coordinate frames
 
 `xarm_observe(cameras=[...])` saves observations and both assemblies' state.
 `xarm_stream` reviews the rolling history. Wrist camera metadata identifies its
@@ -137,6 +141,8 @@ an earlier session's camera restrictions or transforms.
 If a camera mount may have shifted, the operator can mark only that view's
 extrinsics unverified. Its image stays available; use the other verified views
 for geometry. This does not itself disarm or block either assembly.
+An additional or replacement fixed view can be uncalibrated while the other views retain
+their verified geometry. Read per-camera status before using base transforms.
 {% else %}Factory intrinsics and optional depth do not provide a camera-to-arm
 transform. Pixel-to-base lookup and projected base-frame points are unavailable.
 {% endif %}

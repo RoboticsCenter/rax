@@ -46,7 +46,8 @@ physically.
   fresh views, and restore arm/hand readiness through operator controls before
   another move; do not automatically replay the failed target.
 - `xarm_move_joints {positions | preset: "home"}`: joint-space move with six joint
-  angles in radians, or the backend home preset. The path is sampled with controller FK
+  angles in radians, or the operator's saved `home_joints` reported by `xarm_status`.
+  Do not reuse a home target from an earlier configuration. The path is sampled with controller FK
   and checked against the workspace box before moving. The configured move timeout
   (default 60 seconds, capped at 120 seconds) covers the entire call, including all
   segments. The same idle/stationary checks cancel remaining segments and alert
@@ -76,7 +77,7 @@ physically.
 ## Limits and arming
 
 - Every nonzero xArm controller error, failed native SDK command, missing/invalid
-  controller feedback, unexpected paused/stopped state or non-position mode aborts
+  controller feedback, an unusable controller state or non-position mode aborts
   motion independently of its timeout. RAX disarms, requests stops and opens an
   operator help request. The existing armed telemetry loop also watches the arm
   during hand motion and idle holds. Warnings alone remain reported as warnings.

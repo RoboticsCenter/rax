@@ -35,8 +35,9 @@ names, so task skills link to `robot-interface` or `object-localization` without
 branching on the robot or the observation mode.
 
 `xarm_bimanual` currently selects `rgb-only-xarm_bimanual/object-localization`
-even for rgbd capture: camera depth can be recorded, but camera-to-arm and inter-arm
-calibration are pending. Its robot-interface requires explicit `arm`/`hand` selectors;
+even for rgbd capture: metric depth alignment is not qualified. A verified RGB
+bundle supplies camera-to-arm and inter-arm geometry; pending or partially verified
+sessions report that per camera. Its robot-interface requires explicit `arm`/`hand` selectors;
 the shared hand, wrist inspection, stream and task skills render the same convention.
 
 Robot-specific facts a shared source needs come from `robot.*` (`ROBOT_FACTS` in

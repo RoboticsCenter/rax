@@ -31,7 +31,12 @@ clear faults, raise the operator's parameter ceilings, or recalibrate joint orig
 holding/executing without faults. Do not stop or request recovery solely because
 a soft timing warning was recorded. Read `warning_threshold_s`, `stop_threshold_s`
 and the current `fault`; a host watchdog trip is distinct from a native hand error.
+An unfinished S-curve can also exceed its wall-time deadline when the achieved
+command rate is below the requested rate, even without a command-gap watchdog
+trip. Report that timing failure separately from native joint diagnostics; it is
+not an accepted completed-reference shortfall.
 
+{% if robot.has_hand %}
 ## This session's hand profiles
 
 These values come from the launch configuration; live status is authoritative.
@@ -41,6 +46,7 @@ These values come from the launch configuration; live status is authoritative.
 {% for side, profile in robot.hand_profiles.items() %}
 | {{ side }} | `{{ profile.profile_revision }}` | {{ profile.active_joint_count }}/20 | {{ profile.disabled_joints | join(', ') or 'none' }} | {{ profile.postures | join(', ') or 'none' }} |
 {% endfor %}
+{% endif %}
 
 For `partial_hand: true`, use `active_enabled`, not all-joint `enabled`, to assess
 readiness. The configured passive joints and their isolated diagnostic codes do
@@ -48,6 +54,8 @@ not block supported moves. Position moves, saved poses/home and hold are support
 `completion="contact"`, `wuji_set_effort` and `wuji_set_impedance` are unavailable
 for that hand. Keep its commissioned gains/caps and zero feed-forward bias.
 The other hand keeps its own full or partial profile.
+Home moves only the active joints. A passive joint may remain elsewhere, so an
+active-joint home result does not establish the complete finger's home shape.
 
 ## Commands and state
 
@@ -232,6 +240,8 @@ failed attempts when recovery is supported by fresh, fault-free state.
    home convergence or requiring an extra precision test.
 4. Call `xarm_move_joints({% if robot.bimanual %}arm="left", {% endif %}preset="home")` and require measured completion. Check
    `xarm_status`, `wuji_status` and fresh images before reporting the reset complete.
+   Read the current arm `home_joints`; the operator can change it independently
+   of the saved finger home.{% if robot.bimanual %} Left and right arm homes can differ.{% endif %}
 5. Only then call `request_operator(kind="reset", ...)` for the next layout.
    After the operator replies, check status and observations again before starting.
 

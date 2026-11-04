@@ -83,6 +83,37 @@
     "squares_y": 13
   },
   "camera_models": {
+    "front": {
+      "K": [
+        [
+          912.2591552734375,
+          0.0,
+          655.4686889648438
+        ],
+        [
+          0.0,
+          911.7289428710938,
+          378.68194580078125
+        ],
+        [
+          0.0,
+          0.0,
+          1.0
+        ]
+      ],
+      "distortion_coeffs": [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "distortion_model": "inverse_brown_conrady",
+      "fps": 6,
+      "height": 720,
+      "serial": "348522070593",
+      "width": 1280
+    },
     "side_a": {
       "K": [
         [
@@ -363,6 +394,13 @@
       "name": "wrist_right",
       "serial": "752112070450",
       "width": 1280
+    },
+    {
+      "height": 720,
+      "mount": "fixed",
+      "name": "front",
+      "serial": "348522070593",
+      "width": 1280
     }
   ],
   "collection": "/home/jerry/rax-runtime/sessions/20261103T073444Z_unscrew_bottle_b1d812/operator/full-recalibration-20261103T100920Z/collection-covered",
@@ -370,6 +408,284 @@
   "coverage_source": "/home/jerry/rax-runtime/sessions/20261103T073444Z_unscrew_bottle_b1d812/operator/full-recalibration-20261103T100920Z/planning",
   "fit_report": "fit-result.json",
   "fixed": {
+    "front": {
+      "T_cam_base": [
+        [
+          -0.2021174514333171,
+          -0.9709374201535121,
+          -0.12817590246119814,
+          -0.17011406435908835
+        ],
+        [
+          -0.35475348321191286,
+          0.19457219757524136,
+          -0.9144898173734665,
+          0.39360805130113413
+        ],
+        [
+          0.9128518510553151,
+          -0.1393635033873043,
+          -0.38376986847393463,
+          0.15097456296642153
+        ],
+        [
+          0.0,
+          0.0,
+          0.0,
+          1.0
+        ]
+      ],
+      "T_cam_board": [
+        [
+          0.9571581878369775,
+          0.25855453377917365,
+          0.13037544446277916,
+          -0.0724101726753065
+        ],
+        [
+          -0.2171318447733473,
+          0.34297997308377115,
+          0.9139028942118407,
+          0.17476902611886097
+        ],
+        [
+          0.19157757029975128,
+          -0.9030582988521226,
+          0.38442651239522246,
+          0.6063511336285169
+        ],
+        [
+          0.0,
+          0.0,
+          0.0,
+          1.0
+        ]
+      ],
+      "T_cam_left_base": [
+        [
+          -0.2021174514333171,
+          -0.9709374201535121,
+          -0.12817590246119814,
+          -0.17011406435908835
+        ],
+        [
+          -0.35475348321191286,
+          0.19457219757524136,
+          -0.9144898173734665,
+          0.39360805130113413
+        ],
+        [
+          0.9128518510553151,
+          -0.1393635033873043,
+          -0.38376986847393463,
+          0.15097456296642153
+        ],
+        [
+          0.0,
+          0.0,
+          0.0,
+          1.0
+        ]
+      ],
+      "T_cam_right_base": [
+        [
+          -0.1853817293230008,
+          -0.9755674686797398,
+          -0.11790559141541537,
+          0.4306377266357402
+        ],
+        [
+          -0.3416708587842282,
+          0.17649020053168527,
+          -0.923099254345888,
+          0.2566213104501568
+        ],
+        [
+          0.9213547843750864,
+          -0.13084083143304595,
+          -0.3660410334088893,
+          0.23262267300098277
+        ],
+        [
+          0.0,
+          0.0,
+          0.0,
+          1.0
+        ]
+      ],
+      "held_out_count": 8,
+      "held_out_residuals": [
+        {
+          "frame": "/home/jerry/rax-runtime/sessions/20261103T073444Z_unscrew_bottle_b1d812/agent-workspace/runtime/frames/2026110312162784e6fc",
+          "max_corner_error_m": 0.0006795722004573275,
+          "mean_corner_error_m": 0.0004471627882638336,
+          "reference": "stereo:wrist_left+wrist_right",
+          "rotation_error_deg": 0.03134516007903962,
+          "translation_error_m": 0.00038463715854589664
+        },
+        {
+          "frame": "/home/jerry/rax-runtime/sessions/20261103T073444Z_unscrew_bottle_b1d812/agent-workspace/runtime/frames/20261103121628f41f2d",
+          "max_corner_error_m": 0.0005801259519626695,
+          "mean_corner_error_m": 0.0003092842576091349,
+          "reference": "stereo:wrist_left+wrist_right",
+          "rotation_error_deg": 0.20511191908534385,
+          "translation_error_m": 0.0004284807006016894
+        },
+        {
+          "frame": "/home/jerry/rax-runtime/sessions/20261103T073444Z_unscrew_bottle_b1d812/agent-workspace/runtime/frames/202611031216291fe0cf",
+          "max_corner_error_m": 0.0007609043523313752,
+          "mean_corner_error_m": 0.00048522844473234734,
+          "reference": "stereo:wrist_left+wrist_right",
+          "rotation_error_deg": 0.06147370253820146,
+          "translation_error_m": 0.0002772416709700793
+        },
+        {
+          "frame": "/home/jerry/rax-runtime/sessions/20261103T073444Z_unscrew_bottle_b1d812/agent-workspace/runtime/frames/20261103121630286ef6",
+          "max_corner_error_m": 0.0006488117682948578,
+          "mean_corner_error_m": 0.00040110810207229865,
+          "reference": "stereo:wrist_left+wrist_right",
+          "rotation_error_deg": 0.01847834440248946,
+          "translation_error_m": 0.0003097928433553454
+        },
+        {
+          "frame": "/home/jerry/rax-runtime/sessions/20261103T073444Z_unscrew_bottle_b1d812/agent-workspace/runtime/frames/2026110312163114375e",
+          "max_corner_error_m": 0.000730470291084983,
+          "mean_corner_error_m": 0.0003949611617418332,
+          "reference": "stereo:wrist_left+wrist_right",
+          "rotation_error_deg": 0.08441236121666848,
+          "translation_error_m": 0.00011160664773212103
+        },
+        {
+          "frame": "/home/jerry/rax-runtime/sessions/20261103T073444Z_unscrew_bottle_b1d812/agent-workspace/runtime/frames/20261103121632b0423a",
+          "max_corner_error_m": 0.0006453701408727148,
+          "mean_corner_error_m": 0.00030852171162844944,
+          "reference": "stereo:wrist_left+wrist_right",
+          "rotation_error_deg": 0.12894854800618644,
+          "translation_error_m": 0.00012938978525324791
+        },
+        {
+          "frame": "/home/jerry/rax-runtime/sessions/20261103T073444Z_unscrew_bottle_b1d812/agent-workspace/runtime/frames/202611031216348cb3f9",
+          "max_corner_error_m": 0.0005513451840054497,
+          "mean_corner_error_m": 0.00033100381164514033,
+          "reference": "stereo:wrist_left+wrist_right",
+          "rotation_error_deg": 0.11594393642359213,
+          "translation_error_m": 0.00024294937119147915
+        },
+        {
+          "frame": "/home/jerry/rax-runtime/sessions/20261103T073444Z_unscrew_bottle_b1d812/agent-workspace/runtime/frames/2026110312163533fd22",
+          "max_corner_error_m": 0.0007870857270351553,
+          "mean_corner_error_m": 0.0003941357510487185,
+          "reference": "stereo:wrist_left+wrist_right",
+          "rotation_error_deg": 0.14244724022865213,
+          "translation_error_m": 0.00018942728206701838
+        }
+      ],
+      "ok": true,
+      "recalibration": {
+        "method": "Stationary board transfer from shared corners triangulated by two frozen calibrated cameras; rigid metric board fit without scale changes or outlier removal.",
+        "report": "front-recalibration-report.json",
+        "source_manifest_sha256": "3afeba491d6ffcab4a5dc42d97ef2f2267dcdcbbeaddc2662d7a5c2512a44473"
+      },
+      "stationary_board_residuals": [
+        {
+          "frame": "/home/jerry/rax-runtime/sessions/20261103T073444Z_unscrew_bottle_b1d812/agent-workspace/runtime/frames/20261103121615780e26",
+          "max_corner_error_m": 0.0009734407404677544,
+          "mean_corner_error_m": 0.00039150579915481887,
+          "reference": "stereo:wrist_left+wrist_right",
+          "rotation_error_deg": 0.04165261398167306,
+          "translation_error_m": 0.00021424357321320897
+        },
+        {
+          "frame": "/home/jerry/rax-runtime/sessions/20261103T073444Z_unscrew_bottle_b1d812/agent-workspace/runtime/frames/202611031216161434df",
+          "max_corner_error_m": 0.0007582267449389483,
+          "mean_corner_error_m": 0.0003050550708073267,
+          "reference": "stereo:wrist_left+wrist_right",
+          "rotation_error_deg": 0.140940501973057,
+          "translation_error_m": 0.0003084346056892262
+        },
+        {
+          "frame": "/home/jerry/rax-runtime/sessions/20261103T073444Z_unscrew_bottle_b1d812/agent-workspace/runtime/frames/20261103121617b2e7d9",
+          "max_corner_error_m": 0.0007714265204365456,
+          "mean_corner_error_m": 0.00048042894659247967,
+          "reference": "stereo:wrist_left+wrist_right",
+          "rotation_error_deg": 0.11515578066441869,
+          "translation_error_m": 0.00034452553246514634
+        },
+        {
+          "frame": "/home/jerry/rax-runtime/sessions/20261103T073444Z_unscrew_bottle_b1d812/agent-workspace/runtime/frames/20261103121618ea75c2",
+          "max_corner_error_m": 0.0004809323699862888,
+          "mean_corner_error_m": 0.00028449679086988154,
+          "reference": "stereo:wrist_left+wrist_right",
+          "rotation_error_deg": 0.08834462395850648,
+          "translation_error_m": 0.00024754621017003564
+        },
+        {
+          "frame": "/home/jerry/rax-runtime/sessions/20261103T073444Z_unscrew_bottle_b1d812/agent-workspace/runtime/frames/20261103121619cc9dc0",
+          "max_corner_error_m": 0.0006947025719957765,
+          "mean_corner_error_m": 0.000324161935902828,
+          "reference": "stereo:wrist_left+wrist_right",
+          "rotation_error_deg": 0.06205193972309979,
+          "translation_error_m": 8.045702779626112e-05
+        },
+        {
+          "frame": "/home/jerry/rax-runtime/sessions/20261103T073444Z_unscrew_bottle_b1d812/agent-workspace/runtime/frames/20261103121620fe6ac1",
+          "max_corner_error_m": 0.0005596184803026638,
+          "mean_corner_error_m": 0.0002631371809549553,
+          "reference": "stereo:wrist_left+wrist_right",
+          "rotation_error_deg": 0.015076035879348861,
+          "translation_error_m": 0.00011275261346294066
+        },
+        {
+          "frame": "/home/jerry/rax-runtime/sessions/20261103T073444Z_unscrew_bottle_b1d812/agent-workspace/runtime/frames/20261103121621f32caf",
+          "max_corner_error_m": 0.0007188992920364077,
+          "mean_corner_error_m": 0.0003893470016096961,
+          "reference": "stereo:wrist_left+wrist_right",
+          "rotation_error_deg": 0.2062553306354689,
+          "translation_error_m": 0.00015887510709979211
+        },
+        {
+          "frame": "/home/jerry/rax-runtime/sessions/20261103T073444Z_unscrew_bottle_b1d812/agent-workspace/runtime/frames/2026110312162214fedc",
+          "max_corner_error_m": 0.0006707920497378698,
+          "mean_corner_error_m": 0.0003238293910576376,
+          "reference": "stereo:wrist_left+wrist_right",
+          "rotation_error_deg": 0.10351104308257343,
+          "translation_error_m": 9.166581232636362e-05
+        },
+        {
+          "frame": "/home/jerry/rax-runtime/sessions/20261103T073444Z_unscrew_bottle_b1d812/agent-workspace/runtime/frames/202611031216236eda38",
+          "max_corner_error_m": 0.0008370370311374761,
+          "mean_corner_error_m": 0.00032665322207158545,
+          "reference": "stereo:wrist_left+wrist_right",
+          "rotation_error_deg": 0.22549750579098848,
+          "translation_error_m": 0.0002908359506615569
+        },
+        {
+          "frame": "/home/jerry/rax-runtime/sessions/20261103T073444Z_unscrew_bottle_b1d812/agent-workspace/runtime/frames/20261103121624bd5c7d",
+          "max_corner_error_m": 0.0005997166800080071,
+          "mean_corner_error_m": 0.00027392136237308303,
+          "reference": "stereo:wrist_left+wrist_right",
+          "rotation_error_deg": 0.15748512847299972,
+          "translation_error_m": 0.0002417051106007718
+        },
+        {
+          "frame": "/home/jerry/rax-runtime/sessions/20261103T073444Z_unscrew_bottle_b1d812/agent-workspace/runtime/frames/20261103121625cca0e3",
+          "max_corner_error_m": 0.0006699505970452022,
+          "mean_corner_error_m": 0.00033639728324607666,
+          "reference": "stereo:wrist_left+wrist_right",
+          "rotation_error_deg": 0.1301118810441618,
+          "translation_error_m": 0.000186566575891524
+        },
+        {
+          "frame": "/home/jerry/rax-runtime/sessions/20261103T073444Z_unscrew_bottle_b1d812/agent-workspace/runtime/frames/2026110312162690351d",
+          "max_corner_error_m": 0.0007992643993745234,
+          "mean_corner_error_m": 0.00043222238354511327,
+          "reference": "stereo:wrist_left+wrist_right",
+          "rotation_error_deg": 0.13582712012938306,
+          "translation_error_m": 0.00013936545452169187
+        }
+      ],
+      "training_count": 12
+    },
     "side_a": {
       "T_cam_base": [
         [
@@ -1248,10 +1564,52 @@
         "wrist_left",
         "wrist_right"
       ]
+    },
+    {
+      "camera": "front",
+      "recorded_at": "2026-11-03T20:10:33Z",
+      "reference_cameras": [
+        "wrist_left",
+        "wrist_right"
+      ],
+      "report": "front-recalibration-report-4e82078cd2cc6d55.json",
+      "unchanged_cameras": [
+        "side_a",
+        "side_b",
+        "wrist_left",
+        "wrist_right"
+      ]
+    },
+    {
+      "camera": "front",
+      "recorded_at": "2026-11-03T20:16:36Z",
+      "reference_cameras": [
+        "wrist_left",
+        "wrist_right"
+      ],
+      "report": "front-recalibration-report.json",
+      "unchanged_cameras": [
+        "side_a",
+        "side_b",
+        "wrist_left",
+        "wrist_right"
+      ]
     }
   ],
   "fresh_verification": {
     "cameras": {
+      "front": {
+        "checks": 8,
+        "fresh_frames": 8,
+        "max_corner_error_mm": 0.7870857270351552,
+        "max_reference_ray_error_mm": 2.0189815789596834,
+        "max_reference_rigidity_error_mm": 0.5622098944131854,
+        "max_reprojection_mean_px": 0.46798840165138245,
+        "max_rotation_deg": 0.20511191908534385,
+        "max_translation_mm": 0.4284807006016894,
+        "min_shared_corners": 20,
+        "report": "front-recalibration-report.json"
+      },
       "side_a": {
         "checks": 24,
         "fresh_frames": 8,

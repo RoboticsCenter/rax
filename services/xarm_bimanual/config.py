@@ -44,7 +44,7 @@ def combined_actions(arguments):
 
 
 def validate_options(options):
-    from services.xarm.backend import DEFAULTS
+    from services.xarm.backend import DEFAULTS, configured_home
     if not isinstance(options, dict) or set(options) - SHARED_OPTIONS - {'arms'}:
         raise ValueError('bimanual options accept arms and shared camera/recording/launcher settings')
     for key in ('stream_enabled', 'stream_archive', 'motion_archive_enabled'):
@@ -76,12 +76,13 @@ def validate_options(options):
                 raise ValueError(f'{side} {key} must be three finite numbers')
         if any(lo >= hi for lo, hi in zip(merged['workspace_min'], merged['workspace_max'])):
             raise ValueError(f'{side} workspace_min must be below workspace_max')
-        for key in allowed - {'workspace_min', 'workspace_max', 'xarm_ip', 'end_effector'}:
+        for key in allowed - {'workspace_min', 'workspace_max', 'xarm_ip', 'end_effector', 'home_joints'}:
             value = merged[key]
             if type(value) not in (int, float) or not math.isfinite(value) or value < 0:
                 raise ValueError(f'{side} {key} must be finite and nonnegative')
             if value == 0 and key not in ('settle_s', 'link_min_z', 'workspace_guard_margin_m'):
                 raise ValueError(f'{side} {key} must be positive')
+        configured_home(merged)
         hand = hand_config(cfg.get('end_effector'))
         if hand['handedness'] != side:
             raise ValueError(f'arms.{side} must contain the {side} hand profile')
@@ -90,8 +91,8 @@ def validate_options(options):
         serials.add(hand['serial'])
         addresses.add(hand['address'])
     cameras = options.get('cameras')
-    if not isinstance(cameras, list) or len(cameras) != 4:
-        raise ValueError('configure four cameras: two fixed views and one wrist camera per arm')
+    if not isinstance(cameras, list) or len(cameras) < 4:
+        raise ValueError('configure at least two fixed views and one wrist camera per arm')
     names, serials, wrists = set(), set(), []
     fixed = 0
     for camera in cameras:
@@ -115,8 +116,8 @@ def validate_options(options):
         for key in ('width', 'height'):
             if type(camera.get(key, 640 if key == 'width' else 480)) is not int or camera.get(key, 1) <= 0:
                 raise ValueError(f'camera {key} must be a positive integer')
-    if fixed != 2 or sorted(wrists) != list(SIDES):
-        raise ValueError('need two fixed cameras and exactly one wrist camera per arm')
+    if fixed < 2 or sorted(wrists) != list(SIDES):
+        raise ValueError('need at least two fixed cameras and exactly one wrist camera per arm')
     unverified = options.get('unverified_camera_extrinsics', [])
     if (not isinstance(unverified, list) or any(not isinstance(name, str) for name in unverified)
             or len(set(unverified)) != len(unverified) or set(unverified) - names):

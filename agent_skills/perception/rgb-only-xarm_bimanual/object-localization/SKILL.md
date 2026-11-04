@@ -1,6 +1,6 @@
 ---
 name: object-localization
-description: Locate objects using two side and two wrist RealSense views, with explicit left/right base frames and the session's RGB calibration. Use before choosing bimanual approach, grasp or placement targets.
+description: Locate objects using configured fixed and wrist RealSense views, with explicit left/right base frames and the session's RGB calibration. Use before choosing bimanual approach, grasp or placement targets.
 ---
 
 # Bimanual RGB perception
@@ -64,12 +64,16 @@ request calibration or a specific operator-provided measurement.
 {% endif %}
 
 `xarm_status.calibration_status` reports `rgb_extrinsics_verified` when all views
-are verified, or `rgb_extrinsics_partial` when an operator has invalidated specific
-camera extrinsics. Its calibration summary lists per-camera status and the bundle.
+are verified, or `rgb_extrinsics_partial` when specific views have moved or an
+additional or replacement camera has not yet been calibrated. Its calibration summary lists
+per-camera status and the bundle.
 An `extrinsics_unverified` view remains useful for visual inspection but supplies
 no base transform or projected marks. Use two suitable verified views for metric
 localization; an unverified side view does not require stopping otherwise supported
 work. Do not recover its old transform from earlier captures after the mount moved.
+A replacement camera also has its own optical model. Matching a view name such
+as `front` is insufficient: compare serial, image profile and calibration identifier
+before reusing observations or geometry.
 The operator owns recalibration and depth-alignment validation; calibration files
 outside the workspace are not agent tools.
 

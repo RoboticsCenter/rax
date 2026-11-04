@@ -1,10 +1,18 @@
 # Bimanual ChArUco extrinsics
 
 `scripts/xarm-bimanual-charuco-calibrate` adapts `real/xarmwuji`'s original
-18-pose workflow for two xArm bases, two wrist cameras and two fixed cameras.
+18-pose workflow for two xArm bases, two wrist cameras and all configured fixed cameras
+(currently `side_a`, `side_b` and `front`).
 It uses the existing bimanual MCP owner for motion and separate read-only SDK
 connections for precise pose snapshots. It never opens another Wuji owner or
 changes finger targets. Only one arm moves at a time.
+
+Start from the operator's current per-arm saved homes, reported as
+`arms.<side>.home_joints` by `xarm_status`; the left and right homes can differ.
+The sweep is relative to each arm's measured starting TCP pose and returns to
+that same pose. Updating a home does not change the rigid wrist-to-TCP transform,
+but it changes board visibility and the sweep's reachability, so run preflight
+at the new homes before collection. Do not substitute the old single-arm preset.
 
 The board may be placed differently from an earlier calibration. This full
 workflow solves its new pose and the alignment between the arm bases; it does
@@ -17,8 +25,8 @@ and the final physical row absent. A standard 13-row layout does not match
 the observed IDs. The print must lie flat.
 
 Camera identities come from the session's configuration: `wrist_left` belongs
-to the left arm, `wrist_right` to the right arm, and `side_a`/`side_b` are fixed.
-All four are captured at 1280×720, 6 FPS, with live factory RGB intrinsics.
+to the left arm, `wrist_right` to the right arm, and `side_a`/`side_b`/`front` are fixed.
+All five are captured at 1280×720, 6 FPS, with live factory RGB intrinsics.
 The default procedure fits extrinsics only. The optional
 `--refine-wrist-intrinsics` applies the original script's training-only Brown5
 RGB lens refinement; held-out images do not participate in that fit. It saves
@@ -44,9 +52,18 @@ collection's pose-training set for hand-eye fitting. This allows edge views to
 constrain the lens model without substituting sparse edge views for well-framed
 hand-eye observations. Every optical training frame is recorded in the model.
 
-Stop the standalone camera dashboard before collection to release its USB
-streams. The collector owns one camera service and exposes a read-only live
-preview on port 8765 while running. Restore the normal dashboard afterward.
+The collector can own capture or borrow the existing session camera owner.
+For borrowed capture, load a temporary operator backend configuration with no
+`calibration_manifest`, raw factory RGB capture, and the collection speed settings
+below. Pass `--camera-socket SOCKET` to both collection and verification; the
+existing live viewer stays on port 8765. The collector checks each frame's serial,
+profile and raw factory source, stages captures through the owner's frames root,
+and copies them into its calibration artifacts. It never opens a second camera
+owner or applies the old calibrated optical models.
+
+Without `--camera-socket`, release the existing camera owner and live viewer first.
+The collector then owns capture and a temporary preview on port 8765. Restore the
+normal calibrated backend afterward in either mode.
 
 ```bash
 export RAX_ARTIFACT_ROOT=/home/jerry/rax-runtime
@@ -92,7 +109,7 @@ all transforms independently. SDK reachability and normal backend checks still
 apply; a preliminary estimate is never installed as calibration.
 
 The verifier checks a fresh home observation and three newly seeded poses per
-arm, with three separate captures per pose. It checks all four cameras in each
+arm, with three separate captures per pose. It checks every configured camera in each
 capture, including the stationary wrist. Its plan and source-fit hash are saved
 before moving. It returns both arms to their starting poses and records every
 residual without fitting or discarding observations.
@@ -118,13 +135,13 @@ Successful fits write a candidate containing:
   describe the captured resolution; runtime profile conversion and depth
   alignment still require validation.
 
-Candidates are written only when all four camera checks pass. This script does
+Candidates are written only when every configured camera check passes. This script does
 not install them into the running backend or claim depth/pixel-to-base support;
 those runtime capabilities require an explicit configuration integration step.
 
-## Recalibrating moved fixed cameras
+## Calibrating individual fixed cameras
 
-When one or both fixed mounts moved, preserve the unchanged camera transforms,
+When fixed mounts move or a fixed view is added, preserve the unchanged camera transforms,
 both wrist models and the inter-base transform. The board can be in a new
 position. Place it flat and stationary with at least twelve noncollinear
 ChArUco corners visible in each camera. Use the existing board definition,
@@ -141,22 +158,56 @@ With a running bimanual MCP backend and stationary arms:
 .venv/bin/python scripts/xarm-bimanual-fixed-camera-calibrate \
   --session SESSION --mcp-socket MCP_SOCKET --target side_a side_b \
   --output NEW_CALIBRATION_DIRECTORY --install
+
+# A new front view can use the two unchanged wrists as references:
+.venv/bin/python scripts/xarm-bimanual-fixed-camera-calibrate \
+  --session SESSION --mcp-socket MCP_SOCKET --target front \
+  --reference wrist_left wrist_right --output NEW_CALIBRATION_DIRECTORY --install
+
+# For cropped planar views, use shared corners to constrain the reference pose:
+.venv/bin/python scripts/xarm-bimanual-fixed-camera-calibrate \
+  --session SESSION --mcp-socket MCP_SOCKET --target front \
+  --reference wrist_left wrist_right --reference-method stereo \
+  --output NEW_CALIBRATION_DIRECTORY --install
 ```
 
 This command only calls `xarm_observe`; it does not prepare or move any robot.
 It fits the selected fixed cameras from twelve captures using unchanged camera
-poses with equal weights. A single target uses the other three cameras; two side
-targets use only the two wrist cameras. Both moved side cameras are excluded from
-the reference set. It freezes the fits before eight fresh captures and checks
+poses with equal weights. By default, references are all calibrated, non-target
+views. `--reference` selects at least two unchanged calibrated views when other
+views cannot see the board. Targets and unverified views cannot be references.
+New targets must already be configured as fixed cameras and explicitly marked
+unverified; their live factory RGB profile is frozen on the first capture and
+checked throughout collection. Existing optical models are never refitted here.
+It freezes the fits before eight fresh captures and checks
 each target against every reference camera. It retains the 5 mm / 1°
 consistency limits and 1-pixel mean reprojection limit. Detector selection uses
 decoded corner count, never geometric residual. No failed observation is silently
 discarded. Omit `--install` to retain a candidate without updating the bundle.
 
+The optional stereo method uses exactly two frozen reference cameras. It requires
+at least twelve shared, noncollinear ChArUco corners spanning 40 mm in both board
+axes, with converging rays between 10° and 170°. It triangulates those corners
+and fits the known metric board by a rigid transform, without rescaling the board
+or discarding outliers. This avoids averaging independently estimated planar
+poses when cropped views poorly constrain their tilt. Each capture must pass
+5 mm limits on viewing-ray distance and rigid-board residual. The original
+1-pixel per-image board reprojection check remains in place. Fresh verification
+checks the frozen target transform against the stereo board pose at 5 mm / 1°,
+and also checks every triangulated corner against the target's inferred board
+at 5 mm. Reports distinguish this method from independent-pose averaging and
+retain all reference geometry checks. Existing reference calibration uncertainty
+still applies; neither method independently measures absolute robot accuracy.
+The projection and pose conventions follow
+[OpenCV's calibration documentation](https://docs.opencv.org/4.13.0/d9/d0c/group__calib3d.html).
+
 Installation requires every selected target to pass and replaces only their
 base-transform files and manifest entries, with a dedicated report for each.
-Both target entries are included in one atomic manifest replacement. The original
+New targets also add their camera specification and measured factory color model.
+All target entries are included in one atomic manifest replacement. The original
 verification report remains historical evidence for the unchanged calibration.
+After a passing installation, remove only the fitted targets from
+`unverified_camera_extrinsics` in the session and resume configurations.
 Restart the backend after installation: an already running backend retains its
 previous manifest. Fresh stationary observations establish local board-pose
 consistency; they do not replace a wrist hand-eye sweep if a wrist mount or arm

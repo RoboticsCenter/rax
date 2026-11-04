@@ -123,7 +123,15 @@
           }
         }
       },
-      "xarm_ip": "192.168.2.205"
+      "xarm_ip": "192.168.2.205",
+      "home_joints": [
+        -0.122173,
+        -0.174533,
+        -2.094395,
+        0.0,
+        2.094395,
+        0.0
+      ]
     },
     "right": {
       "workspace_min": [
@@ -320,7 +328,15 @@
         "max_temperature_c": 65.0,
         "allow_encoder_warning": true
       },
-      "xarm_ip": "192.168.1.241"
+      "xarm_ip": "192.168.1.241",
+      "home_joints": [
+        0.174533,
+        -0.174533,
+        -2.094395,
+        0.0,
+        2.094395,
+        0.0
+      ]
     }
   },
   "cameras": [
@@ -353,6 +369,13 @@
       "arm": "right",
       "width": 1280,
       "height": 720
+    },
+    {
+      "height": 720,
+      "mount": "fixed",
+      "name": "front",
+      "serial": "263222071915",
+      "width": 1280
     }
   ],
   "camera_cpus": "0-15",
@@ -362,5 +385,8 @@
   "stream_archive": false,
   "motion_archive_enabled": true,
   "protected_paths": [],
-  "calibration_manifest": "calibration/xarm-wuji-bimanual/manifest.json"
+  "calibration_manifest": "calibration/xarm-wuji-bimanual/manifest.json",
+  "unverified_camera_extrinsics": [
+    "front"
+  ]
 }

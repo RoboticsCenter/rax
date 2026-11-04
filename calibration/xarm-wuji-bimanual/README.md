@@ -5,6 +5,8 @@ camera mounts were adjusted. That full pass established all four camera extrinsi
 both wrist RGB models, and the alignment between the two arm bases. Both side
 views were subsequently refitted on November 3 at 16:54 UTC; Side A was secured and refitted at 16:58 UTC;
 both wrist calibrations, all RGB models and the inter-base alignment were preserved.
+The front view was added on November 3 using stationary stereo observations from
+the unchanged wrist cameras. No earlier camera model or transform was refitted.
 `examples/xarm-wuji-bimanual.json` selects it with every camera verified.
 
 | Role | Serial | Fresh maximum position residual | Fresh maximum angle residual |
@@ -13,12 +15,51 @@ both wrist calibrations, all RGB models and the inter-base alignment were preser
 | Right wrist | 752112070450 | 4.48 mm | 0.430° |
 | Side A | 263322070113 | 3.99 mm | 0.504° |
 | Side B | 262422074331 | 3.26 mm | 0.451° |
+| Front | 348522070593 | 0.43 mm | 0.205° |
 
 The original full sweep's 76 fresh checks passed the existing 5 mm / 1° pose-consistency limits and
 1-pixel mean reprojection limit. The largest mean reprojection error was
 0.743 pixels. These are board-pose consistency residuals, not independently
 measured absolute robot positioning accuracy. Depth scale and RGB-depth
 registration remain unqualified; no depth pixel-to-position endpoint is exposed.
+
+## Front-camera addition
+
+The front mount was bumped after the initial calibration and refitted on
+November 3 at 20:16 UTC using the same stereo method. Twelve new fitting captures
+and eight fresh verification captures passed: maximum pose residual 0.43 mm /
+0.205°, maximum triangulated-corner residual 0.79 mm, and maximum mean front
+reprojection 0.468 pixels. Two additional captures passed through the restarted
+MCP backend. Only the front extrinsics changed; all five RGB models, both wrists,
+both side extrinsics and the inter-base transform were preserved exactly.
+The current evidence is in `front-recalibration-report.json` and
+`/home/jerry/rax-runtime/sessions/20261103T073444Z_unscrew_bottle_b1d812/operator/front-recalibration-20261103T201605Z/`.
+The suffixed front report preserves the initial calibration described below.
+
+The final front mount was calibrated with the board lying flat on the wooden
+work surface. Earlier captures with the board on a box failed image or pose
+consistency checks and were not installed. Independent planar-pose averaging
+also failed the 5 mm / 1° check on flat-board captures (6.19 mm / 1.15°).
+The accepted method instead triangulated shared corners using the fixed wrist
+models, then fitted a rigid metric board pose without scale changes or outlier
+removal. Reference viewing-ray and board-rigidity residuals were checked in
+metres; the per-image 1-pixel board reprojection requirement remained unchanged.
+
+Twelve new captures fitted only the front transform, followed by eight fresh
+verification captures after freezing it. The fresh maxima were 0.39 mm / 0.318°
+for board-pose consistency, 0.99 mm for triangulated-corner consistency,
+0.455 pixels for mean front reprojection, 2.01 mm for reference-ray distance,
+and 0.72 mm for reference-board rigidity. At least 24 shared wrist corners were
+available in every verification frame. These residuals inherit the existing
+wrist-calibration uncertainty and do not establish submillimetre absolute accuracy.
+
+`front-recalibration-report.json` records the fit, frozen reference models,
+individual captures and verification checks. Raw captures and failed diagnostic
+attempts are retained under
+`/home/jerry/rax-runtime/sessions/20261103T073444Z_unscrew_bottle_b1d812/operator/front-calibration-20261103T190044Z/`.
+The accepted candidate is `fit-stereo/result.json`. Both side transforms, both
+wrist transforms, all four existing color models and the inter-base transform
+are unchanged from the preceding manifest.
 
 ## Latest side-camera update
 
@@ -90,6 +131,7 @@ That evidence is saved as `runtime-verification.json` in the capture directory.
 - `wrist_*_T_cam_tcp.yaml` and `wrist_*_T_cam_flange.yaml`: each wrist camera
   relative to its owning arm's TCP and flange.
 - `side_*_T_cam_{left,right}_base.yaml`: each side camera relative to both bases.
+- `front_T_cam_{left,right}_base.yaml`: the front camera relative to both bases.
 - `T_left_base_right_base.yaml`: right base into left base.
 - `*_color_model.json`: matching 1280×720 @ 6 FPS RGB models.
 - `board.json`: 10×13 physical squares, 20 mm squares and 15 mm markers,

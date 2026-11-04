@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
-"""Collect and fit two wrist and two fixed camera extrinsics using real MCP moves.
+"""Collect and fit two wrist and configured fixed camera extrinsics using real MCP moves.
 
 Uses the original xarm-charuco-calibrate pose plan and geometry implementation.
-The board and both fixed cameras must remain stationary across both arm passes.
+The board and all fixed cameras must remain stationary across both arm passes.
 One camera owner serves capture and the optional read-only live preview.
 """
 from __future__ import annotations
@@ -12,6 +12,7 @@ from copy import deepcopy
 import importlib.machinery
 import importlib.util
 import json
+import shutil
 import signal
 import socket
 import subprocess
@@ -50,6 +51,28 @@ def original_workflow():
 
 def save(path, value):
     write_private_json(path, jsonable(value))
+
+
+class CameraConnection:
+    """Borrow an existing raw camera owner without opening or closing its devices."""
+    def __init__(self, path, frames_root):
+        self.path, self.frames_root = path, Path(frames_root)
+
+    def request(self, payload, timeout=90):
+        with socket.socket(socket.AF_UNIX) as connection:
+            connection.settimeout(timeout)
+            connection.connect(str(self.path))
+            connection.sendall(json.dumps(payload).encode()+b'\n')
+            value = json.loads(connection.makefile('rb').readline())
+        if not value.pop('ok', False):
+            raise RuntimeError(value.get('error', 'camera server error'))
+        return value
+
+    def start(self):
+        self.request({'op': 'ping'})
+
+    def close(self):
+        pass  # The operator backend retains ownership, including the live viewer.
 
 
 def mcp(path, name, arguments, audit):
@@ -168,15 +191,23 @@ def pose_change(a, b):
 def capture(service, root, specs, drivers):
     before = arm_poses(drivers)
     folder = root/'frames'/str(time.time_ns())
+    capture_folder = service.frames_root/folder.name if isinstance(service, CameraConnection) else folder
     entries = service.request({'op': 'grab', 'cameras': [c['name'] for c in specs],
-                               'depth': False, 'out_dir': str(folder)})['cameras']
+                               'depth': False, 'out_dir': str(capture_folder)})['cameras']
     after = arm_poses(drivers)
+    if capture_folder != folder:
+        shutil.copytree(capture_folder, folder)
+        shutil.rmtree(capture_folder)
     movement = {s: pose_change(before[s], after[s]) for s in SIDES}
     if any(v['translation_error_m'] > .0002 or v['rotation_error_deg'] > .1 for v in movement.values()):
         raise RuntimeError(f'arm moved during capture: {movement}')
     meta = {'arms_before': before, 'arms': after, 'capture_movement': movement, 'cameras': {}}
     for spec in specs:
         entry = entries[spec['name']]
+        if (entry['serial'] != spec['serial'] or entry['width'] != spec['width']
+                or entry['height'] != spec['height'] or entry['fps'] != 6
+                or entry.get('intrinsics_source') != 'realsense_factory'):
+            raise ValueError(f"{spec['name']}: calibration capture requires its matching raw factory RGB profile")
         meta['cameras'][spec['name']] = {**entry, 'rgb': Path(entry['rgb']).name,
                                        'mount': spec['mount'], 'arm': spec.get('arm')}
     save(folder/'meta.json', meta)
@@ -345,6 +376,8 @@ def main():
     mode.add_argument('--fit', type=Path, metavar='COLLECTION')
     parser.add_argument('--session', type=Path)
     parser.add_argument('--mcp-socket', type=Path)
+    parser.add_argument('--camera-socket', type=Path,
+                        help='borrow an existing raw camera owner; leave its live viewer running')
     parser.add_argument('--board', type=Path, default=PROJECT/'calibration/xarm-wuji/board.json')
     parser.add_argument('--root', type=Path, required=True)
     parser.add_argument('--yes', action='store_true', help='operator authorizes the displayed sequential motion')
@@ -391,7 +424,8 @@ def main():
     workflow = original_workflow()
     camera_options = {**DEFAULTS, **options, 'stream_fps': 6, 'stream_archive': False,
                       'stream_depth_hz': 0, 'stream_window_s': 30}
-    service = CameraService(camera_options, root/'frames', root/'camera-server.log', 'NONE', stream=root/'stream')
+    service = (CameraConnection(args.camera_socket, config.root/'agent-workspace/runtime/frames') if args.camera_socket else
+               CameraService(camera_options, root/'frames', root/'camera-server.log', 'NONE', stream=root/'stream'))
     drivers, preview = {}, None
     moving = False
     data = {'complete': False, 'samples': {s: [] for s in SIDES}, 'captures': [], 'motions': []}
@@ -405,7 +439,7 @@ def main():
         for side in SIDES:
             workflow.validate_plan(plans[side], start[side], drivers[side], {**DEFAULTS, **options['arms'][side]})
         service.start()
-        if args.preview_port:
+        if args.preview_port and not args.camera_socket:
             with (root/'preview.log').open('ab') as log:
                 preview = subprocess.Popen([sys.executable, str(PROJECT/'scripts/xarm-camera-viewer'),
                     '--stream', str(root/'stream'), '--cameras', ','.join(c['name'] for c in specs),

@@ -23,7 +23,7 @@ import numpy as np
 from services.xarm import arming
 from services.controller import operator
 from services.storage_root import artifact_root
-from services.xarm.backend import DEFAULTS, HOME_Q
+from services.xarm.backend import DEFAULTS, configured_home
 from services.xarm.sdk import XArmDriver
 from services.xarm.end_effectors import kind as effector_kind
 
@@ -163,7 +163,7 @@ elif action == 'home':
         sys.exit(f'an agent session is running ({busy[0]}): stop it or use the agent; not homing')
     arm = driver()
     start = np.asarray(arm.state()['joints'])
-    goal = np.asarray(HOME_Q)
+    goal = configured_home(options())
     step = float(np.max(np.abs(goal - start)))
     seconds = max(4.0, step / 0.25)
     print('current', np.round(start, 3).tolist())

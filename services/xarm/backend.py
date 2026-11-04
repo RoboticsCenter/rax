@@ -41,6 +41,7 @@ LOWER = np.array([-2*np.pi, -2.059, -3.927, -2*np.pi, -1.692, -2*np.pi])
 UPPER = np.array([2*np.pi, 2.094, 0.192, 2*np.pi, np.pi, 2*np.pi])
 DEFAULTS = {
     'xarm_ip': '192.168.1.194',
+    'home_joints': HOME_Q,
     'workspace_min': [0.20, -0.55, 0.08],
     'workspace_max': [0.85, 0.55, 0.70],
     'workspace_guard_margin_m': 0.02,
@@ -79,6 +80,19 @@ DEFAULTS = {
     'end_effector': None,
 }
 LAUNCHER_OPTIONS = ('agent_python', 'protected_paths')
+
+
+def configured_home(options):
+    """Return the operator's six-joint home, with the legacy pose as default."""
+    value = options.get('home_joints', HOME_Q)
+    if (not isinstance(value, (list, tuple)) or len(value) != 6
+            or any(type(v) not in (int, float) or not np.isfinite(v) for v in value)):
+        raise ValueError('home_joints must contain six finite joint angles in radians')
+    goal = np.asarray(value, dtype=np.float64)
+    margin = options.get('joint_limit_margin_rad', DEFAULTS['joint_limit_margin_rad'])
+    if np.any(goal < LOWER + margin) or np.any(goal > UPPER - margin):
+        raise ValueError(f'home_joints outside the joint limits minus {margin} rad')
+    return goal
 
 
 def _schema(properties=None, required=()):
@@ -211,6 +225,7 @@ class XArmBackend:
         if unknown:
             raise ValueError(f'unknown xarm backend options: {sorted(unknown)}')
         self.options = {**DEFAULTS, **config.backend_options}
+        configured_home(self.options)
         self.end_effector_kind = end_effectors.kind(self.options)
         self.has_hand = self.end_effector_kind == 'wuji_hand2'
         self.hand_config = None
@@ -340,7 +355,8 @@ class XArmBackend:
                                                    'default': min(self.options['move_timeout_s'], MAX_POSE_TIMEOUT_S)}},
                                     ['position'])},
             {'name': 'xarm_move_joints', 'description':
-                'Joint-space move with xArm set_servo_angle. positions: 6 joint angles (rad); or preset "home". '
+                'Joint-space move with xArm set_servo_angle. positions: 6 joint angles (rad); or preset "home", '
+                'using the operator-configured home_joints reported by xarm_status. '
                 'The path is sampled through the controller FK and checked against workspace/table clearance '
                 'before moving. Longer moves execute bounded SDK segments within this call; '
                 'the caller need not subdivide joint targets. Uses the configured move timeout '
@@ -425,7 +441,8 @@ class XArmBackend:
     def _joint_goal(self, arguments):
         if ('positions' in arguments) == ('preset' in arguments):
             raise ValueError('give exactly one of positions or preset')
-        goal = np.asarray(HOME_Q if arguments.get('preset') == 'home' else arguments['positions'], dtype=np.float64)
+        goal = configured_home(self.options) if arguments.get('preset') == 'home' else np.asarray(
+            arguments['positions'], dtype=np.float64)
         margin = self.options['joint_limit_margin_rad']
         if not np.all(np.isfinite(goal)) or np.any(goal < LOWER + margin) or np.any(goal > UPPER - margin):
             raise ValueError(f'joint target outside the joint limits minus {margin} rad')
@@ -1098,6 +1115,7 @@ class XArmBackend:
         state = self.arm.state()
         value = {'robot': 'ufactory_xarm6', 'motion': arming.read(self.config.root), **self._pose_report(state),
                  'joints': np.round(np.asarray(state['joints']), 4).tolist(),
+                 'home_joints': configured_home(self.options).tolist(),
                  'controller_state': state.get('state'), 'controller_mode': state.get('mode'),
                  'error_code': state.get('error_code'), 'warn_code': state.get('warn_code'),
                  'workspace_box': {'min': self.box_min.tolist(), 'max': self.box_max.tolist()},

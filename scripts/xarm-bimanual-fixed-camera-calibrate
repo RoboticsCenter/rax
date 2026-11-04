@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Refit one or both fixed RGB cameras against the unchanged camera mounts.
+"""Fit selected fixed RGB cameras against unchanged calibrated camera mounts.
 
 Reads observations from an existing bimanual MCP backend; never commands motion.
 The board must remain flat and stationary throughout training and verification.
@@ -41,9 +41,9 @@ def difference(reference, measured):
             'rotation_error_deg': float(np.degrees(Rotation.from_matrix(delta[:3, :3]).magnitude()))}
 
 
-def observe(session, endpoint):
+def observe(session, endpoint, cameras=None):
     request = {'jsonrpc': '2.0', 'id': time.time_ns(), 'method': 'tools/call',
-               'params': {'name': 'xarm_observe', 'arguments': {}}}
+               'params': {'name': 'xarm_observe', 'arguments': {'cameras': cameras} if cameras else {}}}
     with socket.socket(socket.AF_UNIX) as connection:
         connection.settimeout(90)
         connection.connect(str(endpoint))
@@ -59,7 +59,7 @@ def observe(session, endpoint):
     return folder
 
 
-def detect(folder, calibration, board, detector, settings, overlays):
+def detect(folder, calibration, board, detector, settings, overlays, models=None):
     meta = json.loads((folder/'meta.json').read_text())
     if meta['calibration']['sha256'] != calibration.digest:
         raise ValueError('running backend and calibration manifest differ; restart the backend')
@@ -68,9 +68,9 @@ def detect(folder, calibration, board, detector, settings, overlays):
         turn = Rotation.from_quat(before['tcp_quaternion']).inv()*Rotation.from_quat(after['tcp_quaternion'])
         if meta['arm_moved_during_capture_mm'][side] > .2 or np.degrees(turn.magnitude()) > .1:
             raise ValueError('arm moved during the stationary capture')
-    poses, quality = {}, {}
+    poses, quality, observations = {}, {}, {}
     for name, entry in meta['cameras'].items():
-        model = calibration.manifest['camera_models'][name]
+        model = (models or calibration.manifest['camera_models'])[name]
         if any(entry[k] != model[k] for k in ('serial', 'width', 'height', 'fps')):
             raise ValueError(f'{name}: unexpected camera profile')
         if not np.allclose(entry['K'], model['K'], atol=1e-6, rtol=0):
@@ -103,12 +103,71 @@ def detect(folder, calibration, board, detector, settings, overlays):
         # Moved target cameras may deliberately have no runtime base transform.
         # Their fit needs only the freshly measured board pose in camera space.
         poses[name] = {'T_cam_board': pose}
+        observations[name] = {'ids': ids.ravel(), 'pixels': pixels.reshape(-1, 2),
+                              'K': K, 'distortion_coeffs': D}
         if entry.get('T_left_base_cam') is not None:
             poses[name]['T_left_base_board'] = np.asarray(entry['T_left_base_cam']) @ pose
+            observations[name]['T_left_base_cam'] = np.asarray(entry['T_left_base_cam'])
         if overlays is not None:
             cv.aruco.drawDetectedCornersCharuco(image, corners, ids, (0, 0, 255))
             cv.imwrite(str(overlays/f'{folder.name}_{name}.jpg'), image)
-    return {'frame': str(folder), 'poses': poses, 'quality': quality}
+    return {'frame': str(folder), 'poses': poses, 'quality': quality, 'observations': observations}
+
+
+def stereo_reference(sample, references, board):
+    """Locate a rigid board from shared corners, keeping both camera poses fixed.
+
+    Independent planar PnP poses can be poorly constrained by cropped views.
+    Triangulate their shared decoded corners instead, then fit a rigid transform
+    without a scale change or outlier removal. Reference uncertainty is measured
+    in metres by ray distances and board rigidity, not hidden by refitting cameras.
+    """
+    views = [sample['observations'][name] for name in references]
+    ids = sorted(set(map(int, views[0]['ids'])) & set(map(int, views[1]['ids'])))
+    if len(ids) < 12 or board.checkCharucoCornersCollinear(np.asarray(ids, np.int32)):
+        raise ValueError('stereo references need at least 12 shared noncollinear board corners')
+    obj = np.asarray(board.getChessboardCorners(), dtype=float)[ids]
+    if np.any(np.ptp(obj[:, :2], axis=0) < .04 - 1e-6):
+        raise ValueError('shared stereo corners must span at least 40 mm along both board axes')
+    normalized, camera_from_base, origins, rays = [], [], [], []
+    for view in views:
+        indices = {int(ident): i for i, ident in enumerate(view['ids'])}
+        pixels = np.asarray([view['pixels'][indices[ident]] for ident in ids], dtype=float)
+        uv = cv.undistortPoints(pixels.reshape(-1, 1, 2), np.asarray(view['K']),
+                               np.asarray(view['distortion_coeffs'])).reshape(-1, 2)
+        T = np.asarray(view['T_left_base_cam'])
+        ray = (T[:3, :3] @ np.c_[uv, np.ones(len(uv))].T).T
+        ray /= np.linalg.norm(ray, axis=1)[:, None]
+        normalized.append(uv)
+        camera_from_base.append(invert(T))
+        origins.append(T[:3, 3])
+        rays.append(ray)
+    angles = np.degrees(np.arccos(np.clip(np.sum(rays[0]*rays[1], axis=1), -1, 1)))
+    if np.any(angles < 10) or np.any(angles > 170):
+        raise ValueError('shared stereo rays are too nearly parallel')
+    homogeneous = cv.triangulatePoints(camera_from_base[0][:3], camera_from_base[1][:3],
+                                        normalized[0].T, normalized[1].T)
+    if np.any(np.abs(homogeneous[3]) < 1e-12):
+        raise ValueError('stereo triangulation produced a point at infinity')
+    xyz = (homogeneous[:3]/homogeneous[3]).T
+    if not np.isfinite(xyz).all() or any(np.any((T[:3, :3] @ xyz.T + T[:3, 3:4])[2] <= 0)
+                                       for T in camera_from_base):
+        raise ValueError('stereo points must be finite and in front of both reference cameras')
+    u, _, vt = np.linalg.svd((obj-obj.mean(axis=0)).T @ (xyz-xyz.mean(axis=0)))
+    R = vt.T @ u.T
+    if np.linalg.det(R) < 0:
+        vt[-1] *= -1
+        R = vt.T @ u.T
+    T = np.eye(4)
+    T[:3, :3], T[:3, 3] = R, xyz.mean(axis=0) - R @ obj.mean(axis=0)
+    rigidity = np.linalg.norm((R @ obj.T).T + T[:3, 3] - xyz, axis=1)
+    ray_errors = {name: np.linalg.norm(np.cross(xyz-origin, ray), axis=1)
+                  for name, origin, ray in zip(references, origins, rays)}
+    if rigidity.max() > .005 or any(error.max() > .005 for error in ray_errors.values()):
+        raise ValueError('stereo references exceed the 5 mm board-rigidity or viewing-ray limit')
+    return {'T_left_base_board': T, 'corner_ids': ids, 'board_points': obj,
+            'triangulated_points_left_base': xyz, 'ray_angles_deg': angles,
+            'rigidity_error_m': rigidity, 'ray_error_m': ray_errors}
 
 
 def install(result, manifest_path):
@@ -121,7 +180,7 @@ def install(result, manifest_path):
     updated = deepcopy(manifest)
     reports = list(result['results'].values()) if 'results' in result else [result]
     targets = [report['target'] for report in reports]
-    if len(set(targets)) != len(targets) or not set(targets) <= {'side_a', 'side_b'}:
+    if len(set(targets)) != len(targets):
         raise ValueError('expected distinct fixed-camera targets')
     if not all(report['ok'] and report['source_manifest_sha256'] == result['source_manifest_sha256']
                for report in reports):
@@ -129,6 +188,17 @@ def install(result, manifest_path):
     bundle = manifest_path.parent
     for report in reports:
         target = report['target']
+        spec = report.get('camera_spec') or next(c for c in manifest['camera_specs'] if c['name'] == target)
+        if (spec['mount'] != 'fixed' or spec.get('arm') is not None
+                or not target.replace('_', '').replace('-', '').isalnum() or spec['name'] != target):
+            raise ValueError('target must be a named fixed camera')
+        if target not in updated['camera_models']:
+            model = report['camera_model']
+            if model['serial'] != spec['serial'] or report['serial'] != spec['serial']:
+                raise ValueError('new fixed camera identity mismatch')
+            updated['camera_models'][target] = deepcopy(model)
+            updated['camera_specs'].append(deepcopy(spec))
+            write_private_json(bundle/f'{target}_color_model.json', model)
         previous_path = bundle/f'{target}-recalibration-report.json'
         if previous_path.exists():
             previous_bytes = previous_path.read_bytes()
@@ -142,7 +212,7 @@ def install(result, manifest_path):
             for update in updated.get('fixed_camera_updates', []):
                 if update.get('camera') == target and update.get('report') == previous_path.name:
                     update['report'] = historical.name
-        fixed = updated['fixed'][target]
+        fixed = updated['fixed'].setdefault(target, {})
         # Preserve the original board-pose convention for this historical fit field.
         T = np.asarray(report['T_cam_left_base'])
         fixed.update(T_cam_base=T.tolist(), T_cam_left_base=T.tolist(),
@@ -176,8 +246,11 @@ def main():
     parser.add_argument('--session', required=True, type=Path)
     parser.add_argument('--mcp-socket', required=True, type=Path)
     parser.add_argument('--output', required=True, type=Path)
-    parser.add_argument('--target', required=True, nargs='+', choices=('side_a', 'side_b'),
-                        help='all fixed cameras that moved; excluded from the reference set')
+    parser.add_argument('--target', required=True, nargs='+',
+                        help='configured fixed cameras to fit, including newly added views')
+    parser.add_argument('--reference', nargs='+', help='unchanged calibrated references (default: all non-target views)')
+    parser.add_argument('--reference-method', choices=('pose-average', 'stereo'), default='pose-average',
+                        help='average independent board poses, or triangulate shared corners from exactly two references')
     parser.add_argument('--training-count', type=int, default=12)
     parser.add_argument('--verification-count', type=int, default=8)
     parser.add_argument('--install', action='store_true')
@@ -190,6 +263,17 @@ def main():
     session = args.session.resolve()
     options = json.loads((session/'operator-input.json').read_text())['backend_options']
     calibration = BimanualCalibration(options)
+    specs = {c['name']: c for c in options['cameras']}
+    if any(name not in specs or specs[name]['mount'] != 'fixed' for name in args.target):
+        parser.error('targets must name configured fixed cameras')
+    references = args.reference if args.reference is not None else [
+        n for n in calibration.models if n not in args.target and n not in calibration.unverified]
+    if (len(references) < 2 or len(set(references)) != len(references)
+            or any(n not in calibration.models or n in calibration.unverified or n in args.target for n in references)):
+        parser.error('use at least two distinct unchanged calibrated reference cameras')
+    if args.reference_method == 'stereo' and len(references) != 2:
+        parser.error('stereo board transfer requires exactly two reference cameras')
+    models = deepcopy(calibration.manifest['camera_models'])
     settings = calibration.manifest['board']
     if not isinstance(settings, dict):
         settings = json.loads((calibration.path.parent/'board.json').read_text())
@@ -197,16 +281,31 @@ def main():
     args.output.mkdir(parents=True, exist_ok=False)
     overlays = args.output/'overlays'
     overlays.mkdir()
-    references = [n for n in calibration.models if n not in args.target]
     training, verification = [], []
     last_timestamps = {}
 
     def capture(phase, index):
-        sample = detect(observe(session, args.mcp_socket), calibration, board, detector, settings,
-                        overlays if index == 0 else None)
+        folder = observe(session, args.mcp_socket, [*references, *args.target])
+        meta = json.loads((folder/'meta.json').read_text())
+        for name in args.target:
+            if name in models:
+                continue
+            entry, spec = meta['cameras'][name], specs[name]
+            if (entry['serial'] != spec['serial'] or entry['width'] != spec.get('width', 640)
+                    or entry['height'] != spec.get('height', 480) or entry['fps'] != options.get('stream_fps', 6)
+                    or entry.get('intrinsics_source') != 'realsense_factory'):
+                raise ValueError(f'{name}: new view must use its configured native factory RGB profile')
+            if entry['distortion_model'] == 'inverse_brown_conrady' and np.any(entry['distortion_coeffs']):
+                raise ValueError(f'{name}: nonzero inverse distortion needs an explicit optical model')
+            models[name] = {k: deepcopy(entry[k]) for k in (
+                'serial', 'width', 'height', 'fps', 'K', 'distortion_model', 'distortion_coeffs')}
+        sample = detect(folder, calibration, board, detector, settings,
+                        overlays if index == 0 else None, models=models)
         for name in references:
             if 'T_left_base_board' not in sample['poses'][name]:
                 raise ValueError(f'{name}: reference camera requires verified runtime extrinsics')
+        if args.reference_method == 'stereo':
+            sample['stereo_reference'] = stereo_reference(sample, references, board)
         for name, q in sample['quality'].items():
             if q['timestamp_ns'] <= last_timestamps.get(name, 0):
                 raise ValueError(f'{name}: capture reused a previous camera frame')
@@ -217,8 +316,10 @@ def main():
 
     for i in range(args.training_count):
         training.append(capture('training', i))
-    board_in_base = mean_pose([sample['poses'][name]['T_left_base_board']
-                              for sample in training for name in references])
+    board_in_base = mean_pose([sample['stereo_reference']['T_left_base_board'] for sample in training]
+                              if args.reference_method == 'stereo' else
+                              [sample['poses'][name]['T_left_base_board']
+                               for sample in training for name in references])
     board_in_targets = {target: mean_pose([sample['poses'][target]['T_cam_board'] for sample in training])
                         for target in args.target}
     transforms = {target: pose @ invert(board_in_base) for target, pose in board_in_targets.items()}
@@ -228,6 +329,18 @@ def main():
         verification.append(capture('verification', i))
 
     def residuals(samples, target):
+        if args.reference_method == 'stereo':
+            result = []
+            for sample in samples:
+                reference = sample['stereo_reference']
+                measured = invert(transforms[target]) @ sample['poses'][target]['T_cam_board']
+                projected = (measured[:3, :3] @ np.asarray(reference['board_points']).T).T + measured[:3, 3]
+                corner_errors = np.linalg.norm(projected-reference['triangulated_points_left_base'], axis=1)
+                result.append({'frame': sample['frame'], 'reference': 'stereo:' + '+'.join(references),
+                               **difference(reference['T_left_base_board'], measured),
+                               'max_corner_error_m': float(corner_errors.max()),
+                               'mean_corner_error_m': float(corner_errors.mean())})
+            return result
         return [{'frame': sample['frame'], 'reference': name,
                  **difference(sample['poses'][name]['T_left_base_board'],
                               invert(transforms[target]) @ sample['poses'][target]['T_cam_board'])}
@@ -241,9 +354,21 @@ def main():
                    'max_rotation_deg': max(e['rotation_error_deg'] for e in errors),
                    'max_reprojection_mean_px': max(s['quality'][target]['reprojection_mean_px'] for s in verification),
                    'checks': len(errors), 'fresh_frames': len(verification)}
-        reports[target] = jsonable({'ok': quality_ok(train_errors) and quality_ok(errors), 'target': target,
-            'serial': calibration.manifest['camera_models'][target]['serial'],
-            'method': f'Stationary board transfer from {len(references)} frozen calibrated cameras; equal camera weights.',
+        stereo_ok = True
+        if args.reference_method == 'stereo':
+            summary.update(max_corner_error_mm=max(e['max_corner_error_m'] for e in errors)*1000,
+                min_shared_corners=min(len(s['stereo_reference']['corner_ids']) for s in verification),
+                max_reference_ray_error_mm=max(float(np.max(error)) for s in verification
+                    for error in s['stereo_reference']['ray_error_m'].values())*1000,
+                max_reference_rigidity_error_mm=max(float(np.max(s['stereo_reference']['rigidity_error_m']))
+                                                    for s in verification)*1000)
+            stereo_ok = all(e['max_corner_error_m'] <= .005 for e in train_errors+errors)
+        method = ('Stationary board transfer from shared corners triangulated by two frozen calibrated cameras; '
+                  'rigid metric board fit without scale changes or outlier removal.' if args.reference_method == 'stereo'
+                  else f'Stationary board transfer from {len(references)} frozen calibrated cameras; equal camera weights.')
+        reports[target] = jsonable({'ok': quality_ok(train_errors) and quality_ok(errors) and stereo_ok, 'target': target,
+            'serial': models[target]['serial'], 'camera_spec': specs[target], 'camera_model': models[target],
+            'method': method, 'reference_method': args.reference_method,
             'scope': 'Fresh image board-pose consistency; not independently measured absolute positioning accuracy.',
             'recorded_at': time.strftime('%Y-%m-%dT%H:%M:%SZ', time.gmtime()),
             'source_manifest_sha256': calibration.digest, 'reference_cameras': references,
@@ -251,10 +376,13 @@ def main():
             'T_left_base_board_current': board_in_base, 'T_target_cam_board_current': board_in_targets[target],
             'training_count': len(training), 'verification_count': len(verification),
             'training_residuals': train_errors, 'verification_residuals': errors, 'summary': summary,
+            **({'stereo_reference_checks': [{'frame': s['frame'], **s['stereo_reference']}
+                                            for s in training+verification]}
+               if args.reference_method == 'stereo' else {}),
             'detection_quality': [{'frame': s['frame'], 'quality': s['quality']} for s in training+verification],
             'limits': {'translation_m': .005, 'rotation_deg': 1., 'mean_reprojection_px': 1.},
-            'camera_pose_change': difference(invert(np.asarray(calibration.manifest['fixed'][target]['T_cam_left_base'])),
-                                             invert(T_cam_base))})
+            'camera_pose_change': (difference(invert(np.asarray(calibration.manifest['fixed'][target]['T_cam_left_base'])),
+                                             invert(T_cam_base)) if target in calibration.manifest['fixed'] else None)})
         print(json.dumps({'target': target, 'ok': reports[target]['ok'], **summary}), flush=True)
     result = reports[args.target[0]] if len(reports) == 1 else {
         'ok': all(report['ok'] for report in reports.values()), 'targets': args.target,

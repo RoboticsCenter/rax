@@ -23,6 +23,11 @@ uncertain; do not load the entire history. Keep learned procedures under
 - Update the matching tip when the same maneuver is refined.
 - The real scene drifts between attempts (objects are moved back by hand, lighting
   changes): record the conditions under which a tip held, not only its numbers.
+{% if robot.bimanual %}
+- Save camera serials and the calibration identifier with metric pose recipes.
+  After recalibration, re-localize their anchors using the current bundle; retain
+  historical evidence without treating old absolute targets as current geometry.
+{% endif %}
 {% if robot.has_hand %}
 - Record joint targets and measured joints, current bias, active gains/caps, hand
   revision/side, mount/TCP and camera context. Label geometry as nominal, inferred

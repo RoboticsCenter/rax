@@ -174,7 +174,8 @@ class XArmBimanualBackend(XArmBackend):
                     'Idle off-target or stalled motion stops early and alerts the operator.')
             elif name == 'xarm_move_joints':
                 definition['description'] = (
-                    'Move the selected arm to six absolute joint angles in radians, or preset home. '
+                    'Move the selected arm to six absolute joint angles in radians, or its configured preset home. '
+                    'Read arms.<side>.home_joints in xarm_status for that arm’s saved home. '
                     'Validates the full sampled FK path and executes bounded SDK segments with existing '
                     'limits, progress detection and measured settling. Read that side’s motion_limits.')
             if name == 'wuji_pose':
@@ -217,7 +218,7 @@ class XArmBimanualBackend(XArmBackend):
                 'inspect results/failed_devices before recovery. Returns per-device results and dispatch timing.',
             'inputSchema': {**_schema(combined), 'minProperties': 1}})
         camera_list = {'type': 'array', 'items': {'type': 'string', 'enum': list(self.models)}, 'minItems': 1,
-                       'maxItems': 4}
+                       'maxItems': len(self.models)}
         observe_properties = {'cameras': camera_list}
         if self.calibration:
             observe_properties.update(arm={'type': 'string', 'enum': list(SIDES), 'default': 'left'},
@@ -225,13 +226,13 @@ class XArmBimanualBackend(XArmBackend):
                         'maxItems': 3, 'items': {'type': 'number'}}})
         definitions += [
             {'name': 'xarm_status', 'inputSchema': _schema(), 'description':
-                'Both arms and both hands, identities, per-arm base frames and limits, shared arming and four cameras.'},
+                'Both arms and both hands, identities, per-arm base frames and limits, shared arming and configured cameras.'},
             {'name': 'xarm_hold', 'inputSchema': _schema(), 'description':
                 'Disarm and independently stop both arms and both hands. Verify each stop; clear uncertainty '
                 'only if all four are confirmed. Does not enable or clear faults. MCP calls are serialized; '
                 'operator direct disarm/stop bypasses the MCP queue.'},
             {'name': 'xarm_observe', 'inputSchema': _schema(observe_properties), 'description':
-                'Capture the two side and two wrist RealSense views, plus state of both assemblies. '
+                f'Capture the configured RealSense views ({", ".join(self.models)}), plus state of both assemblies. '
                 'Saves RGB, optional camera depth, and metadata with camera identities and wrist owners. '
                 + ('Verified views supply camera transforms in both arm bases. Cameras with unverified '
                    'extrinsics remain available as images, without transforms or projected marks. '
@@ -243,7 +244,7 @@ class XArmBimanualBackend(XArmBackend):
         ]
         stream = deepcopy(next(t for t in self.arms['left'].tools() if t['name'] == 'xarm_stream'))
         stream['inputSchema']['properties']['cameras'] = camera_list
-        stream['description'] = 'Review the four-camera rolling recording and both assemblies’ state. ' + stream['description']
+        stream['description'] = 'Review the configured cameras’ rolling recording and both assemblies’ state. ' + stream['description']
         definitions.append(stream)
         return definitions
 

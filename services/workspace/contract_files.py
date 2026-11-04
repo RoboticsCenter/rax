@@ -6,7 +6,7 @@ from pathlib import Path
 def describe(setup) -> str:
     if setup.robot == 'xarm_bimanual':
         calibrated = bool(setup.backend_options.get('calibration_manifest'))
-        geometry = ('Four camera views and both assemblies’ state are supplied. '
+        geometry = ('Configured camera views and both assemblies’ state are supplied. '
                     + ('RGB models, verified camera poses in both bases and the inter-base transform are loaded. '
                        'Views marked extrinsics_unverified remain visual-only; read per-camera status. '
                        'xarm_observe arm selects the observation/projection base (default left); project marks '

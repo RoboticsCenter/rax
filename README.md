@@ -2,8 +2,9 @@
 
 **[Project website](https://robot-agent-exploration.com/)** · [Paper](https://robot-agent-exploration.com/rax.pdf) · [All branches](https://github.com/robot-agent-exploration/rax)
 
-This branch supports two xArm 6 arms, each with a Wuji Hand 2, and four RealSense
-cameras (two side views and one wrist camera per arm). The existing single-arm
+This branch supports two xArm 6 arms, each with a Wuji Hand 2, and RealSense
+cameras (at least two fixed views and one wrist camera per arm). Additional fixed
+views, such as a front camera, can be added independently. The existing single-arm
 xArm/Wuji and G2 configurations remain supported.
 A Claude Code agent learns a
 manipulation task through MCP tools served by a host-owned robot service. It first
@@ -12,7 +13,8 @@ verified skills in its workspace.
 
 **For this branch, start with the [bimanual setup and MCP guide](docs/xarm-wuji-bimanual.md).**
 It covers explicit arm/hand selection, paired moves, shared stop handling and the
-four-camera configuration. Camera and inter-arm calibration are deferred.
+camera configuration. The installation has verified RGB camera and inter-arm
+calibration; depth validation and calibration of newly added views remain separate.
 The [single-arm xArm + Wuji guide](docs/xarm-wuji.md)
 covers the pinned SDK, operator preparation, hand tools, configuration, skills and
 hardware-free tests. [Initial real-hand tool results](docs/wuji-live-test-2026-10-25.md)

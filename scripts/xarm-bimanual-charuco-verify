@@ -51,6 +51,8 @@ def main():
     parser.add_argument('--planning-collection', type=Path, required=True)
     parser.add_argument('--session', type=Path, required=True)
     parser.add_argument('--mcp-socket', type=Path, required=True)
+    parser.add_argument('--camera-socket', type=Path,
+                        help='borrow the existing raw camera owner and its live viewer')
     parser.add_argument('--root', type=Path, required=True)
     parser.add_argument('--yes', action='store_true')
     args = parser.parse_args()
@@ -72,12 +74,13 @@ def main():
     if live != expected:
         raise ValueError('session camera identity/mount differs from fit')
     options.update(cameras=specs, stream_fps=6, stream_archive=False, stream_depth_hz=0, stream_window_s=30)
-    service = c.CameraService({**c.DEFAULTS, **options}, root/'frames', root/'camera-server.log', 'NONE', stream=root/'stream')
+    service = (c.CameraConnection(args.camera_socket, config.root/'agent-workspace/runtime/frames') if args.camera_socket else
+               c.CameraService({**c.DEFAULTS, **options}, root/'frames', root/'camera-server.log', 'NONE', stream=root/'stream'))
     board, detector = c.make_board(fit['board'])
     workflow = c.original_workflow()
     drivers, preview, moving = {}, None, False
     report = {'ok': False, 'fit': str(args.fit.resolve()), 'fit_sha256': hashlib.sha256(fit_bytes).hexdigest(),
-              'method': 'Frozen fit; six newly seeded poses; three fresh frames per pose; all four cameras checked',
+              'method': f'Frozen fit; six newly seeded poses; three fresh frames per pose; all {len(specs)} cameras checked',
               'checks': []}
     def interrupted(*_):
         raise SystemExit('verification interrupted')
@@ -91,10 +94,12 @@ def main():
         for side in c.SIDES:
             workflow.validate_plan(plans[side], start[side], drivers[side], {**c.DEFAULTS, **options['arms'][side]})
         service.start()
-        with (root/'preview.log').open('ab') as log:
+        if not args.camera_socket:
+            log = (root/'preview.log').open('ab')
             preview = subprocess.Popen([sys.executable, str(c.PROJECT/'scripts/xarm-camera-viewer'),
                 '--stream', str(root/'stream'), '--cameras', ','.join(expected), '--rgb-only', '--port', '8765'],
                 stdout=log, stderr=subprocess.STDOUT)
+            log.close()
         time.sleep(3)
         identity = {s: c.arm_identity(drivers[s], options['arms'][s]) for s in c.SIDES}
         if identity != fit['arm_identity']:

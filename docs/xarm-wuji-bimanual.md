@@ -195,12 +195,30 @@ with zero gains/current limits. This supersedes the earlier detached-left runtim
 state. Raw calls and final readbacks are saved under the bimanual session's
 `operator/four-device-home-result.json` and `operator/four-device-home-final-state.json`.
 
+Arm homes are now configured separately as `arms.<side>.home_joints` (six radians)
+and reported by `xarm_status` under each arm. On November 3, the operator selected
+the current left posture `[0, -0.349066, -1.745329, 0, 2.094395, 0]` for both arms:
+the TCP is about 0.521 m above each base, higher than the earlier home above.
+This was the first higher-home setting. Configurations without `home_joints`
+retain the legacy home. Wuji finger homes are independent.
+The live MCP check reached this home on both arms (largest reported joint error
+0.001 rad). Right-hand home reached; left-hand home completed with an accepted
+0.01825-rad active-joint shortfall after an initial host timing expiry and
+reinitialization from measured standstill. All four final stops were confirmed.
+Evidence is in the session's `operator/higher-home-20261104T035042Z/` directory.
+
+The operator subsequently positioned each arm manually and saved distinct homes
+in the current session and bimanual example: left `[-7, -10, -120, 0, 120, 0]`
+degrees and right `[10, -10, -120, 0, 120, 0]` degrees. Configuration stores the
+measured radians, with each TCP about 0.583 m above its own base. This capture
+sent no motion targets. Evidence is in `operator/save-arm-homes-20261104T043216Z/`.
+
 The included fake-hardware tests cover all three trajectory modes, isolation
 violations, exact fault policies, native masks, zero-parameter readback and full-hand
 stops. They do not establish safe operation with this hand's recurring hardware
 faults; physical qualification remains separate.
 
-## Four cameras and extrinsics collection
+## Cameras and extrinsics collection
 
 | Role | Serial |
 | --- | --- |
@@ -208,15 +226,29 @@ faults; physical qualification remains separate.
 | `side_b` (replacement D435) | `262422074331` |
 | `wrist_left` (D435i, dashboard Camera 1) | `108322071838` |
 | `wrist_right` (D435, dashboard Camera 4) | `752112070450` |
+| `front` (replacement D435, calibration pending) | `263222071915` |
 
 The operator confirmed wrist ownership on November 2, 2026. Every wrist entry has
 an explicit `arm` field. Update the serial and role together if a camera is replaced.
-One shared camera process owns all four RealSense streams; both arm controllers
+One shared camera process owns all configured RealSense streams; both arm controllers
 use it. Stop the standalone camera dashboard before starting a session that opens
 the same cameras. A second process cannot capture cameras already owned by it.
 
-The example's `calibration_manifest` loads the verified four-camera bundle at
-1280×720 @ 6 FPS. The existing xArm camera pipeline rectifies wrist RGB with its
+Additional fixed cameras are supported without changing the existing bundle. Add
+the new camera's unique `name`, `serial`, `mount: "fixed"`, `width` and `height` to
+`cameras`, and list its name in `unverified_camera_extrinsics` until calibrated.
+For this installation, the fifth view is `front`, now D435 serial `263222071915`, at
+1280×720 @ 6 FPS. It replaces serial `348522070593`, whose November 3 calibration
+remains in the archived bundle. The replacement is explicitly unverified and uses
+its own live factory RGB model; the old front intrinsics and transforms are not
+applied. The four other views retain their stored geometry. `xarm_observe` and `xarm_stream`
+accept all configured camera names. An unverified view has no base transform or
+projected marks; adding it does not invalidate the other cameras or block motion.
+Original bundle camera names remain present. A fixed camera's serial can change
+only when it is explicitly unverified; wrist identity changes require calibration.
+
+The example's `calibration_manifest` retains the prior five-camera bundle, with
+`front` marked unverified in the current configuration. The existing xArm camera pipeline rectifies wrist RGB with its
 matching fitted models and checks factory profiles against the connected cameras.
 Startup checks arm serials and TCP offsets. Legacy per-camera calibration files
 are refused; the manifest keeps identities, RGB models and transforms together.

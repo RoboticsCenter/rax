@@ -34,13 +34,19 @@ Older data is deleted as time goes by; copy what you need to keep into `output/`
 
 ## Two ways in
 
-- **Directly, as a tool:** `{{ robot.stream }} {seconds_ago: [0, 30, 120]}` returns the frames from
+- **Directly, as a tool:** `{{ robot.stream }} {seconds_ago: [0, 30]}` returns the frames from
   those moments (all cameras, or `cameras: [...]`), labelled with their age, plus the arm
   state then; `{{ robot.stream }} {sheet: {seconds: 120, count: 12}}` returns one contact
   sheet per camera over the last two minutes, if that much history is available.
   Shorten requested ages/windows to the session's retained history. No motion, no arming needed.
 - **As files,** for code and bulk analysis: `python -m api.stream ...` below, or read the
   images under `runtime/stream/` directly.
+
+{% if robot.bimanual %}
+Age-based stream requests allow at most 12 images across cameras and timestamps.
+For five cameras, request at most two ages together, select fewer cameras, or use
+a contact sheet. A current all-camera check uses `seconds_ago: [0]`.
+{% endif %}
 
 ## When to look
 
