@@ -275,8 +275,8 @@ def deployed_paths(config, binary, model):
             'subagents': config.subagents, 'effort': config.agent_effort, 'resume_session': None}
 
 
-def redeploy(config, claude=None):
-    """Reattach an existing session for a resumed launch."""
+def redeploy(config, claude=None, *, resume=True):
+    """Reattach a prepared workspace, optionally resuming its conversation."""
     relay_file = config.root/'model-relay.json'
     relay = json.loads(relay_file.read_text())
     deployed = deployed_paths(config, claude_binary(claude),
@@ -284,7 +284,8 @@ def redeploy(config, claude=None):
     for key in ('workspace', 'claude_home', 'configuration', 'relay_configuration'):
         if not deployed[key].exists():
             raise FileNotFoundError(f'Cannot resume: {deployed[key]} is missing')
-    deployed['resume_session'] = latest_claude_session(deployed['claude_home'])
+    if resume:
+        deployed['resume_session'] = latest_claude_session(deployed['claude_home'])
     return deployed
 
 
@@ -499,6 +500,8 @@ def main():
     with (config.root/'launch.lock').open('a') as lock:
         fcntl.flock(lock, fcntl.LOCK_EX | fcntl.LOCK_NB)
         record = config.root/'agent-lifecycle.json'
+        prepared = (not args.resume and record.exists()
+                    and json.loads(record.read_text()).get('status') == 'prepared-only')
         lifecycle = {'pid': os.getpid(), 'started_at': time.time(), 'status': 'preparing'}
         seconds = config.session_seconds
         if args.resume:
@@ -513,7 +516,7 @@ def main():
                                  'To continue, rerun with --resume --session-hours TOTAL_HOURS, '
                                  'using a larger total allowance.')
             lifecycle.update(resumed=True, attempts=attempts)
-        elif record.exists():
+        elif record.exists() and not prepared:
             raise FileExistsError('This session was already launched; use --resume or a fresh configuration')
         write_private_json(record, lifecycle)
         from services.operator_audit import record as audit_event
@@ -521,13 +524,15 @@ def main():
                     resume=args.resume, prepare_only=args.prepare_only,
                     interactive=not (args.non_interactive or args.exec_prompt))
         try:
-            if config.agent_provider == 'claude-login' and not args.key_file:
+            if config.agent_provider == 'claude-login' and not args.key_file and not (prepared or args.resume):
                 from harness.claude_cli import experiment_login
                 experiment_login.check()  # Fail before provisioning if the token is missing or revoked.
             gemini_key = None if args.no_gemini else args.gemini_key_file or (
                 DEFAULT_GEMINI_KEY if DEFAULT_GEMINI_KEY.is_file() else None)
             if args.resume:
                 deployed = redeploy(config)
+            elif prepared:
+                deployed = redeploy(config, resume=False)
             else:
                 deployed = deploy(config, key_file=args.key_file, gemini_key_file=gemini_key)
             from services.context_archive import publish_context

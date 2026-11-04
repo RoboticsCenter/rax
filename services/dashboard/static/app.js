@@ -99,7 +99,7 @@ function renderDetail() {
     note.dataset.session = s.id;
     note.value = interventionDrafts.get(s.id) || '';
   }
-  const launched = !['configured'].includes(s.status);
+  const launched = !['configured', 'prepared-only'].includes(s.status);
   const u = s.usage;
   detail.replaceChildren(
     el('h2', {}, `Session ${s.task}`),
@@ -274,16 +274,73 @@ function renderActivity(value) {
 
 async function refreshActivity() {
   if (!state.selected) return;
-  renderActivity(await api(`/api/session/${state.selected}/activity`));
+  const session = state.selected;
+  const value = await api(`/api/session/${session}/activity`);
+  if (session !== state.selected) return;
+  notifyMessages(session, value);
+  renderActivity(value);
 }
 
 const seenRequests = new Set();
+const seenMessages = new Map();
+let audioContext = null;
+let soundEnabled = false;
+let lastBeep = -Infinity;
 
-function beep() {
-  try {
-    const audio = new AudioContext(), tone = audio.createOscillator();
-    tone.connect(audio.destination); tone.frequency.value = 880; tone.start(); tone.stop(audio.currentTime + 0.4);
-  } catch { /* audio blocked until the page was clicked */ }
+function updateSoundButton() {
+  const active = soundEnabled && audioContext?.state === 'running';
+  $('sound-toggle').textContent = active ? 'Sound on · mute' : 'Enable sound';
+  $('sound-toggle').setAttribute('aria-pressed', String(active));
+}
+
+$('sound-toggle').addEventListener('click', async () => {
+  if (soundEnabled && audioContext?.state === 'running') {
+    soundEnabled = false;
+  } else {
+    try {
+      if (!audioContext || audioContext.state === 'closed') {
+        audioContext = new AudioContext();
+        audioContext.addEventListener('statechange', updateSoundButton);
+      }
+      await audioContext.resume();
+      soundEnabled = audioContext.state === 'running';
+      if (soundEnabled) beep(true);
+      else toast('Sound is blocked. Click Enable sound again.', true);
+    } catch { toast('Could not enable sound in this browser.', true); }
+  }
+  updateSoundButton();
+});
+
+function beep(test = false) {
+  if (!soundEnabled || audioContext?.state !== 'running') return;
+  // Coalesce messages and requests arriving in the same polling cycle.
+  if (!test && performance.now() - lastBeep < 1500) return;
+  lastBeep = performance.now();
+  [880, 1040, 880].forEach((frequency, index) => {
+    const start = audioContext.currentTime + index * 0.32;
+    const tone = audioContext.createOscillator();
+    const gain = audioContext.createGain();
+    tone.frequency.value = frequency;
+    gain.gain.setValueAtTime(0, start);
+    gain.gain.linearRampToValueAtTime(0.8, start + 0.015);
+    gain.gain.setValueAtTime(0.8, start + 0.21);
+    gain.gain.linearRampToValueAtTime(0, start + 0.25);
+    tone.connect(gain); gain.connect(audioContext.destination);
+    tone.onended = () => { tone.disconnect(); gain.disconnect(); };
+    tone.start(start); tone.stop(start + 0.26);
+  });
+}
+
+function notifyMessages(session, value) {
+  const key = session;
+  const messages = value.transcript.filter((event) => event.kind === 'assistant')
+    .map((event) => JSON.stringify([event.time, event.text]));
+  const seen = seenMessages.get(key);
+  // First load establishes a baseline; opening old history should stay quiet.
+  if (seen && messages.some((message) => !seen.has(message))) beep();
+  const updated = new Set([...(seen || []), ...messages]);
+  while (updated.size > 500) updated.delete(updated.values().next().value);
+  seenMessages.set(key, updated);
 }
 
 const submittingRequests = new Set();
@@ -297,8 +354,8 @@ function renderRequests(value) {
   })));
   box.hidden = open.length === 0;
   document.title = open.length ? `(${open.length}) Agent needs you - xArm` : 'xArm operator';
-  if (open.some((r) => !seenRequests.has(r.id))) beep();
-  open.forEach((r) => seenRequests.add(r.id));
+  if (open.some((r) => !seenRequests.has(`${r.session}/${r.id}`))) beep();
+  open.forEach((r) => seenRequests.add(`${r.session}/${r.id}`));
   if (document.activeElement?.tagName === 'TEXTAREA' && box.contains(document.activeElement)) return;
   box.replaceChildren(el('h2', {}, `The agent is asking for ${open.length > 1 ? 'you (' + open.length + ')' : 'you'}`),
     ...open.map((r) => {

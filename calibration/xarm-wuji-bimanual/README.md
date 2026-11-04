@@ -1,5 +1,41 @@
 # Verified bimanual RGB extrinsics
 
+On November 4, the operator accepted the unchanged wrist transforms and lens
+models at the higher saved homes with limits of **10 mm / 1° per wrist** and
+**20 mm / 1.5° between wrists in the shared base frame**. Today's maximum
+residuals were 8.58 mm / 0.94° left, 5.72 mm / 0.56° right, and
+17.62 mm / 1.18° between wrists. These limits were selected after reviewing
+the measurements. The original stricter results remain in
+[`wrist-validation-20261104.json`](wrist-validation-20261104.json); the manifest's
+`operator_acceptance` records the approved limits and is exposed in MCP status.
+No transforms, lens models or robot motion limits changed. The verification
+figures below describe the earlier November 3 validation.
+
+## November 4 fixed-camera update
+
+All three fixed cameras were recalibrated against shared board corners
+triangulated by the unchanged wrist cameras. Twelve training captures and eight
+fresh verification captures passed the original 5 mm / 1° and 1-pixel limits:
+
+| Camera | Maximum position residual | Maximum angle residual |
+| --- | ---: | ---: |
+| Side A | 0.49 mm | 0.137° |
+| Side B | 0.45 mm | 0.109° |
+| Front | 1.48 mm | 0.110° |
+
+At least 46 shared corners were available. Maximum stereo ray error was
+4.63 mm, board-rigidity error 2.57 mm, and target-to-triangulated-corner error
+3.49 mm. Independent single-camera wrist PnP estimates disagreed by up to
+33.04 mm / 1.425° at this raised placement; stereo transfer did not average
+those poses. These are consistency residuals relative to the retained wrist
+geometry, not independent absolute accuracy. Both wrist transforms, every lens
+model, inter-base alignment and the operator's wrist acceptance are unchanged.
+All five cameras are enabled for calibrated RGB geometry in the saved configs.
+See the current `side_a-recalibration-report.json`,
+`side_b-recalibration-report.json` and `front-recalibration-report.json`.
+
+## November 3 history
+
 Full calibration captured and verified on November 3, 2026, after both side
 camera mounts were adjusted. That full pass established all four camera extrinsics,
 both wrist RGB models, and the alignment between the two arm bases. Both side
@@ -7,7 +43,9 @@ views were subsequently refitted on November 3 at 16:54 UTC; Side A was secured 
 both wrist calibrations, all RGB models and the inter-base alignment were preserved.
 The front view was added on November 3 using stationary stereo observations from
 the unchanged wrist cameras. No earlier camera model or transform was refitted.
-`examples/xarm-wuji-bimanual.json` selects it with every camera verified.
+`examples/xarm-wuji-bimanual.json` selects this bundle. Front serial
+`348522070593` was subsequently reconnected and its placement was recalibrated
+in the November 4 update above; the table below records the earlier results.
 
 | Role | Serial | Fresh maximum position residual | Fresh maximum angle residual |
 | --- | --- | ---: | ---: |
@@ -32,7 +70,7 @@ and eight fresh verification captures passed: maximum pose residual 0.43 mm /
 reprojection 0.468 pixels. Two additional captures passed through the restarted
 MCP backend. Only the front extrinsics changed; all five RGB models, both wrists,
 both side extrinsics and the inter-base transform were preserved exactly.
-The current evidence is in `front-recalibration-report.json` and
+The November 3 evidence is retained in the hashed historical front report and
 `/home/jerry/rax-runtime/sessions/20261103T073444Z_unscrew_bottle_b1d812/operator/front-recalibration-20261103T201605Z/`.
 The suffixed front report preserves the initial calibration described below.
 

@@ -36,6 +36,7 @@ from services.xarm.charuco import (charuco_pose, detect_board, detect_small_boar
                                  make_board, mat_from_pose, quality_ok, solve_hand_eye,
                                  write_matrix)
 from services.xarm.sdk import XArmDriver
+from services.xarm.calibration_motion import validate_sweep_path
 from services.xarm_bimanual.config import SIDES
 
 cv.setNumThreads(1)
@@ -105,8 +106,25 @@ def arm_identity(driver, options):
             'tcp_offset_mm_rad': list(driver.arm.tcp_offset), 'tcp_load': driver.arm.tcp_load}
 
 
-def calibration_plan(workflow, start, options):
+def calibration_plan(workflow, start, options, z_direction='up', inward_side=None):
     plan = workflow.pose_plan(start['tcp_position'], start['tcp_quaternion'])
+    if z_direction not in ('up', 'down'):
+        raise ValueError('sweep z direction must be up or down')
+    if z_direction == 'down':
+        for pose in plan:
+            pose['position'][2] = 2 * start['tcp_position'][2] - pose['position'][2]
+            pose['translation_delta_m'][2] *= -1
+    if inward_side is not None:
+        if inward_side not in SIDES:
+            raise ValueError('inward sweep needs a left or right wrist')
+        initial = Rotation.from_quat(start['tcp_quaternion'])
+        for pose in plan:
+            if pose['index'] == 0:
+                continue  # Retain the actual home as a training observation.
+            angles = list(pose['rotation_delta_deg'])
+            angles[0] = angles[0] * .5 + (-7.5 if inward_side == 'left' else 7.5)
+            pose['rotation_delta_deg'] = angles
+            pose['quaternion'] = (initial * Rotation.from_euler('xyz', angles, degrees=True)).as_quat().tolist()
     opts = {**DEFAULTS, **options}
     # The bimanual home is close to the front workspace boundary. Retain the
     # original rotations while keeping translations inside the live guard.
@@ -131,7 +149,9 @@ def coverage_plan(side, start, options, source, workflow, seed=None):
     previous = json.loads((source/'preflight.json').read_text())
     fitted = json.loads((source/'result.json').read_text())
     meta = json.loads((Path(previous['initial_frame'])/'meta.json').read_text())
-    camera = meta['cameras'][f'wrist_{side}']
+    # Refined hand-eye transforms must be projected with the matching fitted
+    # optical model, even though the source JPEGs contain raw pixels.
+    camera = fitted.get('camera_models', {}).get(f'wrist_{side}', meta['cameras'][f'wrist_{side}'])
     reference = previous['start'][side]
     if (np.linalg.norm(np.asarray(reference['tcp_position'])-start['tcp_position']) > .002 or
             np.degrees((Rotation.from_quat(reference['tcp_quaternion']).inv()*
@@ -147,12 +167,16 @@ def coverage_plan(side, start, options, source, workflow, seed=None):
     original = workflow.pose_plan(p0, start['tcp_quaternion'])
     max_turn = max((r0.inv()*Rotation.from_quat(p['quaternion'])).magnitude() for p in original)
     opts = {**DEFAULTS, **options}
-    lo = np.maximum([-.025, -.025, .015], np.asarray(opts['workspace_min'])+opts['workspace_guard_margin_m']+.003-p0)
-    hi = np.minimum([.025, .025, .05], np.asarray(opts['workspace_max'])-opts['workspace_guard_margin_m']-.003-p0)
+    downward = previous.get('sweep_z_direction', 'up') == 'down'
+    lo = np.maximum([-.025, -.025, -.05 if downward else .015], np.asarray(opts['workspace_min'])+opts['workspace_guard_margin_m']+.003-p0)
+    hi = np.minimum([.025, .025, -.015 if downward else .05], np.asarray(opts['workspace_max'])-opts['workspace_guard_margin_m']-.003-p0)
     rng = np.random.default_rng(seed if seed is not None else (18333 if side == 'left' else 18334))
     candidates, features = [], []
+    roll_lo, roll_hi = (-15, 0) if side == 'left' else (0, 15)
+    if not previous.get('frame_wrists_inward', False):
+        roll_lo, roll_hi = -15, 15
     for _ in range(12000):
-        dp, angles = rng.uniform(lo, hi), rng.uniform([-15, -15, -20], [15, 15, 20])
+        dp, angles = rng.uniform(lo, hi), rng.uniform([roll_lo, -15, -20], [roll_hi, 15, 20])
         turn = Rotation.from_euler('xyz', angles, degrees=True)
         if turn.magnitude() > max_turn:
             continue
@@ -163,7 +187,7 @@ def coverage_plan(side, start, options, source, workflow, seed=None):
         uv, _ = cv.projectPoints(obj, Rotation.from_matrix(C[:3, :3]).as_rotvec(), C[:3, 3], K, D)
         uv = uv.reshape(-1, 2)
         margin = float(min(uv[:, 0].min(), uv[:, 1].min(), camera['width']-uv[:, 0].max(), camera['height']-uv[:, 1].max()))
-        if margin < 80:
+        if margin < previous.get('coverage_margin_px', 80):
             continue
         candidates.append({'position': (p0+dp).tolist(), 'quaternion': q.tolist(),
             'translation_delta_m': dp.tolist(), 'rotation_delta_deg': angles.tolist(),
@@ -176,10 +200,16 @@ def coverage_plan(side, start, options, source, workflow, seed=None):
     features = np.asarray(features)
     selected = [int(np.argmax([p['predicted_board_margin_px'] for p in candidates]))]
     distance = np.linalg.norm(features-features[selected[0]], axis=1)
-    for _ in range(17):
+    for _ in range(16):
         selected.append(int(np.argmax(distance)))
         distance = np.minimum(distance, np.linalg.norm(features-features[selected[-1]], axis=1))
-    return [{**candidates[j], 'index': i, 'held_out': i >= 15} for i, j in enumerate(selected)]
+    # Include the real home view even when cropped: verification starts there,
+    # so a well-framed sweep must not leave that runtime view unconstrained.
+    home = {'position': np.asarray(p0).tolist(), 'quaternion': r0.as_quat().tolist(),
+            'translation_delta_m': [0., 0., 0.], 'rotation_delta_deg': [0., 0., 0.],
+            'home_anchor': True}
+    return [{**goal, 'index': i, 'held_out': i >= 15}
+            for i, goal in enumerate([home, *[candidates[j] for j in selected]])]
 
 
 def pose_change(a, b):
@@ -219,7 +249,15 @@ def usable(found):
     return pose is not None and detection.get('charuco_corners', 0) >= 12 and detection.get('reprojection_mean_px', 99) < 1.
 
 
-def refine_color(samples, name, settings, distortion_only=False, optical_samples=()):
+def calibration_camera_specs(specs, wrists_only=False):
+    selected = [c for c in specs if c['mount'] == 'tcp'] if wrists_only else list(specs)
+    wrists = [c for c in selected if c['mount'] == 'tcp']
+    if len(wrists) != 2 or {c.get('arm') for c in wrists} != set(SIDES):
+        raise ValueError('calibration requires exactly one wrist camera per arm')
+    return selected
+
+
+def refine_color(samples, name, settings, distortion_only=False, optical_samples=(), brown_distortion=False):
     """Reuse the original training-only Brown5 fit on saved raw images."""
     board, detector = make_board(settings)
     observations = []
@@ -249,8 +287,10 @@ def refine_color(samples, name, settings, distortion_only=False, optical_samples
     train = [s for s in observations if not s[0]['held_out']]
     factory = np.asarray(reference['K'], float)
     flags = cv.CALIB_USE_INTRINSIC_GUESS
+    if distortion_only or brown_distortion:
+        flags |= cv.CALIB_FIX_FOCAL_LENGTH | cv.CALIB_FIX_PRINCIPAL_POINT
     if distortion_only:
-        flags |= cv.CALIB_FIX_FOCAL_LENGTH | cv.CALIB_FIX_PRINCIPAL_POINT | cv.CALIB_ZERO_TANGENT_DIST | cv.CALIB_FIX_K3
+        flags |= cv.CALIB_ZERO_TANGENT_DIST | cv.CALIB_FIX_K3
     rms, K, D, _, _ = cv.calibrateCamera([s[1] for s in train], [s[2] for s in train],
         (reference['width'], reference['height']), factory.copy(), np.zeros(5), flags=flags)
     if (not np.isfinite(K).all() or not np.isfinite(D).all() or not np.isfinite(rms) or rms > 1
@@ -270,11 +310,13 @@ def refine_color(samples, name, settings, distortion_only=False, optical_samples
             'K': K.tolist(), 'distortion_coeffs': D.ravel().tolist(), 'distortion_model': 'brown_conrady',
             'factory_profile': reference, 'training_rms_px': float(rms),
             'training_frames': [s[0]['frame_dir'] for s in train],
-            'method': ('Training-only radial k1/k2 refinement with factory focal lengths/principal point fixed'
+            'method': ('Training-only Brown5 distortion refinement with factory focal lengths/principal point fixed'
+                       if brown_distortion else 'Training-only radial k1/k2 refinement with factory focal lengths/principal point fixed'
                        if distortion_only else 'Original training-only Brown5 color refinement') + '; depth calibration pending'}
 
 
-def fit_collection(collection, output, refine_intrinsics=False, distortion_only=False, optical_collection=None):
+def fit_collection(collection, output, refine_intrinsics=False, distortion_only=False, optical_collection=None,
+                   brown_distortion=False):
     preflight = json.loads((collection/'preflight.json').read_text())
     data = json.loads((collection/'collection.json').read_text())
     if not data.get('complete'):
@@ -284,6 +326,9 @@ def fit_collection(collection, output, refine_intrinsics=False, distortion_only=
                           ('serial', 'width', 'height', 'fps', 'K', 'distortion_coeffs', 'distortion_model')}
                     for name, entry in initial_meta['cameras'].items()}
     report = {'ok': False, 'installed': False, 'collection': str(collection), 'board': preflight['board'],
+              'wrists_only': preflight.get('wrists_only', False),
+              'sweep_z_direction': preflight.get('sweep_z_direction', 'up'),
+              'frame_wrists_inward': preflight.get('frame_wrists_inward', False),
               'camera_specs': preflight['camera_specs'], 'arm_identity': preflight['arm_identity'],
               'camera_models': color_models, 'coverage_source': preflight.get('coverage_source'),
               'method': ('Coverage-guided 18-pose sweep inside original envelope' if preflight.get('coverage_source')
@@ -291,6 +336,10 @@ def fit_collection(collection, output, refine_intrinsics=False, distortion_only=
               'convention': 'T_A_B maps column-vector points from B into A; translations in metres',
               'wrists': {}, 'fixed': {}}
     boards = {}
+    if preflight.get('sweep_z_direction') == 'down':
+        report['method'] += '; downward translation offsets from measured homes'
+    if preflight.get('frame_wrists_inward'):
+        report['method'] += '; inward-biased wrist roll within the original axis limits'
     optical_data = None
     if optical_collection:
         optical_preflight = json.loads((optical_collection/'preflight.json').read_text())
@@ -301,7 +350,9 @@ def fit_collection(collection, output, refine_intrinsics=False, distortion_only=
         if not optical_data.get('complete') or optical_collection.resolve() == collection.resolve():
             raise ValueError('additional optical training must be a separate complete collection')
         report['optical_training_collection'] = str(optical_collection.resolve())
-    if distortion_only:
+    if brown_distortion:
+        report['method'] += '; training-only Brown5 distortion refinement with factory K fixed'
+    elif distortion_only:
         report['method'] += '; training-only radial distortion refinement with factory K fixed'
     elif refine_intrinsics:
         report['method'] += '; original training-only Brown5 wrist color refinement'
@@ -313,8 +364,9 @@ def fit_collection(collection, output, refine_intrinsics=False, distortion_only=
         if len(train) < 9 or len(reserved) != 3:
             raise ValueError(f'{side}: need nine training and all three reserved views')
         optical_samples = [dict(s) for s in optical_data['samples'][side] if not s['held_out']] if optical_data else []
-        color = (refine_color(samples, f'wrist_{side}', preflight['board'], distortion_only, optical_samples)
-                 if refine_intrinsics or distortion_only else None)
+        color = (refine_color(samples, f'wrist_{side}', preflight['board'], distortion_only, optical_samples,
+                              brown_distortion=brown_distortion)
+                 if refine_intrinsics or distortion_only or brown_distortion else None)
         if color:
             color_models[f'wrist_{side}'] = color
         X, B = solve_hand_eye(train)
@@ -382,6 +434,14 @@ def main():
     parser.add_argument('--root', type=Path, required=True)
     parser.add_argument('--yes', action='store_true', help='operator authorizes the displayed sequential motion')
     parser.add_argument('--preview-port', type=int, default=8765)
+    parser.add_argument('--wrists-only', action='store_true',
+                        help='calibrate both wrists and inter-base geometry; defer all fixed cameras')
+    parser.add_argument('--sweep-z-direction', choices=('up', 'down'), default='up',
+                        help='use downward offsets for higher homes; rotations and reserved views stay unchanged')
+    parser.add_argument('--frame-wrists-inward', action='store_true',
+                        help='bias left wrist roll to -15..0 degrees and right wrist roll to 0..15 degrees')
+    parser.add_argument('--coverage-margin-px', type=int, default=80,
+                        help='full-board image margin for subsequent coverage planning; minimum 20 pixels')
     parser.add_argument('--width', type=int, default=1280)
     parser.add_argument('--height', type=int, default=720)
     optical = parser.add_mutually_exclusive_group()
@@ -389,11 +449,17 @@ def main():
                         help='reuse the original training-only Brown5 RGB refinement on saved wrist frames')
     optical.add_argument('--refine-wrist-distortion', action='store_true',
                         help='fit only radial k1/k2; retain factory focal lengths and principal point')
+    optical.add_argument('--refine-wrist-brown-distortion', action='store_true',
+                        help='fit Brown5 distortion, retaining factory focal lengths and principal point')
     parser.add_argument('--coverage-from', type=Path,
                         help='frame a fresh sweep using a previous collection, within the original movement bounds')
+    parser.add_argument('--coverage-seed', type=int,
+                        help='reproducible alternative coverage poses; right arm uses seed + 1')
     parser.add_argument('--optical-training-collection', type=Path,
                         help='include non-reserved images from another complete collection in the lens fit only')
     args = parser.parse_args()
+    if args.coverage_margin_px < 20:
+        parser.error('coverage margin must be at least 20 pixels')
     def interrupted(*_):
         raise SystemExit('calibration interrupted')
     signal.signal(signal.SIGTERM, interrupted)
@@ -402,21 +468,24 @@ def main():
         parser.error('root must be inside RAX_ARTIFACT_ROOT')
     if args.collect and (not args.yes or not args.mcp_socket):
         parser.error('collection requires --yes and the existing --mcp-socket')
-    if args.optical_training_collection and not (args.refine_wrist_intrinsics or args.refine_wrist_distortion):
+    if args.optical_training_collection and not (args.refine_wrist_intrinsics or args.refine_wrist_distortion
+                                                 or args.refine_wrist_brown_distortion):
         parser.error('additional optical training requires a wrist optical refinement mode')
     if not args.fit and not args.session:
         parser.error('capture requires an existing bimanual --session')
     root.mkdir(parents=True, exist_ok=False)
     if args.fit:
         report = fit_collection(args.fit.resolve(), root, args.refine_wrist_intrinsics,
-                                args.refine_wrist_distortion, args.optical_training_collection)
+                                args.refine_wrist_distortion, args.optical_training_collection,
+                                brown_distortion=args.refine_wrist_brown_distortion)
         print(json.dumps({'fit_ok': report['ok'], 'result': str(root/'result.json')}), flush=True)
         return 0 if report['ok'] else 1
     config = Configuration.load(args.session/'operator-input.json')
     if config.robot != 'xarm_bimanual':
         raise ValueError('requires a bimanual session')
     options = deepcopy(config.backend_options)
-    specs = options['cameras']
+    specs = calibration_camera_specs(options['cameras'], args.wrists_only)
+    options['cameras'] = specs
     for spec in specs:
         spec.update(width=args.width, height=args.height, calibration_raw_color=True)
     settings = json.loads(args.board.read_text())
@@ -433,11 +502,17 @@ def main():
         for side in SIDES:
             drivers[side] = XArmDriver({**DEFAULTS, **options['arms'][side]})
         start = arm_poses(drivers)
-        plans = {side: (coverage_plan(side, start[side], options['arms'][side], args.coverage_from, workflow)
-                       if args.coverage_from else calibration_plan(workflow, start[side], options['arms'][side]))
-                 for side in SIDES}
+        source_preflight = json.loads((args.coverage_from/'preflight.json').read_text()) if args.coverage_from else {}
+        plans = {side: (coverage_plan(side, start[side], options['arms'][side], args.coverage_from, workflow,
+                                    seed=None if args.coverage_seed is None else args.coverage_seed+i)
+                       if args.coverage_from else calibration_plan(workflow, start[side], options['arms'][side], args.sweep_z_direction,
+                                                                  side if args.frame_wrists_inward else None))
+                 for i, side in enumerate(SIDES)}
+        kinematic_checks = {}
         for side in SIDES:
             workflow.validate_plan(plans[side], start[side], drivers[side], {**DEFAULTS, **options['arms'][side]})
+            kinematic_checks[side] = validate_sweep_path(plans[side], start[side], drivers[side], options['arms'][side])
+            save(root/'kinematic-checks.json', kinematic_checks)
         service.start()
         if args.preview_port and not args.camera_socket:
             with (root/'preview.log').open('ab') as log:
@@ -454,6 +529,13 @@ def main():
         folder, meta = capture(service, root, specs, drivers)
         found = detections(folder)
         preflight = {'ok': all(usable(v) for v in found.values()), 'board': settings, 'camera_specs': specs,
+            'wrists_only': args.wrists_only,
+            'coverage_seed': args.coverage_seed,
+            'frame_wrists_inward': (source_preflight.get('frame_wrists_inward', False)
+                                    if args.coverage_from else args.frame_wrists_inward),
+            'coverage_margin_px': source_preflight.get('coverage_margin_px', args.coverage_margin_px),
+            'sweep_z_direction': (source_preflight.get('sweep_z_direction', 'up')
+                                  if args.coverage_from else args.sweep_z_direction),
             'poses': plans, 'initial_frame': str(folder), 'start': start,
             'detections': {name: {'usable': usable(v), **v[1]} for name, v in found.items()},
             'coverage_source': str(args.coverage_from.resolve()) if args.coverage_from else None,
@@ -470,6 +552,7 @@ def main():
             raise RuntimeError('prepare the existing bimanual session before collection')
         fixed = [c['name'] for c in specs if c['mount'] == 'fixed']
         baseline = {name: found[name][0] for name in fixed}
+        wrist_baseline = {c['arm']: found[c['name']][0] for c in specs if c['mount'] == 'tcp'}
         if args.coverage_from:
             previous = json.loads((args.coverage_from/'preflight.json').read_text())
             if (previous['board'] != settings or previous['camera_specs'] != specs
@@ -503,6 +586,13 @@ def main():
                 if not quality_ok([pose_change(peer_start, meta['arms'][peer])]):
                     raise RuntimeError('the uncommanded arm moved during collection')
                 found = detections(folder)
+                if args.wrists_only:
+                    peer_camera = next(c['name'] for c in specs if c.get('arm') == peer)
+                    if not usable(found[peer_camera]):
+                        raise RuntimeError('stationary wrist lost board visibility during collection')
+                    delta = invert(wrist_baseline[peer])@found[peer_camera][0]
+                    if np.linalg.norm(delta[:3, 3]) > .005 or Rotation.from_matrix(delta[:3, :3]).magnitude() > np.radians(1):
+                        raise RuntimeError('board/stationary wrist pose changed beyond 5 mm / 1 degree')
                 poses = {name: value[0] for name, value in found.items() if usable(value)}
                 entry = {'arm': side, 'index': goal['index'], 'held_out': goal['held_out'],
                          'frame_dir': str(folder), 'poses': poses,
@@ -526,7 +616,8 @@ def main():
         data['complete'] = True
         save(root/'collection.json', data)
         report = fit_collection(root, root, args.refine_wrist_intrinsics,
-                                args.refine_wrist_distortion, args.optical_training_collection)
+                                args.refine_wrist_distortion, args.optical_training_collection,
+                                brown_distortion=args.refine_wrist_brown_distortion)
         print(json.dumps({'fit_ok': report['ok'], 'result': str(root/'result.json')}), flush=True)
         return 0 if report['ok'] else 1
     except BaseException as exc:

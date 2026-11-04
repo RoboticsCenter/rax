@@ -7,12 +7,44 @@ It uses the existing bimanual MCP owner for motion and separate read-only SDK
 connections for precise pose snapshots. It never opens another Wuji owner or
 changes finger targets. Only one arm moves at a time.
 
+Use `--wrists-only` for a separate wrist stage when the fixed cameras cannot
+see the wrist calibration board. Keep that board stationary through both arm
+sweeps and fresh verification; the stationary peer wrist monitors board motion.
+This fits the two wrists and inter-base transform only. Verification inherits
+the two-camera scope from the fit. Fixed views remain unverified when installing
+this partial bundle and can be calibrated later against the verified wrists
+using the fixed-camera workflow below, with the board at a different height.
+
 Start from the operator's current per-arm saved homes, reported as
 `arms.<side>.home_joints` by `xarm_status`; the left and right homes can differ.
 The sweep is relative to each arm's measured starting TCP pose and returns to
 that same pose. Updating a home does not change the rigid wrist-to-TCP transform,
 but it changes board visibility and the sweep's reachability, so run preflight
 at the new homes before collection. Do not substitute the old single-arm preset.
+
+For higher homes, use `--sweep-z-direction down` in preflight and collection.
+This reverses the original 15–50 mm vertical offsets while retaining all 18
+rotations and three reserved views per arm. Coverage-guided follow-up and fresh
+verification inherit that vertical envelope from the planning collection.
+Both tools screen every Cartesian segment and the return path at intervals of
+at most 5 mm and 2°, checking controller IK, joint-limit margins and continuity.
+A finite-difference FK Jacobian, with translation normalized by 0.3 m, must have
+minimum singular value at least 0.05 and condition number at most 50 at every
+sample. These sampled kinematic checks do not check collisions; the existing
+workspace and controller protections remain active. Reports are saved in
+`kinematic-checks.json` before collection or verification motion.
+
+When the board sits near the inner edges of the wrist images,
+`--frame-wrists-inward` changes the left roll range to −15°..0° and the right
+range to 0°..15°, keeping pitch/yaw within the original limits and retaining
+18 poses and three reserved views. Pose zero retains the actual starting home
+orientation as a training observation. Use fresh captures after changing this plan.
+`--coverage-margin-px 20` permits subsequent coverage planning to use a smaller
+full-board image border than the default 80 pixels; 20 pixels is the minimum.
+It changes only pose selection, not the corner-count, reprojection, pose-error,
+workspace or singularity checks. Follow-up planning inherits these settings.
+Coverage-guided collections also retain the actual home as pose zero, even
+when that view is cropped; the remaining 17 poses use the full-board border.
 
 The board may be placed differently from an earlier calibration. This full
 workflow solves its new pose and the alignment between the arm bases; it does
@@ -43,7 +75,9 @@ fit: the November 3 recalibration needed Brown5/K refinement to pass fresh home
 and sweep verification. Select the model using training data and verify the
 frozen result with new captures before installation.
 It uses OpenCV's [fixed-intrinsic-parameter calibration flags](https://docs.opencv.org/4.13.0/d9/d0c/group__calib3d.html).
-Both refinement modes use training images only; neither changes acceptance
+`--refine-wrist-brown-distortion` instead fits all five Brown distortion terms
+while retaining the factory focal lengths and principal point. These refinement
+modes are mutually exclusive and use training images only; none changes acceptance
 limits. After choosing a model from diagnostic fits, verify it on fresh images.
 The optical training images must cover the parts of the image used at runtime.
 `--optical-training-collection EARLIER_COLLECTION` includes only the earlier

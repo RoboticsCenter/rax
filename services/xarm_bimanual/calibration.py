@@ -150,5 +150,6 @@ class BimanualCalibration:
                 'camera_status': {name: self.camera_status(name) for name in self.camera_names},
                 'reference_base_frame': 'left_base', 'T_left_base_right_base': self.left_from_right.tolist(),
                 'reference_board_planes': planes, 'depth_metric_validation': 'pending',
+                'operator_acceptance': deepcopy(self.manifest.get('operator_acceptance')),
                 'verification': {name: value for name, value in self.manifest['fresh_verification']['cameras'].items()
                                  if name not in self.unverified}}

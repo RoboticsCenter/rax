@@ -164,7 +164,7 @@ class Sessions:
             'created': (root/'operator-input.json').stat().st_mtime,
             'status': status, 'returncode': lifecycle.get('returncode'),
             'started_at': lifecycle.get('started_at'), 'finished_at': lifecycle.get('finished_at'),
-            'attempts': len(lifecycle.get('attempts', [])) + (1 if lifecycle else 0),
+            'attempts': len(lifecycle.get('attempts', [])) + (1 if lifecycle and status != 'prepared-only' else 0),
             'running': bool(process), 'process': process,
             'motion': arming.read(root),
             'requests': operator.pending(root),
@@ -222,9 +222,10 @@ class Sessions:
             if running:
                 raise RuntimeError(f'session {running[0]} is running; one robot, one session at a time')
             lifecycle = read_json(root/'agent-lifecycle.json')
-            if lifecycle and not resume:
+            prepared = lifecycle and lifecycle.get('status') == 'prepared-only'
+            if lifecycle and not resume and not prepared:
                 raise RuntimeError('this session was already launched; use Resume')
-            if resume and not lifecycle:
+            if resume and (not lifecycle or prepared):
                 raise RuntimeError('nothing to resume: this session was never launched')
             command = [*self.launcher, '--config', str(root/'operator-input.json'), '--non-interactive']
             if resume:

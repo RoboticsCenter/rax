@@ -188,6 +188,63 @@ def test_resume_budget_excludes_usage_waits(tmp_path):
     assert launcher.attempt_seconds(launcher.resumable_lifecycle(record)) == 250.0
 
 
+@pytest.mark.parametrize('provider', ['anthropic', 'claude-login'])
+def test_prepared_session_launches_new_conversation_without_reprovisioning(deployed, monkeypatch, provider):
+    config, paths = deployed
+    config = replace(config, agent_provider=provider)
+    paths['configuration'].write_text(json.dumps(config.to_dict()))
+    relay = json.loads(paths['relay_configuration'].read_text())
+    relay['provider'] = provider
+    paths['relay_configuration'].write_text(json.dumps(relay))
+    source = config.root/'operator-input.json'
+    source.write_text(json.dumps(config.to_dict()))
+    record = config.root/'agent-lifecycle.json'
+    record.write_text(json.dumps({'status': 'prepared-only', 'started_at': 1., 'finished_at': 2.}))
+    binary = paths['claude']
+    monkeypatch.setattr(launcher, 'claude_binary', lambda *_: binary)
+    monkeypatch.setattr(launcher, 'deploy', lambda *a, **kw: pytest.fail('must reuse prepared workspace'))
+    monkeypatch.setattr(launcher.signal, 'signal', lambda *a: None)
+    from harness.claude_cli import experiment_login
+    monkeypatch.setattr(experiment_login, 'check', lambda: pytest.fail('must use the session credential'))
+    calls = []
+
+    def launch(current, deployed, **kwargs):
+        assert deployed['resume_session'] is None
+        assert kwargs['seconds'] == config.session_seconds
+        assert kwargs['prompt'] == (paths['workspace']/'START_PROMPT.md').read_text().strip()
+        calls.append(current)
+        return 0
+
+    monkeypatch.setattr(launcher, 'launch', launch)
+    monkeypatch.setattr(sys, 'argv', ['launcher', '--config', str(source), '--no-gemini'])
+    with pytest.raises(SystemExit) as result:
+        launcher.main()
+    assert result.value.code == 0 and calls == [config]
+    assert json.loads(record.read_text())['status'] == 'exited'
+    assert not list(paths['claude_home'].glob('projects/*/*.jsonl'))
+
+
+def test_prepare_only_never_starts_agent_or_robot(tmp_path, monkeypatch):
+    config = configuration(tmp_path, provider='anthropic')
+    config.root.mkdir(parents=True)
+    source = config.root/'operator-input.json'
+    source.write_text(json.dumps(config.to_dict()))
+    key = tmp_path/'model.key'
+    key.write_text('test-key')
+    key.chmod(0o600)
+    monkeypatch.setattr(launcher, 'claude_binary', lambda *_: Path('/fake/claude'))
+    monkeypatch.setattr(launcher, 'launch', lambda *a, **kw: pytest.fail('prepare-only must not launch'))
+    monkeypatch.setattr(launcher, 'start_robot_service', lambda *a, **kw: pytest.fail('must not open robot'))
+    monkeypatch.setattr(launcher.signal, 'signal', lambda *a: None)
+    monkeypatch.setattr(sys, 'argv', ['launcher', '--config', str(source), '--key-file', str(key),
+                                    '--prepare-only', '--no-gemini'])
+    launcher.main()
+    assert json.loads((config.root/'agent-lifecycle.json').read_text())['status'] == 'prepared-only'
+    assert (config.root/'agent-workspace/TASK.md').is_file()
+    assert not (config.root/'state.json').exists()
+    assert not (config.root/'model-calls.json').exists()
+
+
 @pytest.fixture
 def exhausted_session(deployed, monkeypatch):
     config, paths = deployed

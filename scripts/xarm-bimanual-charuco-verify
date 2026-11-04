@@ -70,7 +70,8 @@ def main():
     options = deepcopy(config.backend_options)
     specs = fit['camera_specs']
     expected = {x['name']: (x['serial'], x['mount'], x.get('arm')) for x in specs}
-    live = {x['name']: (x['serial'], x['mount'], x.get('arm')) for x in options['cameras']}
+    live_specs = c.calibration_camera_specs(options['cameras'], fit.get('wrists_only', False))
+    live = {x['name']: (x['serial'], x['mount'], x.get('arm')) for x in live_specs}
     if live != expected:
         raise ValueError('session camera identity/mount differs from fit')
     options.update(cameras=specs, stream_fps=6, stream_archive=False, stream_depth_hz=0, stream_window_s=30)
@@ -91,8 +92,11 @@ def main():
         start = c.arm_poses(drivers)
         plans = {s: c.coverage_plan(s, start[s], options['arms'][s], args.planning_collection,
                                    workflow, seed=29333+i)[-3:] for i, s in enumerate(c.SIDES)}
+        kinematic_checks = {}
         for side in c.SIDES:
             workflow.validate_plan(plans[side], start[side], drivers[side], {**c.DEFAULTS, **options['arms'][side]})
+            kinematic_checks[side] = c.validate_sweep_path(plans[side], start[side], drivers[side], options['arms'][side])
+            c.save(root/'kinematic-checks.json', kinematic_checks)
         service.start()
         if not args.camera_socket:
             log = (root/'preview.log').open('ab')

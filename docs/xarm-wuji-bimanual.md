@@ -226,7 +226,7 @@ faults; physical qualification remains separate.
 | `side_b` (replacement D435) | `262422074331` |
 | `wrist_left` (D435i, dashboard Camera 1) | `108322071838` |
 | `wrist_right` (D435, dashboard Camera 4) | `752112070450` |
-| `front` (replacement D435, calibration pending) | `263222071915` |
+| `front` (D435) | `348522070593` |
 
 The operator confirmed wrist ownership on November 2, 2026. Every wrist entry has
 an explicit `arm` field. Update the serial and role together if a camera is replaced.
@@ -237,18 +237,23 @@ the same cameras. A second process cannot capture cameras already owned by it.
 Additional fixed cameras are supported without changing the existing bundle. Add
 the new camera's unique `name`, `serial`, `mount: "fixed"`, `width` and `height` to
 `cameras`, and list its name in `unverified_camera_extrinsics` until calibrated.
-For this installation, the fifth view is `front`, now D435 serial `263222071915`, at
-1280×720 @ 6 FPS. It replaces serial `348522070593`, whose November 3 calibration
-remains in the archived bundle. The replacement is explicitly unverified and uses
-its own live factory RGB model; the old front intrinsics and transforms are not
-applied. The four other views retain their stored geometry. `xarm_observe` and `xarm_stream`
+For this installation, the fifth view is `front`, D435 serial `348522070593`, at
+1280×720 @ 6 FPS. The operator confirmed this camera after reconnecting it on
+November 3, 2026. On November 4, all three fixed views were recalibrated from
+stereo observations by the retained wrist cameras, and passed fresh verification.
+The saved configs enable geometry for all five views. The wrist transforms and
+lens models remain unchanged, with the operator's accepted 10 mm / 1° per-wrist
+and 20 mm / 1.5° cross-wrist limits recorded in the manifest. See the
+[bundle report](../calibration/xarm-wuji-bimanual/README.md) for measured results
+and the separate raised-board reference diagnostics.
+`xarm_observe` and `xarm_stream`
 accept all configured camera names. An unverified view has no base transform or
 projected marks; adding it does not invalidate the other cameras or block motion.
 Original bundle camera names remain present. A fixed camera's serial can change
 only when it is explicitly unverified; wrist identity changes require calibration.
 
-The example's `calibration_manifest` retains the prior five-camera bundle, with
-`front` marked unverified in the current configuration. The existing xArm camera pipeline rectifies wrist RGB with its
+The example's `calibration_manifest` selects the updated five-camera bundle.
+The existing xArm camera pipeline rectifies wrist RGB with its
 matching fitted models and checks factory profiles against the connected cameras.
 Startup checks arm serials and TCP offsets. Legacy per-camera calibration files
 are refused; the manifest keeps identities, RGB models and transforms together.

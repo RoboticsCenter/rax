@@ -208,6 +208,18 @@ def test_resume_needs_a_previous_launch(dashboard):
     assert status == 409 and 'never launched' in value['error']
 
 
+def test_prepared_session_can_launch_but_cannot_resume(dashboard):
+    base, token, sessions = dashboard
+    session_id = configure(base)['id']
+    root = sessions.root(session_id)
+    (root/'agent-lifecycle.json').write_text(json.dumps({'status': 'prepared-only'}))
+    assert sessions.summary(root)['attempts'] == 0
+    status, value = call(base, f'/api/session/{session_id}/resume', {})
+    assert status == 409 and 'never launched' in value['error']
+    status, value = call(base, f'/api/session/{session_id}/launch', {})
+    assert status == 200 and value['pid'] > 0
+
+
 def test_robot_panel_reports_tcp_and_bridge_down(dashboard, robot):
     base, token, sessions = dashboard
     status, value = call(base, '/api/robot')

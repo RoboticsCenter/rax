@@ -1,0 +1,650 @@
+{
+  "manifest": "/home/jerry/rax/calibration/xarm-wuji-bimanual/manifest.json",
+  "manifest_sha256": "50ce93b719cb3beb25bbe4a7e8f6bba191f9ec4f59568c5b3f9b2a0398d441d4",
+  "collection": "/home/jerry/rax-runtime/sessions/20261103T073444Z_unscrew_bottle_b1d812/operator/wrist-calibration-20261104T083518Z/collection",
+  "method": "Frozen earlier wrist transforms, lens models and inter-base transform. Estimate only the new stationary board pose from 15 training views per wrist; check all 18 views, including three reserved. Also compare both wrists in the same base for each simultaneous capture.",
+  "wrists": {
+    "left": {
+      "new_board_pose": [
+        [
+          -0.05804955585136354,
+          -0.9983055819796597,
+          0.004026667817419624,
+          0.4572875504612403
+        ],
+        [
+          -0.9983035191504547,
+          0.05803027313558337,
+          -0.004750900085961786,
+          -0.23199081666400245
+        ],
+        [
+          0.004509181441972174,
+          -0.004295624292464178,
+          -0.9999806072592913,
+          0.006639240837233166
+        ],
+        [
+          0.0,
+          0.0,
+          0.0,
+          1.0
+        ]
+      ],
+      "all": {
+        "count": 18,
+        "max_translation_mm": 8.57654101944952,
+        "rms_translation_mm": 4.862739815900001,
+        "max_rotation_deg": 0.938861554590501,
+        "rms_rotation_deg": 0.5556693245910884,
+        "ok": false
+      },
+      "reserved": {
+        "count": 3,
+        "max_translation_mm": 5.900556346681858,
+        "rms_translation_mm": 5.663991503880223,
+        "max_rotation_deg": 0.603880485285564,
+        "rms_rotation_deg": 0.5156959599045056,
+        "ok": false
+      },
+      "checks": [
+        {
+          "index": 0,
+          "held_out": false,
+          "translation_mm": 4.194044890270216,
+          "rotation_deg": 0.34479271773344555,
+          "corners": 102,
+          "reprojection_mean_px": 0.21381187438964844
+        },
+        {
+          "index": 1,
+          "held_out": false,
+          "translation_mm": 1.978575271344026,
+          "rotation_deg": 0.3598894898588781,
+          "corners": 100,
+          "reprojection_mean_px": 0.2375057190656662
+        },
+        {
+          "index": 2,
+          "held_out": false,
+          "translation_mm": 2.1812072492370125,
+          "rotation_deg": 0.1970332289223784,
+          "corners": 86,
+          "reprojection_mean_px": 0.24881699681282043
+        },
+        {
+          "index": 3,
+          "held_out": false,
+          "translation_mm": 6.192970517198204,
+          "rotation_deg": 0.5499485342271667,
+          "corners": 96,
+          "reprojection_mean_px": 0.2512670159339905
+        },
+        {
+          "index": 4,
+          "held_out": false,
+          "translation_mm": 6.283968023111471,
+          "rotation_deg": 0.9315878278615132,
+          "corners": 89,
+          "reprojection_mean_px": 0.26893848180770874
+        },
+        {
+          "index": 5,
+          "held_out": false,
+          "translation_mm": 4.574251793257299,
+          "rotation_deg": 0.22572030090972184,
+          "corners": 71,
+          "reprojection_mean_px": 0.18899627029895782
+        },
+        {
+          "index": 6,
+          "held_out": false,
+          "translation_mm": 3.161985377845934,
+          "rotation_deg": 0.38139919686926516,
+          "corners": 95,
+          "reprojection_mean_px": 0.26012539863586426
+        },
+        {
+          "index": 7,
+          "held_out": false,
+          "translation_mm": 4.371179908776993,
+          "rotation_deg": 0.6790437146599034,
+          "corners": 105,
+          "reprojection_mean_px": 0.23557108640670776
+        },
+        {
+          "index": 8,
+          "held_out": false,
+          "translation_mm": 3.1124486593683307,
+          "rotation_deg": 0.938861554590501,
+          "corners": 96,
+          "reprojection_mean_px": 0.2543741464614868
+        },
+        {
+          "index": 9,
+          "held_out": false,
+          "translation_mm": 4.074586892491697,
+          "rotation_deg": 0.31467433838244424,
+          "corners": 77,
+          "reprojection_mean_px": 0.19423411786556244
+        },
+        {
+          "index": 10,
+          "held_out": false,
+          "translation_mm": 5.009945546472094,
+          "rotation_deg": 0.4132690539701107,
+          "corners": 90,
+          "reprojection_mean_px": 0.22747717797756195
+        },
+        {
+          "index": 11,
+          "held_out": false,
+          "translation_mm": 8.57654101944952,
+          "rotation_deg": 0.7035510611937391,
+          "corners": 55,
+          "reprojection_mean_px": 0.23085299134254456
+        },
+        {
+          "index": 12,
+          "held_out": false,
+          "translation_mm": 6.561883419973098,
+          "rotation_deg": 0.8791531008387939,
+          "corners": 43,
+          "reprojection_mean_px": 0.1539369374513626
+        },
+        {
+          "index": 13,
+          "held_out": false,
+          "translation_mm": 1.1161538965170417,
+          "rotation_deg": 0.3258633212802975,
+          "corners": 96,
+          "reprojection_mean_px": 0.22692148387432098
+        },
+        {
+          "index": 14,
+          "held_out": false,
+          "translation_mm": 2.4508885773556144,
+          "rotation_deg": 0.34584904340704803,
+          "corners": 62,
+          "reprojection_mean_px": 0.20842881500720978
+        },
+        {
+          "index": 15,
+          "held_out": true,
+          "translation_mm": 5.31506856545763,
+          "rotation_deg": 0.5599075712379824,
+          "corners": 84,
+          "reprojection_mean_px": 0.19303391873836517
+        },
+        {
+          "index": 16,
+          "held_out": true,
+          "translation_mm": 5.900556346681858,
+          "rotation_deg": 0.3459173894835926,
+          "corners": 103,
+          "reprojection_mean_px": 0.2648930847644806
+        },
+        {
+          "index": 17,
+          "held_out": true,
+          "translation_mm": 5.759850710929811,
+          "rotation_deg": 0.603880485285564,
+          "corners": 100,
+          "reprojection_mean_px": 0.24588876962661743
+        }
+      ]
+    },
+    "right": {
+      "new_board_pose": [
+        [
+          -0.04901193559883428,
+          -0.9985591358402803,
+          0.02185137063821217,
+          0.454721936832246
+        ],
+        [
+          -0.9986707275919731,
+          0.04864444181349008,
+          -0.017043947065546045,
+          0.3939310809644466
+        ],
+        [
+          0.01595644132552362,
+          -0.022657681050071703,
+          -0.9996159369826286,
+          0.0019568680287007792
+        ],
+        [
+          0.0,
+          0.0,
+          0.0,
+          1.0
+        ]
+      ],
+      "all": {
+        "count": 18,
+        "max_translation_mm": 5.717318330246104,
+        "rms_translation_mm": 3.3339163294742415,
+        "max_rotation_deg": 0.5633432035205591,
+        "rms_rotation_deg": 0.364653592428864,
+        "ok": false
+      },
+      "reserved": {
+        "count": 3,
+        "max_translation_mm": 2.3448866109353284,
+        "rms_translation_mm": 1.8308191415044783,
+        "max_rotation_deg": 0.4219721772638055,
+        "rms_rotation_deg": 0.3723338547720297,
+        "ok": true
+      },
+      "checks": [
+        {
+          "index": 0,
+          "held_out": false,
+          "translation_mm": 3.2641124484556414,
+          "rotation_deg": 0.425758731789072,
+          "corners": 106,
+          "reprojection_mean_px": 0.18919380009174347
+        },
+        {
+          "index": 1,
+          "held_out": false,
+          "translation_mm": 3.5023852752751594,
+          "rotation_deg": 0.3322548762992563,
+          "corners": 99,
+          "reprojection_mean_px": 0.2070353478193283
+        },
+        {
+          "index": 2,
+          "held_out": false,
+          "translation_mm": 2.0631385199531618,
+          "rotation_deg": 0.33849979839482436,
+          "corners": 108,
+          "reprojection_mean_px": 0.1862223893404007
+        },
+        {
+          "index": 3,
+          "held_out": false,
+          "translation_mm": 4.991743873694072,
+          "rotation_deg": 0.3325852005471266,
+          "corners": 103,
+          "reprojection_mean_px": 0.20257049798965454
+        },
+        {
+          "index": 4,
+          "held_out": false,
+          "translation_mm": 4.206296235241556,
+          "rotation_deg": 0.5633432035205591,
+          "corners": 95,
+          "reprojection_mean_px": 0.1888873428106308
+        },
+        {
+          "index": 5,
+          "held_out": false,
+          "translation_mm": 3.1057061825870096,
+          "rotation_deg": 0.4060061016560299,
+          "corners": 102,
+          "reprojection_mean_px": 0.23197291791439056
+        },
+        {
+          "index": 6,
+          "held_out": false,
+          "translation_mm": 2.5126126119044656,
+          "rotation_deg": 0.1930256483048298,
+          "corners": 100,
+          "reprojection_mean_px": 0.22125592827796936
+        },
+        {
+          "index": 7,
+          "held_out": false,
+          "translation_mm": 5.717318330246104,
+          "rotation_deg": 0.32946514185572945,
+          "corners": 92,
+          "reprojection_mean_px": 0.2142912894487381
+        },
+        {
+          "index": 8,
+          "held_out": false,
+          "translation_mm": 4.710391265629866,
+          "rotation_deg": 0.44893962651775055,
+          "corners": 84,
+          "reprojection_mean_px": 0.1894204318523407
+        },
+        {
+          "index": 9,
+          "held_out": false,
+          "translation_mm": 3.5767751932542,
+          "rotation_deg": 0.18022328100636034,
+          "corners": 100,
+          "reprojection_mean_px": 0.2688860595226288
+        },
+        {
+          "index": 10,
+          "held_out": false,
+          "translation_mm": 3.204590844596153,
+          "rotation_deg": 0.2094795467531845,
+          "corners": 104,
+          "reprojection_mean_px": 0.17547589540481567
+        },
+        {
+          "index": 11,
+          "held_out": false,
+          "translation_mm": 3.326010894112243,
+          "rotation_deg": 0.29087113998839254,
+          "corners": 108,
+          "reprojection_mean_px": 0.21495281159877777
+        },
+        {
+          "index": 12,
+          "held_out": false,
+          "translation_mm": 2.1038932216855155,
+          "rotation_deg": 0.525742606917475,
+          "corners": 108,
+          "reprojection_mean_px": 0.22836387157440186
+        },
+        {
+          "index": 13,
+          "held_out": false,
+          "translation_mm": 1.6948910772671686,
+          "rotation_deg": 0.23164222111370325,
+          "corners": 108,
+          "reprojection_mean_px": 0.21490280330181122
+        },
+        {
+          "index": 14,
+          "held_out": false,
+          "translation_mm": 2.8227503121804056,
+          "rotation_deg": 0.37438350560809697,
+          "corners": 108,
+          "reprojection_mean_px": 0.20085389912128448
+        },
+        {
+          "index": 15,
+          "held_out": true,
+          "translation_mm": 1.564870996525273,
+          "rotation_deg": 0.3326574622645275,
+          "corners": 90,
+          "reprojection_mean_px": 0.24171693623065948
+        },
+        {
+          "index": 16,
+          "held_out": true,
+          "translation_mm": 1.4520267672421936,
+          "rotation_deg": 0.4219721772638055,
+          "corners": 103,
+          "reprojection_mean_px": 0.1894187331199646
+        },
+        {
+          "index": 17,
+          "held_out": true,
+          "translation_mm": 2.3448866109353284,
+          "rotation_deg": 0.35661743177130967,
+          "corners": 104,
+          "reprojection_mean_px": 0.206185445189476
+        }
+      ]
+    }
+  },
+  "cross_wrist": [
+    {
+      "frame_dir": "/home/jerry/rax-runtime/sessions/20261103T073444Z_unscrew_bottle_b1d812/operator/wrist-calibration-20261104T083518Z/collection/frames/1793781373253290242",
+      "moving_arm": "left",
+      "index": 0,
+      "translation_mm": 17.61660991593167,
+      "rotation_deg": 0.5699370433743144
+    },
+    {
+      "frame_dir": "/home/jerry/rax-runtime/sessions/20261103T073444Z_unscrew_bottle_b1d812/operator/wrist-calibration-20261104T083518Z/collection/frames/1793781376838425451",
+      "moving_arm": "left",
+      "index": 1,
+      "translation_mm": 15.479337434666753,
+      "rotation_deg": 0.6805064503960656
+    },
+    {
+      "frame_dir": "/home/jerry/rax-runtime/sessions/20261103T073444Z_unscrew_bottle_b1d812/operator/wrist-calibration-20261104T083518Z/collection/frames/1793781384787221167",
+      "moving_arm": "left",
+      "index": 2,
+      "translation_mm": 13.644066435506934,
+      "rotation_deg": 0.547005568855621
+    },
+    {
+      "frame_dir": "/home/jerry/rax-runtime/sessions/20261103T073444Z_unscrew_bottle_b1d812/operator/wrist-calibration-20261104T083518Z/collection/frames/1793781392998107338",
+      "moving_arm": "left",
+      "index": 3,
+      "translation_mm": 12.483324130752614,
+      "rotation_deg": 0.7548241110519206
+    },
+    {
+      "frame_dir": "/home/jerry/rax-runtime/sessions/20261103T073444Z_unscrew_bottle_b1d812/operator/wrist-calibration-20261104T083518Z/collection/frames/1793781405973821507",
+      "moving_arm": "left",
+      "index": 4,
+      "translation_mm": 13.830449415188076,
+      "rotation_deg": 1.1746631200448439
+    },
+    {
+      "frame_dir": "/home/jerry/rax-runtime/sessions/20261103T073444Z_unscrew_bottle_b1d812/operator/wrist-calibration-20261104T083518Z/collection/frames/1793781417285402767",
+      "moving_arm": "left",
+      "index": 5,
+      "translation_mm": 17.22520217561922,
+      "rotation_deg": 0.5810261408702968
+    },
+    {
+      "frame_dir": "/home/jerry/rax-runtime/sessions/20261103T073444Z_unscrew_bottle_b1d812/operator/wrist-calibration-20261104T083518Z/collection/frames/1793781433588385757",
+      "moving_arm": "left",
+      "index": 6,
+      "translation_mm": 16.221458847530066,
+      "rotation_deg": 0.5525672635655212
+    },
+    {
+      "frame_dir": "/home/jerry/rax-runtime/sessions/20261103T073444Z_unscrew_bottle_b1d812/operator/wrist-calibration-20261104T083518Z/collection/frames/1793781446931295086",
+      "moving_arm": "left",
+      "index": 7,
+      "translation_mm": 12.601612338268286,
+      "rotation_deg": 0.8720355502217156
+    },
+    {
+      "frame_dir": "/home/jerry/rax-runtime/sessions/20261103T073444Z_unscrew_bottle_b1d812/operator/wrist-calibration-20261104T083518Z/collection/frames/1793781459585517355",
+      "moving_arm": "left",
+      "index": 8,
+      "translation_mm": 12.367587461930121,
+      "rotation_deg": 1.1611910046062754
+    },
+    {
+      "frame_dir": "/home/jerry/rax-runtime/sessions/20261103T073444Z_unscrew_bottle_b1d812/operator/wrist-calibration-20261104T083518Z/collection/frames/1793781470728241545",
+      "moving_arm": "left",
+      "index": 9,
+      "translation_mm": 14.623566742157665,
+      "rotation_deg": 0.7621766479062132
+    },
+    {
+      "frame_dir": "/home/jerry/rax-runtime/sessions/20261103T073444Z_unscrew_bottle_b1d812/operator/wrist-calibration-20261104T083518Z/collection/frames/1793781483369902506",
+      "moving_arm": "left",
+      "index": 10,
+      "translation_mm": 14.277542357000247,
+      "rotation_deg": 0.6837926826486113
+    },
+    {
+      "frame_dir": "/home/jerry/rax-runtime/sessions/20261103T073444Z_unscrew_bottle_b1d812/operator/wrist-calibration-20261104T083518Z/collection/frames/1793781488613500909",
+      "moving_arm": "left",
+      "index": 11,
+      "translation_mm": 11.829258404649707,
+      "rotation_deg": 0.8754437631226042
+    },
+    {
+      "frame_dir": "/home/jerry/rax-runtime/sessions/20261103T073444Z_unscrew_bottle_b1d812/operator/wrist-calibration-20261104T083518Z/collection/frames/1793781505881832777",
+      "moving_arm": "left",
+      "index": 12,
+      "translation_mm": 14.382741384635716,
+      "rotation_deg": 1.1773025168846412
+    },
+    {
+      "frame_dir": "/home/jerry/rax-runtime/sessions/20261103T073444Z_unscrew_bottle_b1d812/operator/wrist-calibration-20261104T083518Z/collection/frames/1793781519021901552",
+      "moving_arm": "left",
+      "index": 13,
+      "translation_mm": 13.068640871937449,
+      "rotation_deg": 0.6511997061899275
+    },
+    {
+      "frame_dir": "/home/jerry/rax-runtime/sessions/20261103T073444Z_unscrew_bottle_b1d812/operator/wrist-calibration-20261104T083518Z/collection/frames/1793781530385280549",
+      "moving_arm": "left",
+      "index": 14,
+      "translation_mm": 14.256544891062978,
+      "rotation_deg": 0.6008796612352606
+    },
+    {
+      "frame_dir": "/home/jerry/rax-runtime/sessions/20261103T073444Z_unscrew_bottle_b1d812/operator/wrist-calibration-20261104T083518Z/collection/frames/1793781538108890347",
+      "moving_arm": "left",
+      "index": 15,
+      "translation_mm": 13.964397954299294,
+      "rotation_deg": 0.9293278533333421
+    },
+    {
+      "frame_dir": "/home/jerry/rax-runtime/sessions/20261103T073444Z_unscrew_bottle_b1d812/operator/wrist-calibration-20261104T083518Z/collection/frames/1793781550313359724",
+      "moving_arm": "left",
+      "index": 16,
+      "translation_mm": 12.81185207284341,
+      "rotation_deg": 0.6263162058890562
+    },
+    {
+      "frame_dir": "/home/jerry/rax-runtime/sessions/20261103T073444Z_unscrew_bottle_b1d812/operator/wrist-calibration-20261104T083518Z/collection/frames/1793781556166031940",
+      "moving_arm": "left",
+      "index": 17,
+      "translation_mm": 15.581416575806294,
+      "rotation_deg": 0.7563319396162602
+    },
+    {
+      "frame_dir": "/home/jerry/rax-runtime/sessions/20261103T073444Z_unscrew_bottle_b1d812/operator/wrist-calibration-20261104T083518Z/collection/frames/1793781563995962185",
+      "moving_arm": "right",
+      "index": 0,
+      "translation_mm": 16.69908947287132,
+      "rotation_deg": 0.5957248894196453
+    },
+    {
+      "frame_dir": "/home/jerry/rax-runtime/sessions/20261103T073444Z_unscrew_bottle_b1d812/operator/wrist-calibration-20261104T083518Z/collection/frames/1793781572056243228",
+      "moving_arm": "right",
+      "index": 1,
+      "translation_mm": 17.25997184127768,
+      "rotation_deg": 0.42621942862774503
+    },
+    {
+      "frame_dir": "/home/jerry/rax-runtime/sessions/20261103T073444Z_unscrew_bottle_b1d812/operator/wrist-calibration-20261104T083518Z/collection/frames/1793781580278518075",
+      "moving_arm": "right",
+      "index": 2,
+      "translation_mm": 15.832515318246362,
+      "rotation_deg": 0.5829611961186458
+    },
+    {
+      "frame_dir": "/home/jerry/rax-runtime/sessions/20261103T073444Z_unscrew_bottle_b1d812/operator/wrist-calibration-20261104T083518Z/collection/frames/1793781589067654234",
+      "moving_arm": "right",
+      "index": 3,
+      "translation_mm": 10.59457947473078,
+      "rotation_deg": 0.8285467048193129
+    },
+    {
+      "frame_dir": "/home/jerry/rax-runtime/sessions/20261103T073444Z_unscrew_bottle_b1d812/operator/wrist-calibration-20261104T083518Z/collection/frames/1793781601861247464",
+      "moving_arm": "right",
+      "index": 4,
+      "translation_mm": 15.57013687910949,
+      "rotation_deg": 1.1421841123340177
+    },
+    {
+      "frame_dir": "/home/jerry/rax-runtime/sessions/20261103T073444Z_unscrew_bottle_b1d812/operator/wrist-calibration-20261104T083518Z/collection/frames/1793781612864561313",
+      "moving_arm": "right",
+      "index": 5,
+      "translation_mm": 15.34231791756853,
+      "rotation_deg": 0.6218513288241636
+    },
+    {
+      "frame_dir": "/home/jerry/rax-runtime/sessions/20261103T073444Z_unscrew_bottle_b1d812/operator/wrist-calibration-20261104T083518Z/collection/frames/1793781629205938103",
+      "moving_arm": "right",
+      "index": 6,
+      "translation_mm": 16.373386732122928,
+      "rotation_deg": 0.5879100206191721
+    },
+    {
+      "frame_dir": "/home/jerry/rax-runtime/sessions/20261103T073444Z_unscrew_bottle_b1d812/operator/wrist-calibration-20261104T083518Z/collection/frames/1793781642553758098",
+      "moving_arm": "right",
+      "index": 7,
+      "translation_mm": 10.477349580196114,
+      "rotation_deg": 0.7465196797161057
+    },
+    {
+      "frame_dir": "/home/jerry/rax-runtime/sessions/20261103T073444Z_unscrew_bottle_b1d812/operator/wrist-calibration-20261104T083518Z/collection/frames/1793781655214332599",
+      "moving_arm": "right",
+      "index": 8,
+      "translation_mm": 14.819099926734895,
+      "rotation_deg": 0.8547327390204328
+    },
+    {
+      "frame_dir": "/home/jerry/rax-runtime/sessions/20261103T073444Z_unscrew_bottle_b1d812/operator/wrist-calibration-20261104T083518Z/collection/frames/1793781666186836007",
+      "moving_arm": "right",
+      "index": 9,
+      "translation_mm": 17.13340258591149,
+      "rotation_deg": 0.7140681103668574
+    },
+    {
+      "frame_dir": "/home/jerry/rax-runtime/sessions/20261103T073444Z_unscrew_bottle_b1d812/operator/wrist-calibration-20261104T083518Z/collection/frames/1793781678873137404",
+      "moving_arm": "right",
+      "index": 10,
+      "translation_mm": 12.17347083409353,
+      "rotation_deg": 0.7265408700601484
+    },
+    {
+      "frame_dir": "/home/jerry/rax-runtime/sessions/20261103T073444Z_unscrew_bottle_b1d812/operator/wrist-calibration-20261104T083518Z/collection/frames/1793781684186826100",
+      "moving_arm": "right",
+      "index": 11,
+      "translation_mm": 12.157462007002554,
+      "rotation_deg": 0.7965610123314095
+    },
+    {
+      "frame_dir": "/home/jerry/rax-runtime/sessions/20261103T073444Z_unscrew_bottle_b1d812/operator/wrist-calibration-20261104T083518Z/collection/frames/1793781701486433170",
+      "moving_arm": "right",
+      "index": 12,
+      "translation_mm": 14.051642800598179,
+      "rotation_deg": 1.0664764409014844
+    },
+    {
+      "frame_dir": "/home/jerry/rax-runtime/sessions/20261103T073444Z_unscrew_bottle_b1d812/operator/wrist-calibration-20261104T083518Z/collection/frames/1793781714416688481",
+      "moving_arm": "right",
+      "index": 13,
+      "translation_mm": 15.617184854514445,
+      "rotation_deg": 0.4787692740283587
+    },
+    {
+      "frame_dir": "/home/jerry/rax-runtime/sessions/20261103T073444Z_unscrew_bottle_b1d812/operator/wrist-calibration-20261104T083518Z/collection/frames/1793781725505528374",
+      "moving_arm": "right",
+      "index": 14,
+      "translation_mm": 16.185192956550015,
+      "rotation_deg": 0.5518153569783525
+    },
+    {
+      "frame_dir": "/home/jerry/rax-runtime/sessions/20261103T073444Z_unscrew_bottle_b1d812/operator/wrist-calibration-20261104T083518Z/collection/frames/1793781733521759691",
+      "moving_arm": "right",
+      "index": 15,
+      "translation_mm": 15.506776194452202,
+      "rotation_deg": 0.7453497107305904
+    },
+    {
+      "frame_dir": "/home/jerry/rax-runtime/sessions/20261103T073444Z_unscrew_bottle_b1d812/operator/wrist-calibration-20261104T083518Z/collection/frames/1793781746514455608",
+      "moving_arm": "right",
+      "index": 16,
+      "translation_mm": 13.334084812337261,
+      "rotation_deg": 0.8588529405371002
+    },
+    {
+      "frame_dir": "/home/jerry/rax-runtime/sessions/20261103T073444Z_unscrew_bottle_b1d812/operator/wrist-calibration-20261104T083518Z/collection/frames/1793781752426313692",
+      "moving_arm": "right",
+      "index": 17,
+      "translation_mm": 16.18601657746019,
+      "rotation_deg": 0.547932086143128
+    }
+  ],
+  "cross_wrist_summary": {
+    "count": 36,
+    "max_translation_mm": 17.61660991593167,
+    "rms_translation_mm": 14.609125079671532,
+    "max_rotation_deg": 1.1773025168846412,
+    "rms_rotation_deg": 0.7714864949949695,
+    "ok": false
+  }
+}

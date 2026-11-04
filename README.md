@@ -238,7 +238,8 @@ bash scripts/start_agent.sh --config <session>/operator-input.json --resume
 - `start_agent.sh` builds the workspace, starts the relay and the robot service, and runs
   Claude Code in its terminal UI. `--non-interactive` runs the start prompt without a UI;
   `--exec-prompt TEXT` runs a different prompt; `--prepare-only` builds the session and
-  starts nothing.
+  starts nothing. Start that prepared session later with the same `--config`
+  and without `--prepare-only` or `--resume`, or use the dashboard's Launch button.
 - `--resume` continues the session's own Claude Code conversation in the same workspace,
   with the wall-clock budget that is left. A non-interactive run that exhausts its Claude
   usage window waits for the reset by itself, off the session clock, and then continues.

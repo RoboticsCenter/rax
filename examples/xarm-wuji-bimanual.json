@@ -1,22 +1,33 @@
 {
   "arms": {
     "left": {
-      "workspace_min": [
-        0.2,
-        -0.35,
-        0.02
-      ],
-      "workspace_max": [
-        0.8,
-        0.35,
-        0.9
-      ],
       "end_effector": {
-        "type": "wuji_hand2",
-        "serial": "WH2JA01260811007",
-        "handedness": "left",
         "address": "192.168.1.110:50001",
-        "profile_revision": "left-hand2-partial-v15-hosttiming-20261103",
+        "allow_encoder_warning": true,
+        "allow_init_current_calib_failed": {},
+        "command_hz": 200,
+        "current_limit_a": 1.5,
+        "disabled_joints": [
+          "thumb_S3",
+          "middle_S1"
+        ],
+        "feedback_pause_error_rad": 0.1,
+        "feedback_slow_error_rad": 0.06,
+        "feedback_transition_s": 1.0,
+        "handedness": "left",
+        "isolated_joint_faults": {
+          "middle_S1": {
+            "code": 12808,
+            "firmware": "2.13.1"
+          },
+          "thumb_S3": {
+            "code": 8456,
+            "firmware": "2.13.1"
+          }
+        },
+        "kd": 0.15,
+        "kp": 8.0,
+        "lock_paths": [],
         "lower_rad": [
           -1.186824,
           -1.48353,
@@ -39,37 +50,15 @@
           -1.047198,
           -1.047198
         ],
-        "upper_rad": [
-          1.291544,
-          0.698132,
-          1.570796,
-          1.570796,
-          1.570796,
-          0.698132,
-          2.094395,
-          1.570796,
-          1.570796,
-          0.698132,
-          2.094395,
-          1.570796,
-          1.570796,
-          0.698132,
-          2.094395,
-          1.570796,
-          1.570796,
-          0.698132,
-          2.094395,
-          1.570796
-        ],
-        "current_limit_a": 1.5,
-        "kp": 8.0,
-        "kd": 0.15,
-        "command_hz": 200,
-        "max_velocity_rad_s": 0.15,
         "max_acceleration_rad_s2": 0.5,
-        "max_step_rad": 2.1,
-        "max_tracking_error_rad": 0.1,
         "max_feedback_age_s": 0.25,
+        "max_jerk_rad_s3": 0.5,
+        "max_scheduler_gap_s": 0.25,
+        "max_step_rad": 2.1,
+        "max_temperature_c": 65.0,
+        "max_tracking_error_rad": 0.1,
+        "max_velocity_rad_s": 0.15,
+        "motion_mode": "scurve",
         "postures": {
           "home": [
             0.3606764078140259,
@@ -94,84 +83,13 @@
             0.794166088104248
           ]
         },
-        "lock_paths": [],
-        "tolerance_rad": 0.015,
-        "motion_mode": "scurve",
-        "max_jerk_rad_s3": 0.5,
-        "feedback_transition_s": 1.0,
-        "feedback_slow_error_rad": 0.06,
-        "feedback_pause_error_rad": 0.1,
-        "settle_s": 0.4,
+        "profile_revision": "left-hand2-partial-v15-hosttiming-20261103",
+        "serial": "WH2JA01260811007",
         "settle_position_range_rad": 0.004,
+        "settle_s": 0.4,
         "settle_timeout_s": 1.0,
-        "max_scheduler_gap_s": 0.25,
-        "max_temperature_c": 65.0,
-        "allow_encoder_warning": true,
-        "allow_init_current_calib_failed": {},
-        "disabled_joints": [
-          "thumb_S3",
-          "middle_S1"
-        ],
-        "isolated_joint_faults": {
-          "thumb_S3": {
-            "code": 8456,
-            "firmware": "2.13.1"
-          },
-          "middle_S1": {
-            "code": 12808,
-            "firmware": "2.13.1"
-          }
-        }
-      },
-      "xarm_ip": "192.168.2.205",
-      "home_joints": [
-        -0.122173,
-        -0.174533,
-        -2.094395,
-        0.0,
-        2.094395,
-        0.0
-      ]
-    },
-    "right": {
-      "workspace_min": [
-        0.2,
-        -0.35,
-        0.02
-      ],
-      "workspace_max": [
-        0.8,
-        0.35,
-        0.9
-      ],
-      "end_effector": {
+        "tolerance_rad": 0.015,
         "type": "wuji_hand2",
-        "serial": "WH2KA01260823017",
-        "handedness": "right",
-        "address": "192.168.1.111:50001",
-        "profile_revision": "right-hand2-scurve-v14-bimanual-200hz-20261103",
-        "lower_rad": [
-          -1.186824,
-          -1.48353,
-          -1.047198,
-          -1.047198,
-          -1.047198,
-          -0.698132,
-          -1.047198,
-          -1.047198,
-          -1.047198,
-          -0.698132,
-          -1.047198,
-          -1.047198,
-          -1.047198,
-          -0.698132,
-          -1.047198,
-          -1.047198,
-          -1.047198,
-          -0.698132,
-          -1.047198,
-          -1.047198
-        ],
         "upper_rad": [
           1.291544,
           0.698132,
@@ -193,7 +111,33 @@
           0.698132,
           2.094395,
           1.570796
-        ],
+        ]
+      },
+      "home_joints": [
+        -0.122173,
+        -0.174533,
+        -2.094395,
+        0.0,
+        2.094395,
+        0.0
+      ],
+      "workspace_max": [
+        0.8,
+        0.35,
+        0.9
+      ],
+      "workspace_min": [
+        0.2,
+        -0.35,
+        0.02
+      ],
+      "xarm_ip": "192.168.2.205"
+    },
+    "right": {
+      "end_effector": {
+        "address": "192.168.1.111:50001",
+        "allow_encoder_warning": true,
+        "command_hz": 200,
         "current_limit_a": [
           1.5,
           1.5,
@@ -215,6 +159,32 @@
           1.5,
           1.5,
           1.5
+        ],
+        "feedback_pause_error_rad": 0.1,
+        "feedback_slow_error_rad": 0.06,
+        "feedback_transition_s": 1.0,
+        "handedness": "right",
+        "kd": [
+          0.15,
+          0.15,
+          0.15,
+          0.15,
+          0.15,
+          0.15,
+          0.15,
+          0.15,
+          0.15,
+          0.15,
+          0.15,
+          0.15,
+          0.15,
+          0.15,
+          0.15,
+          0.15,
+          0.15,
+          0.15,
+          0.15,
+          0.15
         ],
         "kp": [
           8.0,
@@ -238,57 +208,41 @@
           8.0,
           8.0
         ],
-        "kd": [
-          0.15,
-          0.15,
-          0.15,
-          0.15,
-          0.15,
-          0.15,
-          0.15,
-          0.15,
-          0.15,
-          0.15,
-          0.15,
-          0.15,
-          0.15,
-          0.15,
-          0.15,
-          0.15,
-          0.15,
-          0.15,
-          0.15,
-          0.15
+        "lock_paths": [
+          "/home/jerry/xe-eval-deploy/bimanual/eval_robotics_xarm_bimanual/wuji-teleop/teleop.lock"
         ],
-        "command_hz": 200,
-        "max_velocity_rad_s": 0.6,
+        "lower_rad": [
+          -1.186824,
+          -1.48353,
+          -1.047198,
+          -1.047198,
+          -1.047198,
+          -0.698132,
+          -1.047198,
+          -1.047198,
+          -1.047198,
+          -0.698132,
+          -1.047198,
+          -1.047198,
+          -1.047198,
+          -0.698132,
+          -1.047198,
+          -1.047198,
+          -1.047198,
+          -0.698132,
+          -1.047198,
+          -1.047198
+        ],
         "max_acceleration_rad_s2": 3.0,
-        "max_step_rad": 2.1,
-        "max_tracking_error_rad": 0.35,
         "max_feedback_age_s": 0.25,
+        "max_jerk_rad_s3": 2.0,
+        "max_scheduler_gap_s": 0.25,
+        "max_step_rad": 2.1,
+        "max_temperature_c": 65.0,
+        "max_tracking_error_rad": 0.35,
+        "max_velocity_rad_s": 0.6,
+        "motion_mode": "scurve",
         "postures": {
-          "home": [
-            0.099798,
-            0.064535,
-            0.301045,
-            0.370696,
-            -0.146403,
-            0.029051,
-            0.39289,
-            0.761477,
-            0.026323,
-            0.060501,
-            0.269742,
-            0.44159,
-            0.039982,
-            0.043522,
-            0.223297,
-            0.729796,
-            0.09103,
-            0.041176,
-            -0.093998,
-            1.076658
-          ],
           "fist": [
             0.8,
             -1.25,
@@ -310,25 +264,60 @@
             0.13124849973465186,
             1.35,
             1.0
+          ],
+          "home": [
+            0.099798,
+            0.064535,
+            0.301045,
+            0.370696,
+            -0.146403,
+            0.029051,
+            0.39289,
+            0.761477,
+            0.026323,
+            0.060501,
+            0.269742,
+            0.44159,
+            0.039982,
+            0.043522,
+            0.223297,
+            0.729796,
+            0.09103,
+            0.041176,
+            -0.093998,
+            1.076658
           ]
         },
-        "lock_paths": [
-          "/home/jerry/xe-eval-deploy/bimanual/eval_robotics_xarm_bimanual/wuji-teleop/teleop.lock"
-        ],
-        "tolerance_rad": 0.06,
-        "motion_mode": "scurve",
-        "max_jerk_rad_s3": 2.0,
-        "feedback_transition_s": 1.0,
-        "feedback_slow_error_rad": 0.06,
-        "feedback_pause_error_rad": 0.1,
-        "settle_s": 0.4,
+        "profile_revision": "right-hand2-scurve-v14-bimanual-200hz-20261103",
+        "serial": "WH2KA01260823017",
         "settle_position_range_rad": 0.004,
+        "settle_s": 0.4,
         "settle_timeout_s": 8.0,
-        "max_scheduler_gap_s": 0.25,
-        "max_temperature_c": 65.0,
-        "allow_encoder_warning": true
+        "tolerance_rad": 0.06,
+        "type": "wuji_hand2",
+        "upper_rad": [
+          1.291544,
+          0.698132,
+          1.570796,
+          1.570796,
+          1.570796,
+          0.698132,
+          2.094395,
+          1.570796,
+          1.570796,
+          0.698132,
+          2.094395,
+          1.570796,
+          1.570796,
+          0.698132,
+          2.094395,
+          1.570796,
+          1.570796,
+          0.698132,
+          2.094395,
+          1.570796
+        ]
       },
-      "xarm_ip": "192.168.1.241",
       "home_joints": [
         0.174533,
         -0.174533,
@@ -336,57 +325,66 @@
         0.0,
         2.094395,
         0.0
-      ]
+      ],
+      "workspace_max": [
+        0.8,
+        0.35,
+        0.9
+      ],
+      "workspace_min": [
+        0.2,
+        -0.35,
+        0.02
+      ],
+      "xarm_ip": "192.168.1.241"
     }
   },
+  "calibration_manifest": "calibration/xarm-wuji-bimanual/manifest.json",
+  "camera_cpus": "0-15",
   "cameras": [
     {
+      "height": 720,
+      "mount": "fixed",
       "name": "side_a",
       "serial": "263322070113",
-      "mount": "fixed",
-      "width": 1280,
-      "height": 720
+      "width": 1280
     },
     {
+      "height": 720,
+      "mount": "fixed",
       "name": "side_b",
       "serial": "262422074331",
-      "mount": "fixed",
-      "width": 1280,
-      "height": 720
+      "width": 1280
     },
     {
+      "arm": "left",
+      "height": 720,
+      "mount": "tcp",
       "name": "wrist_left",
       "serial": "108322071838",
-      "mount": "tcp",
-      "arm": "left",
-      "width": 1280,
-      "height": 720
+      "width": 1280
     },
     {
+      "arm": "right",
+      "height": 720,
+      "mount": "tcp",
       "name": "wrist_right",
       "serial": "752112070450",
-      "mount": "tcp",
-      "arm": "right",
-      "width": 1280,
-      "height": 720
+      "width": 1280
     },
     {
       "height": 720,
       "mount": "fixed",
       "name": "front",
-      "serial": "263222071915",
+      "serial": "348522070593",
       "width": 1280
     }
   ],
-  "camera_cpus": "0-15",
-  "stream_fps": 6,
-  "stream_depth_hz": 0,
-  "stream_window_s": 120,
-  "stream_archive": false,
   "motion_archive_enabled": true,
   "protected_paths": [],
-  "calibration_manifest": "calibration/xarm-wuji-bimanual/manifest.json",
-  "unverified_camera_extrinsics": [
-    "front"
-  ]
+  "stream_archive": false,
+  "stream_depth_hz": 0,
+  "stream_fps": 6,
+  "stream_window_s": 120,
+  "unverified_camera_extrinsics": []
 }

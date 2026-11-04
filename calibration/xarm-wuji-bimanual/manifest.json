@@ -411,22 +411,22 @@
     "front": {
       "T_cam_base": [
         [
-          -0.2021174514333171,
-          -0.9709374201535121,
-          -0.12817590246119814,
-          -0.17011406435908835
+          -0.02482462018193315,
+          -0.9935612135601251,
+          0.11054344458969645,
+          -0.2960339374125784
         ],
         [
-          -0.35475348321191286,
-          0.19457219757524136,
-          -0.9144898173734665,
-          0.39360805130113413
+          -0.5314417746403457,
+          -0.0805423016787241,
+          -0.843257124373945,
+          0.4571492724903273
         ],
         [
-          0.9128518510553151,
-          -0.1393635033873043,
-          -0.38376986847393463,
-          0.15097456296642153
+          0.8467309952989462,
+          -0.07968094219589732,
+          -0.526020502500455,
+          0.46217498722583766
         ],
         [
           0.0,
@@ -437,22 +437,22 @@
       ],
       "T_cam_board": [
         [
-          0.9571581878369775,
-          0.25855453377917365,
-          0.13037544446277916,
-          -0.0724101726753065
+          0.9906693606332768,
+          0.08283340995908046,
+          -0.1082258938378732,
+          -0.10675698509832313
         ],
         [
-          -0.2171318447733473,
-          0.34297997308377115,
-          0.9139028942118407,
-          0.17476902611886097
+          0.04735175444245032,
+          0.5354312274054301,
+          0.8432503851587252,
+          0.21082196294163863
         ],
         [
-          0.19157757029975128,
-          -0.9030582988521226,
-          0.38442651239522246,
-          0.6063511336285169
+          0.12779682802666734,
+          -0.8405070058682839,
+          0.5265130044288144,
+          0.8724206238802527
         ],
         [
           0.0,
@@ -463,22 +463,22 @@
       ],
       "T_cam_left_base": [
         [
-          -0.2021174514333171,
-          -0.9709374201535121,
-          -0.12817590246119814,
-          -0.17011406435908835
+          -0.02482462018193315,
+          -0.9935612135601251,
+          0.11054344458969645,
+          -0.2960339374125784
         ],
         [
-          -0.35475348321191286,
-          0.19457219757524136,
-          -0.9144898173734665,
-          0.39360805130113413
+          -0.5314417746403457,
+          -0.0805423016787241,
+          -0.843257124373945,
+          0.4571492724903273
         ],
         [
-          0.9128518510553151,
-          -0.1393635033873043,
-          -0.38376986847393463,
-          0.15097456296642153
+          0.8467309952989462,
+          -0.07968094219589732,
+          -0.526020502500455,
+          0.46217498722583766
         ],
         [
           0.0,
@@ -489,22 +489,22 @@
       ],
       "T_cam_right_base": [
         [
-          -0.1853817293230008,
-          -0.9755674686797398,
-          -0.11790559141541537,
-          0.4306377266357402
+          -0.011945549588821734,
+          -0.9921956912254924,
+          0.12411693743639383,
+          0.32312036026278107
         ],
         [
-          -0.3416708587842282,
-          0.17649020053168527,
-          -0.923099254345888,
-          0.2566213104501568
+          -0.5154542371418352,
+          -0.10025256802688537,
+          -0.8510325211274513,
+          0.4920029483736138
         ],
         [
-          0.9213547843750864,
-          -0.13084083143304595,
-          -0.3660410334088893,
-          0.23262267300098277
+          0.8568338422690551,
+          -0.07414265248548514,
+          -0.5102339010932798,
+          0.5042186832127318
         ],
         [
           0.0,
@@ -516,172 +516,172 @@
       "held_out_count": 8,
       "held_out_residuals": [
         {
-          "frame": "/home/jerry/rax-runtime/sessions/20261103T073444Z_unscrew_bottle_b1d812/agent-workspace/runtime/frames/2026110312162784e6fc",
-          "max_corner_error_m": 0.0006795722004573275,
-          "mean_corner_error_m": 0.0004471627882638336,
+          "frame": "/home/jerry/rax-runtime/sessions/20261103T073444Z_unscrew_bottle_b1d812/agent-workspace/runtime/frames/20261104010422a7cb82",
+          "max_corner_error_m": 0.002616264924296632,
+          "mean_corner_error_m": 0.0008573414131569462,
           "reference": "stereo:wrist_left+wrist_right",
-          "rotation_error_deg": 0.03134516007903962,
-          "translation_error_m": 0.00038463715854589664
+          "rotation_error_deg": 0.11044762758795197,
+          "translation_error_m": 0.0005851112504862803
         },
         {
-          "frame": "/home/jerry/rax-runtime/sessions/20261103T073444Z_unscrew_bottle_b1d812/agent-workspace/runtime/frames/20261103121628f41f2d",
-          "max_corner_error_m": 0.0005801259519626695,
-          "mean_corner_error_m": 0.0003092842576091349,
+          "frame": "/home/jerry/rax-runtime/sessions/20261103T073444Z_unscrew_bottle_b1d812/agent-workspace/runtime/frames/20261104010424bb6c21",
+          "max_corner_error_m": 0.0030163796889905144,
+          "mean_corner_error_m": 0.001022127330701945,
           "reference": "stereo:wrist_left+wrist_right",
-          "rotation_error_deg": 0.20511191908534385,
-          "translation_error_m": 0.0004284807006016894
+          "rotation_error_deg": 0.09986362007443414,
+          "translation_error_m": 0.00056979087006281
         },
         {
-          "frame": "/home/jerry/rax-runtime/sessions/20261103T073444Z_unscrew_bottle_b1d812/agent-workspace/runtime/frames/202611031216291fe0cf",
-          "max_corner_error_m": 0.0007609043523313752,
-          "mean_corner_error_m": 0.00048522844473234734,
+          "frame": "/home/jerry/rax-runtime/sessions/20261103T073444Z_unscrew_bottle_b1d812/agent-workspace/runtime/frames/2026110401042736584b",
+          "max_corner_error_m": 0.002788279686988739,
+          "mean_corner_error_m": 0.0009310525888317801,
           "reference": "stereo:wrist_left+wrist_right",
-          "rotation_error_deg": 0.06147370253820146,
-          "translation_error_m": 0.0002772416709700793
+          "rotation_error_deg": 0.08984866492140661,
+          "translation_error_m": 0.0005626196470632812
         },
         {
-          "frame": "/home/jerry/rax-runtime/sessions/20261103T073444Z_unscrew_bottle_b1d812/agent-workspace/runtime/frames/20261103121630286ef6",
-          "max_corner_error_m": 0.0006488117682948578,
-          "mean_corner_error_m": 0.00040110810207229865,
+          "frame": "/home/jerry/rax-runtime/sessions/20261103T073444Z_unscrew_bottle_b1d812/agent-workspace/runtime/frames/202611040104299fa85b",
+          "max_corner_error_m": 0.0034858376385574984,
+          "mean_corner_error_m": 0.0014882213833964724,
           "reference": "stereo:wrist_left+wrist_right",
-          "rotation_error_deg": 0.01847834440248946,
-          "translation_error_m": 0.0003097928433553454
+          "rotation_error_deg": 0.10488443769394463,
+          "translation_error_m": 0.0014835017856577705
         },
         {
-          "frame": "/home/jerry/rax-runtime/sessions/20261103T073444Z_unscrew_bottle_b1d812/agent-workspace/runtime/frames/2026110312163114375e",
-          "max_corner_error_m": 0.000730470291084983,
-          "mean_corner_error_m": 0.0003949611617418332,
+          "frame": "/home/jerry/rax-runtime/sessions/20261103T073444Z_unscrew_bottle_b1d812/agent-workspace/runtime/frames/20261104010431718988",
+          "max_corner_error_m": 0.0028356759400527086,
+          "mean_corner_error_m": 0.0008831701163959331,
           "reference": "stereo:wrist_left+wrist_right",
-          "rotation_error_deg": 0.08441236121666848,
-          "translation_error_m": 0.00011160664773212103
+          "rotation_error_deg": 0.10388849955663919,
+          "translation_error_m": 0.00035376070627330075
         },
         {
-          "frame": "/home/jerry/rax-runtime/sessions/20261103T073444Z_unscrew_bottle_b1d812/agent-workspace/runtime/frames/20261103121632b0423a",
-          "max_corner_error_m": 0.0006453701408727148,
-          "mean_corner_error_m": 0.00030852171162844944,
+          "frame": "/home/jerry/rax-runtime/sessions/20261103T073444Z_unscrew_bottle_b1d812/agent-workspace/runtime/frames/20261104010433074ce6",
+          "max_corner_error_m": 0.0033770431550865375,
+          "mean_corner_error_m": 0.001312483627572723,
           "reference": "stereo:wrist_left+wrist_right",
-          "rotation_error_deg": 0.12894854800618644,
-          "translation_error_m": 0.00012938978525324791
+          "rotation_error_deg": 0.10445318916545245,
+          "translation_error_m": 0.0010084828293550876
         },
         {
-          "frame": "/home/jerry/rax-runtime/sessions/20261103T073444Z_unscrew_bottle_b1d812/agent-workspace/runtime/frames/202611031216348cb3f9",
-          "max_corner_error_m": 0.0005513451840054497,
-          "mean_corner_error_m": 0.00033100381164514033,
+          "frame": "/home/jerry/rax-runtime/sessions/20261103T073444Z_unscrew_bottle_b1d812/agent-workspace/runtime/frames/20261104010435caf929",
+          "max_corner_error_m": 0.003261506643048993,
+          "mean_corner_error_m": 0.0012279286429679988,
           "reference": "stereo:wrist_left+wrist_right",
-          "rotation_error_deg": 0.11594393642359213,
-          "translation_error_m": 0.00024294937119147915
+          "rotation_error_deg": 0.09174570045149105,
+          "translation_error_m": 0.0010405571419895567
         },
         {
-          "frame": "/home/jerry/rax-runtime/sessions/20261103T073444Z_unscrew_bottle_b1d812/agent-workspace/runtime/frames/2026110312163533fd22",
-          "max_corner_error_m": 0.0007870857270351553,
-          "mean_corner_error_m": 0.0003941357510487185,
+          "frame": "/home/jerry/rax-runtime/sessions/20261103T073444Z_unscrew_bottle_b1d812/agent-workspace/runtime/frames/2026110401043768fdf9",
+          "max_corner_error_m": 0.0027777444284344346,
+          "mean_corner_error_m": 0.000906155746455111,
           "reference": "stereo:wrist_left+wrist_right",
-          "rotation_error_deg": 0.14244724022865213,
-          "translation_error_m": 0.00018942728206701838
+          "rotation_error_deg": 0.08896024912239098,
+          "translation_error_m": 0.00038946787248094985
         }
       ],
       "ok": true,
       "recalibration": {
         "method": "Stationary board transfer from shared corners triangulated by two frozen calibrated cameras; rigid metric board fit without scale changes or outlier removal.",
         "report": "front-recalibration-report.json",
-        "source_manifest_sha256": "3afeba491d6ffcab4a5dc42d97ef2f2267dcdcbbeaddc2662d7a5c2512a44473"
+        "source_manifest_sha256": "86e21a5ae63c5a3453e526da1324e2eaef01794cff7382959c6c03398955bf7a"
       },
       "stationary_board_residuals": [
         {
-          "frame": "/home/jerry/rax-runtime/sessions/20261103T073444Z_unscrew_bottle_b1d812/agent-workspace/runtime/frames/20261103121615780e26",
-          "max_corner_error_m": 0.0009734407404677544,
-          "mean_corner_error_m": 0.00039150579915481887,
+          "frame": "/home/jerry/rax-runtime/sessions/20261103T073444Z_unscrew_bottle_b1d812/agent-workspace/runtime/frames/20261104010357db6c3c",
+          "max_corner_error_m": 0.0024184482166561307,
+          "mean_corner_error_m": 0.0009364682459321609,
           "reference": "stereo:wrist_left+wrist_right",
-          "rotation_error_deg": 0.04165261398167306,
-          "translation_error_m": 0.00021424357321320897
+          "rotation_error_deg": 0.1068827584843808,
+          "translation_error_m": 0.00033778585736337144
         },
         {
-          "frame": "/home/jerry/rax-runtime/sessions/20261103T073444Z_unscrew_bottle_b1d812/agent-workspace/runtime/frames/202611031216161434df",
-          "max_corner_error_m": 0.0007582267449389483,
-          "mean_corner_error_m": 0.0003050550708073267,
+          "frame": "/home/jerry/rax-runtime/sessions/20261103T073444Z_unscrew_bottle_b1d812/agent-workspace/runtime/frames/202611040103599b043d",
+          "max_corner_error_m": 0.0021578386179555223,
+          "mean_corner_error_m": 0.0010714926086482727,
           "reference": "stereo:wrist_left+wrist_right",
-          "rotation_error_deg": 0.140940501973057,
-          "translation_error_m": 0.0003084346056892262
+          "rotation_error_deg": 0.09913500222858561,
+          "translation_error_m": 0.0005722086694150556
         },
         {
-          "frame": "/home/jerry/rax-runtime/sessions/20261103T073444Z_unscrew_bottle_b1d812/agent-workspace/runtime/frames/20261103121617b2e7d9",
-          "max_corner_error_m": 0.0007714265204365456,
-          "mean_corner_error_m": 0.00048042894659247967,
+          "frame": "/home/jerry/rax-runtime/sessions/20261103T073444Z_unscrew_bottle_b1d812/agent-workspace/runtime/frames/2026110401040157cacc",
+          "max_corner_error_m": 0.002208403833386576,
+          "mean_corner_error_m": 0.0009702612627746549,
           "reference": "stereo:wrist_left+wrist_right",
-          "rotation_error_deg": 0.11515578066441869,
-          "translation_error_m": 0.00034452553246514634
+          "rotation_error_deg": 0.10846857888998851,
+          "translation_error_m": 0.00047797376328912247
         },
         {
-          "frame": "/home/jerry/rax-runtime/sessions/20261103T073444Z_unscrew_bottle_b1d812/agent-workspace/runtime/frames/20261103121618ea75c2",
-          "max_corner_error_m": 0.0004809323699862888,
-          "mean_corner_error_m": 0.00028449679086988154,
+          "frame": "/home/jerry/rax-runtime/sessions/20261103T073444Z_unscrew_bottle_b1d812/agent-workspace/runtime/frames/20261104010403f7480e",
+          "max_corner_error_m": 0.0027157996479094757,
+          "mean_corner_error_m": 0.0008939417204042186,
           "reference": "stereo:wrist_left+wrist_right",
-          "rotation_error_deg": 0.08834462395850648,
-          "translation_error_m": 0.00024754621017003564
+          "rotation_error_deg": 0.1146871132708775,
+          "translation_error_m": 0.00029654820760619454
         },
         {
-          "frame": "/home/jerry/rax-runtime/sessions/20261103T073444Z_unscrew_bottle_b1d812/agent-workspace/runtime/frames/20261103121619cc9dc0",
-          "max_corner_error_m": 0.0006947025719957765,
-          "mean_corner_error_m": 0.000324161935902828,
+          "frame": "/home/jerry/rax-runtime/sessions/20261103T073444Z_unscrew_bottle_b1d812/agent-workspace/runtime/frames/20261104010405650ab3",
+          "max_corner_error_m": 0.002747177633547391,
+          "mean_corner_error_m": 0.0008927581149836053,
           "reference": "stereo:wrist_left+wrist_right",
-          "rotation_error_deg": 0.06205193972309979,
-          "translation_error_m": 8.045702779626112e-05
+          "rotation_error_deg": 0.08633268280423208,
+          "translation_error_m": 0.0004886178727269819
         },
         {
-          "frame": "/home/jerry/rax-runtime/sessions/20261103T073444Z_unscrew_bottle_b1d812/agent-workspace/runtime/frames/20261103121620fe6ac1",
-          "max_corner_error_m": 0.0005596184803026638,
-          "mean_corner_error_m": 0.0002631371809549553,
+          "frame": "/home/jerry/rax-runtime/sessions/20261103T073444Z_unscrew_bottle_b1d812/agent-workspace/runtime/frames/20261104010407973e63",
+          "max_corner_error_m": 0.002195814871246803,
+          "mean_corner_error_m": 0.001058532673873524,
           "reference": "stereo:wrist_left+wrist_right",
-          "rotation_error_deg": 0.015076035879348861,
-          "translation_error_m": 0.00011275261346294066
+          "rotation_error_deg": 0.11798566854947841,
+          "translation_error_m": 0.0006753781376002663
         },
         {
-          "frame": "/home/jerry/rax-runtime/sessions/20261103T073444Z_unscrew_bottle_b1d812/agent-workspace/runtime/frames/20261103121621f32caf",
-          "max_corner_error_m": 0.0007188992920364077,
-          "mean_corner_error_m": 0.0003893470016096961,
+          "frame": "/home/jerry/rax-runtime/sessions/20261103T073444Z_unscrew_bottle_b1d812/agent-workspace/runtime/frames/20261104010410d38aa6",
+          "max_corner_error_m": 0.002314206474780863,
+          "mean_corner_error_m": 0.0010140610778378491,
           "reference": "stereo:wrist_left+wrist_right",
-          "rotation_error_deg": 0.2062553306354689,
-          "translation_error_m": 0.00015887510709979211
+          "rotation_error_deg": 0.08067115779342086,
+          "translation_error_m": 0.00047518336012333887
         },
         {
-          "frame": "/home/jerry/rax-runtime/sessions/20261103T073444Z_unscrew_bottle_b1d812/agent-workspace/runtime/frames/2026110312162214fedc",
-          "max_corner_error_m": 0.0006707920497378698,
-          "mean_corner_error_m": 0.0003238293910576376,
+          "frame": "/home/jerry/rax-runtime/sessions/20261103T073444Z_unscrew_bottle_b1d812/agent-workspace/runtime/frames/2026110401041246b667",
+          "max_corner_error_m": 0.002723324603537067,
+          "mean_corner_error_m": 0.0008735892195573248,
           "reference": "stereo:wrist_left+wrist_right",
-          "rotation_error_deg": 0.10351104308257343,
-          "translation_error_m": 9.166581232636362e-05
+          "rotation_error_deg": 0.06421060799713207,
+          "translation_error_m": 0.0003474897205780642
         },
         {
-          "frame": "/home/jerry/rax-runtime/sessions/20261103T073444Z_unscrew_bottle_b1d812/agent-workspace/runtime/frames/202611031216236eda38",
-          "max_corner_error_m": 0.0008370370311374761,
-          "mean_corner_error_m": 0.00032665322207158545,
+          "frame": "/home/jerry/rax-runtime/sessions/20261103T073444Z_unscrew_bottle_b1d812/agent-workspace/runtime/frames/20261104010414dd734b",
+          "max_corner_error_m": 0.0029091724423217446,
+          "mean_corner_error_m": 0.0009520132118998935,
           "reference": "stereo:wrist_left+wrist_right",
-          "rotation_error_deg": 0.22549750579098848,
-          "translation_error_m": 0.0002908359506615569
+          "rotation_error_deg": 0.10271589358217814,
+          "translation_error_m": 0.0002916497979572165
         },
         {
-          "frame": "/home/jerry/rax-runtime/sessions/20261103T073444Z_unscrew_bottle_b1d812/agent-workspace/runtime/frames/20261103121624bd5c7d",
-          "max_corner_error_m": 0.0005997166800080071,
-          "mean_corner_error_m": 0.00027392136237308303,
+          "frame": "/home/jerry/rax-runtime/sessions/20261103T073444Z_unscrew_bottle_b1d812/agent-workspace/runtime/frames/202611040104168b1eeb",
+          "max_corner_error_m": 0.0028942187670869582,
+          "mean_corner_error_m": 0.0008985273417294331,
           "reference": "stereo:wrist_left+wrist_right",
-          "rotation_error_deg": 0.15748512847299972,
-          "translation_error_m": 0.0002417051106007718
+          "rotation_error_deg": 0.0573316685476066,
+          "translation_error_m": 0.0004125962362849869
         },
         {
-          "frame": "/home/jerry/rax-runtime/sessions/20261103T073444Z_unscrew_bottle_b1d812/agent-workspace/runtime/frames/20261103121625cca0e3",
-          "max_corner_error_m": 0.0006699505970452022,
-          "mean_corner_error_m": 0.00033639728324607666,
+          "frame": "/home/jerry/rax-runtime/sessions/20261103T073444Z_unscrew_bottle_b1d812/agent-workspace/runtime/frames/202611040104184fdd5f",
+          "max_corner_error_m": 0.0025477793842649753,
+          "mean_corner_error_m": 0.0009001758631145979,
           "reference": "stereo:wrist_left+wrist_right",
-          "rotation_error_deg": 0.1301118810441618,
-          "translation_error_m": 0.000186566575891524
+          "rotation_error_deg": 0.07465443450000897,
+          "translation_error_m": 0.00012545752625037085
         },
         {
-          "frame": "/home/jerry/rax-runtime/sessions/20261103T073444Z_unscrew_bottle_b1d812/agent-workspace/runtime/frames/2026110312162690351d",
-          "max_corner_error_m": 0.0007992643993745234,
-          "mean_corner_error_m": 0.00043222238354511327,
+          "frame": "/home/jerry/rax-runtime/sessions/20261103T073444Z_unscrew_bottle_b1d812/agent-workspace/runtime/frames/20261104010420c1b5d2",
+          "max_corner_error_m": 0.0028694183759762253,
+          "mean_corner_error_m": 0.0009458331733400832,
           "reference": "stereo:wrist_left+wrist_right",
-          "rotation_error_deg": 0.13582712012938306,
-          "translation_error_m": 0.00013936545452169187
+          "rotation_error_deg": 0.029377168854047498,
+          "translation_error_m": 0.0003709811137741946
         }
       ],
       "training_count": 12
@@ -689,22 +689,22 @@
     "side_a": {
       "T_cam_base": [
         [
-          0.999978631376634,
-          -0.002559175771776712,
-          -0.006015597184288734,
-          -0.2633980103657997
+          0.9564255155266997,
+          0.25669337085158217,
+          -0.13913571292209334,
+          -0.1200922488249369
         ],
         [
-          -0.006386418397785125,
-          -0.18584278535585472,
-          -0.9825587375781799,
-          0.12047327666388057
+          -0.03897769379777528,
+          -0.36001537413222684,
+          -0.9321317877717934,
+          0.309671360518021
         ],
         [
-          0.0013965851792505527,
-          0.9825761597711128,
-          -0.18585515811860115,
-          0.9495255521485149
+          -0.2893630464238549,
+          0.896937814873074,
+          -0.33432257419298084,
+          1.1525622613730253
         ],
         [
           0.0,
@@ -715,22 +715,22 @@
       ],
       "T_cam_board": [
         [
-          0.06099120030430475,
-          -0.9981178838103653,
-          0.006384630244518926,
-          0.2106063590369252
+          -0.20067709167146583,
+          -0.969763175208816,
+          0.1388815642452168,
+          0.2794909726883466
         ],
         [
-          0.1828338095410545,
-          0.0174601353989381,
-          0.9829887800786726,
-          0.14216699957098933
+          0.35492203206010314,
+          0.06016513889337228,
+          0.9329579343251596,
+          0.3515707496596159
         ],
         [
-          -0.9812501574899982,
-          -0.05878633931254605,
-          0.18355460968356155,
-          0.7503933581807661
+          -0.9131040773299665,
+          0.23651541190978964,
+          0.3321165516690389,
+          0.8310314218327384
         ],
         [
           0.0,
@@ -741,22 +741,22 @@
       ],
       "T_cam_left_base": [
         [
-          0.999978631376634,
-          -0.002559175771776712,
-          -0.006015597184288734,
-          -0.2633980103657997
+          0.9564255155266997,
+          0.25669337085158217,
+          -0.13913571292209334,
+          -0.1200922488249369
         ],
         [
-          -0.006386418397785125,
-          -0.18584278535585472,
-          -0.9825587375781799,
-          0.12047327666388057
+          -0.03897769379777528,
+          -0.36001537413222684,
+          -0.9321317877717934,
+          0.309671360518021
         ],
         [
-          0.0013965851792505527,
-          0.9825761597711128,
-          -0.18585515811860115,
-          0.9495255521485149
+          -0.2893630464238549,
+          0.896937814873074,
+          -0.33432257419298084,
+          1.1525622613730253
         ],
         [
           0.0,
@@ -767,22 +767,22 @@
       ],
       "T_cam_right_base": [
         [
-          0.9998594746520647,
-          0.012488074309205675,
-          0.011183870016523486,
-          -0.2602031222331984
+          0.9547703855190681,
+          0.2691822204515272,
+          -0.12631089869269835,
+          -0.28030642976746645
         ],
         [
-          0.013451452995583084,
-          -0.19951709963816738,
-          -0.9798020133497801,
-          0.2192895504849967
+          -0.017414093946990724,
+          -0.3734472986038557,
+          -0.927487932265153,
+          0.5175038694967602
         ],
         [
-          -0.010004467042594327,
-          0.9798147656327815,
-          -0.19965704517289723,
-          0.33588100345390337
+          -0.29683372495014304,
+          0.887737600509446,
+          -0.3518688567832551,
+          0.5891161150012539
         ],
         [
           0.0,
@@ -794,372 +794,172 @@
       "held_out_count": 8,
       "held_out_residuals": [
         {
-          "frame": "/home/jerry/rax-runtime/sessions/20261103T073444Z_unscrew_bottle_b1d812/agent-workspace/runtime/frames/202611030858284b6531",
-          "reference": "side_b",
-          "rotation_error_deg": 0.31294050561242026,
-          "translation_error_m": 0.0014610771321511248
+          "frame": "/home/jerry/rax-runtime/sessions/20261103T073444Z_unscrew_bottle_b1d812/agent-workspace/runtime/frames/20261104010422a7cb82",
+          "max_corner_error_m": 0.0024791684611039865,
+          "mean_corner_error_m": 0.0008271543926776617,
+          "reference": "stereo:wrist_left+wrist_right",
+          "rotation_error_deg": 0.10517244853044616,
+          "translation_error_m": 0.00017392770049051698
         },
         {
-          "frame": "/home/jerry/rax-runtime/sessions/20261103T073444Z_unscrew_bottle_b1d812/agent-workspace/runtime/frames/202611030858284b6531",
-          "reference": "wrist_left",
-          "rotation_error_deg": 0.5042985607262909,
-          "translation_error_m": 0.0017504397719145766
+          "frame": "/home/jerry/rax-runtime/sessions/20261103T073444Z_unscrew_bottle_b1d812/agent-workspace/runtime/frames/20261104010424bb6c21",
+          "max_corner_error_m": 0.0026749509093786624,
+          "mean_corner_error_m": 0.000879731669600851,
+          "reference": "stereo:wrist_left+wrist_right",
+          "rotation_error_deg": 0.09863258847605608,
+          "translation_error_m": 0.0003666551756826053
         },
         {
-          "frame": "/home/jerry/rax-runtime/sessions/20261103T073444Z_unscrew_bottle_b1d812/agent-workspace/runtime/frames/202611030858284b6531",
-          "reference": "wrist_right",
-          "rotation_error_deg": 0.38305820455606837,
-          "translation_error_m": 0.003989438381910139
+          "frame": "/home/jerry/rax-runtime/sessions/20261103T073444Z_unscrew_bottle_b1d812/agent-workspace/runtime/frames/2026110401042736584b",
+          "max_corner_error_m": 0.0025974150602179435,
+          "mean_corner_error_m": 0.0008835942680141791,
+          "reference": "stereo:wrist_left+wrist_right",
+          "rotation_error_deg": 0.13670266797461247,
+          "translation_error_m": 0.0004916690009848345
         },
         {
-          "frame": "/home/jerry/rax-runtime/sessions/20261103T073444Z_unscrew_bottle_b1d812/agent-workspace/runtime/frames/20261103085830e08478",
-          "reference": "side_b",
-          "rotation_error_deg": 0.05801193329914038,
-          "translation_error_m": 0.00011047254974263593
+          "frame": "/home/jerry/rax-runtime/sessions/20261103T073444Z_unscrew_bottle_b1d812/agent-workspace/runtime/frames/202611040104299fa85b",
+          "max_corner_error_m": 0.0026177139157808962,
+          "mean_corner_error_m": 0.0008830206020088827,
+          "reference": "stereo:wrist_left+wrist_right",
+          "rotation_error_deg": 0.06796899107476143,
+          "translation_error_m": 0.0002317530663002164
         },
         {
-          "frame": "/home/jerry/rax-runtime/sessions/20261103T073444Z_unscrew_bottle_b1d812/agent-workspace/runtime/frames/20261103085830e08478",
-          "reference": "wrist_left",
-          "rotation_error_deg": 0.3528654445243259,
-          "translation_error_m": 0.003044233279363826
+          "frame": "/home/jerry/rax-runtime/sessions/20261103T073444Z_unscrew_bottle_b1d812/agent-workspace/runtime/frames/20261104010431718988",
+          "max_corner_error_m": 0.0026640214784975,
+          "mean_corner_error_m": 0.0008329629417976774,
+          "reference": "stereo:wrist_left+wrist_right",
+          "rotation_error_deg": 0.040531653838447264,
+          "translation_error_m": 0.0002956648161810214
         },
         {
-          "frame": "/home/jerry/rax-runtime/sessions/20261103T073444Z_unscrew_bottle_b1d812/agent-workspace/runtime/frames/20261103085830e08478",
-          "reference": "wrist_right",
-          "rotation_error_deg": 0.3906304369329551,
-          "translation_error_m": 0.002959061896064164
+          "frame": "/home/jerry/rax-runtime/sessions/20261103T073444Z_unscrew_bottle_b1d812/agent-workspace/runtime/frames/20261104010433074ce6",
+          "max_corner_error_m": 0.00247093042666835,
+          "mean_corner_error_m": 0.0008760231683844062,
+          "reference": "stereo:wrist_left+wrist_right",
+          "rotation_error_deg": 0.10377903752430624,
+          "translation_error_m": 0.00023473515638532612
         },
         {
-          "frame": "/home/jerry/rax-runtime/sessions/20261103T073444Z_unscrew_bottle_b1d812/agent-workspace/runtime/frames/20261103085831cc050b",
-          "reference": "side_b",
-          "rotation_error_deg": 0.07321918457254459,
-          "translation_error_m": 0.0006104875089684336
+          "frame": "/home/jerry/rax-runtime/sessions/20261103T073444Z_unscrew_bottle_b1d812/agent-workspace/runtime/frames/20261104010435caf929",
+          "max_corner_error_m": 0.00263834371582746,
+          "mean_corner_error_m": 0.0008602964516042668,
+          "reference": "stereo:wrist_left+wrist_right",
+          "rotation_error_deg": 0.05944757413063064,
+          "translation_error_m": 0.00014456470084249213
         },
         {
-          "frame": "/home/jerry/rax-runtime/sessions/20261103T073444Z_unscrew_bottle_b1d812/agent-workspace/runtime/frames/20261103085831cc050b",
-          "reference": "wrist_left",
-          "rotation_error_deg": 0.40472645239098426,
-          "translation_error_m": 0.0035928719445269004
-        },
-        {
-          "frame": "/home/jerry/rax-runtime/sessions/20261103T073444Z_unscrew_bottle_b1d812/agent-workspace/runtime/frames/20261103085831cc050b",
-          "reference": "wrist_right",
-          "rotation_error_deg": 0.31934460301403766,
-          "translation_error_m": 0.0022235658551713346
-        },
-        {
-          "frame": "/home/jerry/rax-runtime/sessions/20261103T073444Z_unscrew_bottle_b1d812/agent-workspace/runtime/frames/2026110308583221fa57",
-          "reference": "side_b",
-          "rotation_error_deg": 0.09707169866992471,
-          "translation_error_m": 0.0002052392183147923
-        },
-        {
-          "frame": "/home/jerry/rax-runtime/sessions/20261103T073444Z_unscrew_bottle_b1d812/agent-workspace/runtime/frames/2026110308583221fa57",
-          "reference": "wrist_left",
-          "rotation_error_deg": 0.3585205223362762,
-          "translation_error_m": 0.0029593545108002398
-        },
-        {
-          "frame": "/home/jerry/rax-runtime/sessions/20261103T073444Z_unscrew_bottle_b1d812/agent-workspace/runtime/frames/2026110308583221fa57",
-          "reference": "wrist_right",
-          "rotation_error_deg": 0.3707882081437209,
-          "translation_error_m": 0.002659954080623261
-        },
-        {
-          "frame": "/home/jerry/rax-runtime/sessions/20261103T073444Z_unscrew_bottle_b1d812/agent-workspace/runtime/frames/20261103085835906bee",
-          "reference": "side_b",
-          "rotation_error_deg": 0.0878375097519888,
-          "translation_error_m": 0.00033839276361436187
-        },
-        {
-          "frame": "/home/jerry/rax-runtime/sessions/20261103T073444Z_unscrew_bottle_b1d812/agent-workspace/runtime/frames/20261103085835906bee",
-          "reference": "wrist_left",
-          "rotation_error_deg": 0.29886081126522535,
-          "translation_error_m": 0.0028752932140499623
-        },
-        {
-          "frame": "/home/jerry/rax-runtime/sessions/20261103T073444Z_unscrew_bottle_b1d812/agent-workspace/runtime/frames/20261103085835906bee",
-          "reference": "wrist_right",
-          "rotation_error_deg": 0.41129288164203287,
-          "translation_error_m": 0.0029081015736571224
-        },
-        {
-          "frame": "/home/jerry/rax-runtime/sessions/20261103T073444Z_unscrew_bottle_b1d812/agent-workspace/runtime/frames/2026110308583697c3ff",
-          "reference": "side_b",
-          "rotation_error_deg": 0.2408948811138301,
-          "translation_error_m": 0.0010820441577135843
-        },
-        {
-          "frame": "/home/jerry/rax-runtime/sessions/20261103T073444Z_unscrew_bottle_b1d812/agent-workspace/runtime/frames/2026110308583697c3ff",
-          "reference": "wrist_left",
-          "rotation_error_deg": 0.41883716636875257,
-          "translation_error_m": 0.0021026293240324584
-        },
-        {
-          "frame": "/home/jerry/rax-runtime/sessions/20261103T073444Z_unscrew_bottle_b1d812/agent-workspace/runtime/frames/2026110308583697c3ff",
-          "reference": "wrist_right",
-          "rotation_error_deg": 0.42859109339980184,
-          "translation_error_m": 0.003887828449470335
-        },
-        {
-          "frame": "/home/jerry/rax-runtime/sessions/20261103T073444Z_unscrew_bottle_b1d812/agent-workspace/runtime/frames/20261103085839db0a15",
-          "reference": "side_b",
-          "rotation_error_deg": 0.1896500181568436,
-          "translation_error_m": 0.0004167390739671132
-        },
-        {
-          "frame": "/home/jerry/rax-runtime/sessions/20261103T073444Z_unscrew_bottle_b1d812/agent-workspace/runtime/frames/20261103085839db0a15",
-          "reference": "wrist_left",
-          "rotation_error_deg": 0.4454507563491535,
-          "translation_error_m": 0.0027668077214035762
-        },
-        {
-          "frame": "/home/jerry/rax-runtime/sessions/20261103T073444Z_unscrew_bottle_b1d812/agent-workspace/runtime/frames/20261103085839db0a15",
-          "reference": "wrist_right",
-          "rotation_error_deg": 0.3618236384227336,
-          "translation_error_m": 0.002808864392767766
-        },
-        {
-          "frame": "/home/jerry/rax-runtime/sessions/20261103T073444Z_unscrew_bottle_b1d812/agent-workspace/runtime/frames/202611030858408ef2d7",
-          "reference": "side_b",
-          "rotation_error_deg": 0.20244248279745955,
-          "translation_error_m": 0.0011310164731982073
-        },
-        {
-          "frame": "/home/jerry/rax-runtime/sessions/20261103T073444Z_unscrew_bottle_b1d812/agent-workspace/runtime/frames/202611030858408ef2d7",
-          "reference": "wrist_left",
-          "rotation_error_deg": 0.32365610078689916,
-          "translation_error_m": 0.0033188138042822
-        },
-        {
-          "frame": "/home/jerry/rax-runtime/sessions/20261103T073444Z_unscrew_bottle_b1d812/agent-workspace/runtime/frames/202611030858408ef2d7",
-          "reference": "wrist_right",
-          "rotation_error_deg": 0.4464555192488234,
-          "translation_error_m": 0.0025474497778757333
+          "frame": "/home/jerry/rax-runtime/sessions/20261103T073444Z_unscrew_bottle_b1d812/agent-workspace/runtime/frames/2026110401043768fdf9",
+          "max_corner_error_m": 0.002748597599189075,
+          "mean_corner_error_m": 0.0008836434451826096,
+          "reference": "stereo:wrist_left+wrist_right",
+          "rotation_error_deg": 0.10589272214066912,
+          "translation_error_m": 0.00043446970005624246
         }
       ],
       "ok": true,
       "recalibration": {
-        "method": "Stationary board transfer from 3 frozen calibrated cameras; equal camera weights.",
+        "method": "Stationary board transfer from shared corners triangulated by two frozen calibrated cameras; rigid metric board fit without scale changes or outlier removal.",
         "report": "side_a-recalibration-report.json",
-        "source_manifest_sha256": "ea483f29b1e8f99efd43d80abdd9e411be4bac1fcb7303bed0d469f762ffaa73"
+        "source_manifest_sha256": "86e21a5ae63c5a3453e526da1324e2eaef01794cff7382959c6c03398955bf7a"
       },
       "stationary_board_residuals": [
         {
-          "frame": "/home/jerry/rax-runtime/sessions/20261103T073444Z_unscrew_bottle_b1d812/agent-workspace/runtime/frames/20261103085759b2a328",
-          "reference": "side_b",
-          "rotation_error_deg": 0.13274429281811068,
-          "translation_error_m": 0.000549023135191593
+          "frame": "/home/jerry/rax-runtime/sessions/20261103T073444Z_unscrew_bottle_b1d812/agent-workspace/runtime/frames/20261104010357db6c3c",
+          "max_corner_error_m": 0.0025118482461261205,
+          "mean_corner_error_m": 0.000917742106809233,
+          "reference": "stereo:wrist_left+wrist_right",
+          "rotation_error_deg": 0.029517833549581006,
+          "translation_error_m": 9.799921479046893e-05
         },
         {
-          "frame": "/home/jerry/rax-runtime/sessions/20261103T073444Z_unscrew_bottle_b1d812/agent-workspace/runtime/frames/20261103085759b2a328",
-          "reference": "wrist_left",
-          "rotation_error_deg": 0.3678907758885306,
-          "translation_error_m": 0.0031549977805227273
+          "frame": "/home/jerry/rax-runtime/sessions/20261103T073444Z_unscrew_bottle_b1d812/agent-workspace/runtime/frames/202611040103599b043d",
+          "max_corner_error_m": 0.002459527780580909,
+          "mean_corner_error_m": 0.0009286573591029679,
+          "reference": "stereo:wrist_left+wrist_right",
+          "rotation_error_deg": 0.04077116439738777,
+          "translation_error_m": 0.00020785759931395582
         },
         {
-          "frame": "/home/jerry/rax-runtime/sessions/20261103T073444Z_unscrew_bottle_b1d812/agent-workspace/runtime/frames/20261103085759b2a328",
-          "reference": "wrist_right",
-          "rotation_error_deg": 0.36537003932475454,
-          "translation_error_m": 0.0023522886021193805
+          "frame": "/home/jerry/rax-runtime/sessions/20261103T073444Z_unscrew_bottle_b1d812/agent-workspace/runtime/frames/2026110401040157cacc",
+          "max_corner_error_m": 0.0022260865043654855,
+          "mean_corner_error_m": 0.0008459489707277585,
+          "reference": "stereo:wrist_left+wrist_right",
+          "rotation_error_deg": 0.10958524960940129,
+          "translation_error_m": 0.00038299278414862317
         },
         {
-          "frame": "/home/jerry/rax-runtime/sessions/20261103T073444Z_unscrew_bottle_b1d812/agent-workspace/runtime/frames/202611030858050799bb",
-          "reference": "side_b",
-          "rotation_error_deg": 0.17609331339448214,
-          "translation_error_m": 0.0006789866005052737
+          "frame": "/home/jerry/rax-runtime/sessions/20261103T073444Z_unscrew_bottle_b1d812/agent-workspace/runtime/frames/20261104010403f7480e",
+          "max_corner_error_m": 0.0025537357482331687,
+          "mean_corner_error_m": 0.0009041416877974619,
+          "reference": "stereo:wrist_left+wrist_right",
+          "rotation_error_deg": 0.08359173208309634,
+          "translation_error_m": 0.00022603048902031836
         },
         {
-          "frame": "/home/jerry/rax-runtime/sessions/20261103T073444Z_unscrew_bottle_b1d812/agent-workspace/runtime/frames/202611030858050799bb",
-          "reference": "wrist_left",
-          "rotation_error_deg": 0.30249833860630104,
-          "translation_error_m": 0.0032098774872481067
+          "frame": "/home/jerry/rax-runtime/sessions/20261103T073444Z_unscrew_bottle_b1d812/agent-workspace/runtime/frames/20261104010405650ab3",
+          "max_corner_error_m": 0.002716457077824577,
+          "mean_corner_error_m": 0.000874797769039639,
+          "reference": "stereo:wrist_left+wrist_right",
+          "rotation_error_deg": 0.04709896145377863,
+          "translation_error_m": 0.00017985084744329794
         },
         {
-          "frame": "/home/jerry/rax-runtime/sessions/20261103T073444Z_unscrew_bottle_b1d812/agent-workspace/runtime/frames/202611030858050799bb",
-          "reference": "wrist_right",
-          "rotation_error_deg": 0.4669513579257491,
-          "translation_error_m": 0.0024033901817822837
+          "frame": "/home/jerry/rax-runtime/sessions/20261103T073444Z_unscrew_bottle_b1d812/agent-workspace/runtime/frames/20261104010407973e63",
+          "max_corner_error_m": 0.002648766833555107,
+          "mean_corner_error_m": 0.0009014552376182942,
+          "reference": "stereo:wrist_left+wrist_right",
+          "rotation_error_deg": 0.11151441593495799,
+          "translation_error_m": 0.0003368715008295552
         },
         {
-          "frame": "/home/jerry/rax-runtime/sessions/20261103T073444Z_unscrew_bottle_b1d812/agent-workspace/runtime/frames/20261103085808871e98",
-          "reference": "side_b",
-          "rotation_error_deg": 0.10689697183544286,
-          "translation_error_m": 0.0004929147257804801
+          "frame": "/home/jerry/rax-runtime/sessions/20261103T073444Z_unscrew_bottle_b1d812/agent-workspace/runtime/frames/20261104010410d38aa6",
+          "max_corner_error_m": 0.002501323032949381,
+          "mean_corner_error_m": 0.0009171012135118393,
+          "reference": "stereo:wrist_left+wrist_right",
+          "rotation_error_deg": 0.09378618439783652,
+          "translation_error_m": 0.0002888236131380339
         },
         {
-          "frame": "/home/jerry/rax-runtime/sessions/20261103T073444Z_unscrew_bottle_b1d812/agent-workspace/runtime/frames/20261103085808871e98",
-          "reference": "wrist_left",
-          "rotation_error_deg": 0.2851910271870972,
-          "translation_error_m": 0.0032778361863445376
+          "frame": "/home/jerry/rax-runtime/sessions/20261103T073444Z_unscrew_bottle_b1d812/agent-workspace/runtime/frames/2026110401041246b667",
+          "max_corner_error_m": 0.0023167015626262065,
+          "mean_corner_error_m": 0.0009727539710207601,
+          "reference": "stereo:wrist_left+wrist_right",
+          "rotation_error_deg": 0.10348366158245287,
+          "translation_error_m": 0.00038026612421782866
         },
         {
-          "frame": "/home/jerry/rax-runtime/sessions/20261103T073444Z_unscrew_bottle_b1d812/agent-workspace/runtime/frames/20261103085808871e98",
-          "reference": "wrist_right",
-          "rotation_error_deg": 0.46682047487793293,
-          "translation_error_m": 0.002566015482735955
+          "frame": "/home/jerry/rax-runtime/sessions/20261103T073444Z_unscrew_bottle_b1d812/agent-workspace/runtime/frames/20261104010414dd734b",
+          "max_corner_error_m": 0.0025940842138444747,
+          "mean_corner_error_m": 0.000891126487854763,
+          "reference": "stereo:wrist_left+wrist_right",
+          "rotation_error_deg": 0.0803777361697215,
+          "translation_error_m": 0.00020557238727543744
         },
         {
-          "frame": "/home/jerry/rax-runtime/sessions/20261103T073444Z_unscrew_bottle_b1d812/agent-workspace/runtime/frames/20261103085811babe0d",
-          "reference": "side_b",
-          "rotation_error_deg": 0.13564735638728917,
-          "translation_error_m": 0.0007151661490131097
+          "frame": "/home/jerry/rax-runtime/sessions/20261103T073444Z_unscrew_bottle_b1d812/agent-workspace/runtime/frames/202611040104168b1eeb",
+          "max_corner_error_m": 0.002508112346896443,
+          "mean_corner_error_m": 0.0008426818020618009,
+          "reference": "stereo:wrist_left+wrist_right",
+          "rotation_error_deg": 0.029048820213103187,
+          "translation_error_m": 0.00015665543295175985
         },
         {
-          "frame": "/home/jerry/rax-runtime/sessions/20261103T073444Z_unscrew_bottle_b1d812/agent-workspace/runtime/frames/20261103085811babe0d",
-          "reference": "wrist_left",
-          "rotation_error_deg": 0.3550484190064972,
-          "translation_error_m": 0.0036826011325385337
+          "frame": "/home/jerry/rax-runtime/sessions/20261103T073444Z_unscrew_bottle_b1d812/agent-workspace/runtime/frames/202611040104184fdd5f",
+          "max_corner_error_m": 0.0027332110846457008,
+          "mean_corner_error_m": 0.0009198111897402821,
+          "reference": "stereo:wrist_left+wrist_right",
+          "rotation_error_deg": 0.12206803566607372,
+          "translation_error_m": 0.0003141209191397831
         },
         {
-          "frame": "/home/jerry/rax-runtime/sessions/20261103T073444Z_unscrew_bottle_b1d812/agent-workspace/runtime/frames/20261103085811babe0d",
-          "reference": "wrist_right",
-          "rotation_error_deg": 0.4421932393115199,
-          "translation_error_m": 0.0022218038450718507
-        },
-        {
-          "frame": "/home/jerry/rax-runtime/sessions/20261103T073444Z_unscrew_bottle_b1d812/agent-workspace/runtime/frames/20261103085814d38be9",
-          "reference": "side_b",
-          "rotation_error_deg": 0.07594536189072856,
-          "translation_error_m": 0.00025102723991294603
-        },
-        {
-          "frame": "/home/jerry/rax-runtime/sessions/20261103T073444Z_unscrew_bottle_b1d812/agent-workspace/runtime/frames/20261103085814d38be9",
-          "reference": "wrist_left",
-          "rotation_error_deg": 0.3225222919695708,
-          "translation_error_m": 0.002969403382673748
-        },
-        {
-          "frame": "/home/jerry/rax-runtime/sessions/20261103T073444Z_unscrew_bottle_b1d812/agent-workspace/runtime/frames/20261103085814d38be9",
-          "reference": "wrist_right",
-          "rotation_error_deg": 0.42609056848544324,
-          "translation_error_m": 0.002926723921149251
-        },
-        {
-          "frame": "/home/jerry/rax-runtime/sessions/20261103T073444Z_unscrew_bottle_b1d812/agent-workspace/runtime/frames/20261103085816864d96",
-          "reference": "side_b",
-          "rotation_error_deg": 0.0532084874586631,
-          "translation_error_m": 0.00020707023689382227
-        },
-        {
-          "frame": "/home/jerry/rax-runtime/sessions/20261103T073444Z_unscrew_bottle_b1d812/agent-workspace/runtime/frames/20261103085816864d96",
-          "reference": "wrist_left",
-          "rotation_error_deg": 0.374406570206195,
-          "translation_error_m": 0.0028083836183878845
-        },
-        {
-          "frame": "/home/jerry/rax-runtime/sessions/20261103T073444Z_unscrew_bottle_b1d812/agent-workspace/runtime/frames/20261103085816864d96",
-          "reference": "wrist_right",
-          "rotation_error_deg": 0.38535240629503487,
-          "translation_error_m": 0.002883722859084554
-        },
-        {
-          "frame": "/home/jerry/rax-runtime/sessions/20261103T073444Z_unscrew_bottle_b1d812/agent-workspace/runtime/frames/20261103085819fa8d60",
-          "reference": "side_b",
-          "rotation_error_deg": 0.1724188066634058,
-          "translation_error_m": 0.0006263015745225883
-        },
-        {
-          "frame": "/home/jerry/rax-runtime/sessions/20261103T073444Z_unscrew_bottle_b1d812/agent-workspace/runtime/frames/20261103085819fa8d60",
-          "reference": "wrist_left",
-          "rotation_error_deg": 0.24490440162333874,
-          "translation_error_m": 0.0024739400777118365
-        },
-        {
-          "frame": "/home/jerry/rax-runtime/sessions/20261103T073444Z_unscrew_bottle_b1d812/agent-workspace/runtime/frames/20261103085819fa8d60",
-          "reference": "wrist_right",
-          "rotation_error_deg": 0.5493876478935514,
-          "translation_error_m": 0.0032346324289943785
-        },
-        {
-          "frame": "/home/jerry/rax-runtime/sessions/20261103T073444Z_unscrew_bottle_b1d812/agent-workspace/runtime/frames/202611030858219fb590",
-          "reference": "side_b",
-          "rotation_error_deg": 0.08431663151757562,
-          "translation_error_m": 0.00022733559887124654
-        },
-        {
-          "frame": "/home/jerry/rax-runtime/sessions/20261103T073444Z_unscrew_bottle_b1d812/agent-workspace/runtime/frames/202611030858219fb590",
-          "reference": "wrist_left",
-          "rotation_error_deg": 0.3741412027574941,
-          "translation_error_m": 0.003097955652273567
-        },
-        {
-          "frame": "/home/jerry/rax-runtime/sessions/20261103T073444Z_unscrew_bottle_b1d812/agent-workspace/runtime/frames/202611030858219fb590",
-          "reference": "wrist_right",
-          "rotation_error_deg": 0.38754057848516127,
-          "translation_error_m": 0.0029420919533474743
-        },
-        {
-          "frame": "/home/jerry/rax-runtime/sessions/20261103T073444Z_unscrew_bottle_b1d812/agent-workspace/runtime/frames/20261103085822c61c46",
-          "reference": "side_b",
-          "rotation_error_deg": 0.05456725952102478,
-          "translation_error_m": 0.0005418228347249802
-        },
-        {
-          "frame": "/home/jerry/rax-runtime/sessions/20261103T073444Z_unscrew_bottle_b1d812/agent-workspace/runtime/frames/20261103085822c61c46",
-          "reference": "wrist_left",
-          "rotation_error_deg": 0.3444044520578322,
-          "translation_error_m": 0.002962677674357743
-        },
-        {
-          "frame": "/home/jerry/rax-runtime/sessions/20261103T073444Z_unscrew_bottle_b1d812/agent-workspace/runtime/frames/20261103085822c61c46",
-          "reference": "wrist_right",
-          "rotation_error_deg": 0.36976772795682694,
-          "translation_error_m": 0.0026378636191488405
-        },
-        {
-          "frame": "/home/jerry/rax-runtime/sessions/20261103T073444Z_unscrew_bottle_b1d812/agent-workspace/runtime/frames/2026110308582550403d",
-          "reference": "side_b",
-          "rotation_error_deg": 0.056847825995131156,
-          "translation_error_m": 0.0003287541825589847
-        },
-        {
-          "frame": "/home/jerry/rax-runtime/sessions/20261103T073444Z_unscrew_bottle_b1d812/agent-workspace/runtime/frames/2026110308582550403d",
-          "reference": "wrist_left",
-          "rotation_error_deg": 0.3884277286476916,
-          "translation_error_m": 0.003088209627471413
-        },
-        {
-          "frame": "/home/jerry/rax-runtime/sessions/20261103T073444Z_unscrew_bottle_b1d812/agent-workspace/runtime/frames/2026110308582550403d",
-          "reference": "wrist_right",
-          "rotation_error_deg": 0.32595929821488256,
-          "translation_error_m": 0.0025791354921977762
-        },
-        {
-          "frame": "/home/jerry/rax-runtime/sessions/20261103T073444Z_unscrew_bottle_b1d812/agent-workspace/runtime/frames/2026110308582617b714",
-          "reference": "side_b",
-          "rotation_error_deg": 0.14025953541178862,
-          "translation_error_m": 0.0004202412935140798
-        },
-        {
-          "frame": "/home/jerry/rax-runtime/sessions/20261103T073444Z_unscrew_bottle_b1d812/agent-workspace/runtime/frames/2026110308582617b714",
-          "reference": "wrist_left",
-          "rotation_error_deg": 0.5400392968335889,
-          "translation_error_m": 0.0027848176382997453
-        },
-        {
-          "frame": "/home/jerry/rax-runtime/sessions/20261103T073444Z_unscrew_bottle_b1d812/agent-workspace/runtime/frames/2026110308582617b714",
-          "reference": "wrist_right",
-          "rotation_error_deg": 0.26830792544804777,
-          "translation_error_m": 0.0030936922154406548
-        },
-        {
-          "frame": "/home/jerry/rax-runtime/sessions/20261103T073444Z_unscrew_bottle_b1d812/agent-workspace/runtime/frames/2026110308582781edd7",
-          "reference": "side_b",
-          "rotation_error_deg": 0.515153425795816,
-          "translation_error_m": 0.0025403945922817667
-        },
-        {
-          "frame": "/home/jerry/rax-runtime/sessions/20261103T073444Z_unscrew_bottle_b1d812/agent-workspace/runtime/frames/2026110308582781edd7",
-          "reference": "wrist_left",
-          "rotation_error_deg": 0.7735129073452185,
-          "translation_error_m": 0.0019786058356306003
-        },
-        {
-          "frame": "/home/jerry/rax-runtime/sessions/20261103T073444Z_unscrew_bottle_b1d812/agent-workspace/runtime/frames/2026110308582781edd7",
-          "reference": "wrist_right",
-          "rotation_error_deg": 0.3895132280055469,
-          "translation_error_m": 0.0044728106059534496
+          "frame": "/home/jerry/rax-runtime/sessions/20261103T073444Z_unscrew_bottle_b1d812/agent-workspace/runtime/frames/20261104010420c1b5d2",
+          "max_corner_error_m": 0.002659981756527819,
+          "mean_corner_error_m": 0.0009099222816581505,
+          "reference": "stereo:wrist_left+wrist_right",
+          "rotation_error_deg": 0.11391063256722152,
+          "translation_error_m": 0.00040259006079722536
         }
       ],
       "training_count": 12
@@ -1167,22 +967,22 @@
     "side_b": {
       "T_cam_base": [
         [
-          -0.793941226356588,
-          0.6077803294609593,
-          -0.01613692076338857,
-          0.41462015333769614
+          -0.817388190961888,
+          0.5760066667783164,
+          -0.009636654138551958,
+          0.4338245451468016
         ],
         [
-          0.41573025828467985,
-          0.523317368534282,
-          -0.7438462772219181,
-          0.18537353661214095
+          0.2686371885701901,
+          0.3663079866615563,
+          -0.8908717751871261,
+          0.3533496529198002
         ],
         [
-          -0.4436504045281031,
-          -0.5972788317952354,
-          -0.6681559066949632,
-          0.7690754266105782
+          -0.5096180983767714,
+          -0.7307768323742145,
+          -0.45415263411319406,
+          0.6953552976360664
         ],
         [
           0.0,
@@ -1193,22 +993,22 @@
       ],
       "T_cam_board": [
         [
-          -0.6531848597927691,
-          0.7570610548319752,
-          0.014425608971448982,
-          -0.08368732719525418
+          -0.6228207984518986,
+          0.7823237137481922,
+          0.00799124039036352,
+          -0.0691198511420058
         ],
         [
-          -0.49987535427498925,
-          -0.44544085147031565,
-          0.7427698688220015,
-          0.2675626335274647
+          -0.3520794877490558,
+          -0.28938852290026723,
+          0.8901091602269716,
+          0.3955348442178375
         ],
         [
-          0.5687478959310124,
-          0.4779550262295573,
-          0.6693913831055407,
-          0.6703890663878963
+          0.698666077122757,
+          0.5515649460587925,
+          0.45567732328596244,
+          0.5949972666784529
         ],
         [
           0.0,
@@ -1219,22 +1019,22 @@
       ],
       "T_cam_left_base": [
         [
-          -0.793941226356588,
-          0.6077803294609593,
-          -0.01613692076338857,
-          0.41462015333769614
+          -0.817388190961888,
+          0.5760066667783164,
+          -0.009636654138551958,
+          0.4338245451468016
         ],
         [
-          0.41573025828467985,
-          0.523317368534282,
-          -0.7438462772219181,
-          0.18537353661214095
+          0.2686371885701901,
+          0.3663079866615563,
+          -0.8908717751871261,
+          0.3533496529198002
         ],
         [
-          -0.4436504045281031,
-          -0.5972788317952354,
-          -0.6681559066949632,
-          0.7690754266105782
+          -0.5096180983767714,
+          -0.7307768323742145,
+          -0.45415263411319406,
+          0.6953552976360664
         ],
         [
           0.0,
@@ -1245,22 +1045,22 @@
       ],
       "T_cam_right_base": [
         [
-          -0.8025021960160862,
-          0.5954160983480767,
-          -0.038339212528591356,
-          0.0353627022397201
+          -0.8255828745097721,
+          0.5633844465930324,
+          -0.031794380843879554,
+          0.07437894143030704
         ],
         [
-          0.42075210908474664,
-          0.5191887606582907,
-          -0.7439157838807061,
-          -0.15166559164105287
+          0.2785893869068252,
+          0.35794929897301564,
+          -0.8912127988688263,
+          0.11112315645480944
         ],
         [
-          -0.42303414530046723,
-          -0.6131253547473479,
-          -0.6671726997381128,
-          1.1281059367871868
+          -0.4907146531529934,
+          -0.7446276013564028,
+          -0.45246973874409385,
+          1.1408434319380516
         ],
         [
           0.0,
@@ -1272,252 +1072,172 @@
       "held_out_count": 8,
       "held_out_residuals": [
         {
-          "frame": "/home/jerry/rax-runtime/sessions/20261103T073444Z_unscrew_bottle_b1d812/agent-workspace/runtime/frames/20261103085411d0212f",
-          "reference": "wrist_left",
-          "rotation_error_deg": 0.4354089775696344,
-          "translation_error_m": 0.0030249212236053745
+          "frame": "/home/jerry/rax-runtime/sessions/20261103T073444Z_unscrew_bottle_b1d812/agent-workspace/runtime/frames/20261104010422a7cb82",
+          "max_corner_error_m": 0.0023750414168456527,
+          "mean_corner_error_m": 0.0008053397882080357,
+          "reference": "stereo:wrist_left+wrist_right",
+          "rotation_error_deg": 0.10931566066662397,
+          "translation_error_m": 0.00032073766320736227
         },
         {
-          "frame": "/home/jerry/rax-runtime/sessions/20261103T073444Z_unscrew_bottle_b1d812/agent-workspace/runtime/frames/20261103085411d0212f",
-          "reference": "wrist_right",
-          "rotation_error_deg": 0.34258525934669765,
-          "translation_error_m": 0.0027238643603270446
+          "frame": "/home/jerry/rax-runtime/sessions/20261103T073444Z_unscrew_bottle_b1d812/agent-workspace/runtime/frames/20261104010424bb6c21",
+          "max_corner_error_m": 0.002453677306470694,
+          "mean_corner_error_m": 0.000932766234153186,
+          "reference": "stereo:wrist_left+wrist_right",
+          "rotation_error_deg": 0.040120427526662256,
+          "translation_error_m": 0.000244595040286563
         },
         {
-          "frame": "/home/jerry/rax-runtime/sessions/20261103T073444Z_unscrew_bottle_b1d812/agent-workspace/runtime/frames/2026110308541305c1e0",
-          "reference": "wrist_left",
-          "rotation_error_deg": 0.3613383254946836,
-          "translation_error_m": 0.0026679854949133654
+          "frame": "/home/jerry/rax-runtime/sessions/20261103T073444Z_unscrew_bottle_b1d812/agent-workspace/runtime/frames/2026110401042736584b",
+          "max_corner_error_m": 0.0025478335246413427,
+          "mean_corner_error_m": 0.0008728549729411038,
+          "reference": "stereo:wrist_left+wrist_right",
+          "rotation_error_deg": 0.07341631028362973,
+          "translation_error_m": 0.00025335914401825434
         },
         {
-          "frame": "/home/jerry/rax-runtime/sessions/20261103T073444Z_unscrew_bottle_b1d812/agent-workspace/runtime/frames/2026110308541305c1e0",
-          "reference": "wrist_right",
-          "rotation_error_deg": 0.3890933893990981,
-          "translation_error_m": 0.002958886543103252
+          "frame": "/home/jerry/rax-runtime/sessions/20261103T073444Z_unscrew_bottle_b1d812/agent-workspace/runtime/frames/202611040104299fa85b",
+          "max_corner_error_m": 0.002485843127022318,
+          "mean_corner_error_m": 0.0009340551016823768,
+          "reference": "stereo:wrist_left+wrist_right",
+          "rotation_error_deg": 0.07434723885758854,
+          "translation_error_m": 0.0003266010622503566
         },
         {
-          "frame": "/home/jerry/rax-runtime/sessions/20261103T073444Z_unscrew_bottle_b1d812/agent-workspace/runtime/frames/20261103085414459490",
-          "reference": "wrist_left",
-          "rotation_error_deg": 0.43045002359822276,
-          "translation_error_m": 0.0031223539924991753
+          "frame": "/home/jerry/rax-runtime/sessions/20261103T073444Z_unscrew_bottle_b1d812/agent-workspace/runtime/frames/20261104010431718988",
+          "max_corner_error_m": 0.0025412409070388305,
+          "mean_corner_error_m": 0.0008121154302398258,
+          "reference": "stereo:wrist_left+wrist_right",
+          "rotation_error_deg": 0.05715228065211086,
+          "translation_error_m": 0.00011134865868628517
         },
         {
-          "frame": "/home/jerry/rax-runtime/sessions/20261103T073444Z_unscrew_bottle_b1d812/agent-workspace/runtime/frames/20261103085414459490",
-          "reference": "wrist_right",
-          "rotation_error_deg": 0.3418238057580195,
-          "translation_error_m": 0.002881123178031868
+          "frame": "/home/jerry/rax-runtime/sessions/20261103T073444Z_unscrew_bottle_b1d812/agent-workspace/runtime/frames/20261104010433074ce6",
+          "max_corner_error_m": 0.002810551243202995,
+          "mean_corner_error_m": 0.0009668746067051909,
+          "reference": "stereo:wrist_left+wrist_right",
+          "rotation_error_deg": 0.08321765902225144,
+          "translation_error_m": 0.00044811748829369014
         },
         {
-          "frame": "/home/jerry/rax-runtime/sessions/20261103T073444Z_unscrew_bottle_b1d812/agent-workspace/runtime/frames/202611030854162b4c01",
-          "reference": "wrist_left",
-          "rotation_error_deg": 0.409419305034689,
-          "translation_error_m": 0.0025075652378953608
+          "frame": "/home/jerry/rax-runtime/sessions/20261103T073444Z_unscrew_bottle_b1d812/agent-workspace/runtime/frames/20261104010435caf929",
+          "max_corner_error_m": 0.0025573108876172763,
+          "mean_corner_error_m": 0.0008660768886332213,
+          "reference": "stereo:wrist_left+wrist_right",
+          "rotation_error_deg": 0.01980863752450672,
+          "translation_error_m": 2.9605245992245544e-05
         },
         {
-          "frame": "/home/jerry/rax-runtime/sessions/20261103T073444Z_unscrew_bottle_b1d812/agent-workspace/runtime/frames/202611030854162b4c01",
-          "reference": "wrist_right",
-          "rotation_error_deg": 0.3627318699748563,
-          "translation_error_m": 0.0032620161548783805
-        },
-        {
-          "frame": "/home/jerry/rax-runtime/sessions/20261103T073444Z_unscrew_bottle_b1d812/agent-workspace/runtime/frames/2026110308541907051f",
-          "reference": "wrist_left",
-          "rotation_error_deg": 0.4098744396673746,
-          "translation_error_m": 0.002551960032560123
-        },
-        {
-          "frame": "/home/jerry/rax-runtime/sessions/20261103T073444Z_unscrew_bottle_b1d812/agent-workspace/runtime/frames/2026110308541907051f",
-          "reference": "wrist_right",
-          "rotation_error_deg": 0.3808726512184295,
-          "translation_error_m": 0.0029669378828672674
-        },
-        {
-          "frame": "/home/jerry/rax-runtime/sessions/20261103T073444Z_unscrew_bottle_b1d812/agent-workspace/runtime/frames/20261103085421c5dfab",
-          "reference": "wrist_left",
-          "rotation_error_deg": 0.36864160166580906,
-          "translation_error_m": 0.003054763000711122
-        },
-        {
-          "frame": "/home/jerry/rax-runtime/sessions/20261103T073444Z_unscrew_bottle_b1d812/agent-workspace/runtime/frames/20261103085421c5dfab",
-          "reference": "wrist_right",
-          "rotation_error_deg": 0.4016978857935459,
-          "translation_error_m": 0.0027537935321414416
-        },
-        {
-          "frame": "/home/jerry/rax-runtime/sessions/20261103T073444Z_unscrew_bottle_b1d812/agent-workspace/runtime/frames/202611030854221b4934",
-          "reference": "wrist_left",
-          "rotation_error_deg": 0.45127962074104866,
-          "translation_error_m": 0.0029765597718530417
-        },
-        {
-          "frame": "/home/jerry/rax-runtime/sessions/20261103T073444Z_unscrew_bottle_b1d812/agent-workspace/runtime/frames/202611030854221b4934",
-          "reference": "wrist_right",
-          "rotation_error_deg": 0.3100959841703726,
-          "translation_error_m": 0.0027426696438543684
-        },
-        {
-          "frame": "/home/jerry/rax-runtime/sessions/20261103T073444Z_unscrew_bottle_b1d812/agent-workspace/runtime/frames/2026110308542618ab8f",
-          "reference": "wrist_left",
-          "rotation_error_deg": 0.40455367503055034,
-          "translation_error_m": 0.0028184194933255904
-        },
-        {
-          "frame": "/home/jerry/rax-runtime/sessions/20261103T073444Z_unscrew_bottle_b1d812/agent-workspace/runtime/frames/2026110308542618ab8f",
-          "reference": "wrist_right",
-          "rotation_error_deg": 0.3462885113975362,
-          "translation_error_m": 0.002991512869236819
+          "frame": "/home/jerry/rax-runtime/sessions/20261103T073444Z_unscrew_bottle_b1d812/agent-workspace/runtime/frames/2026110401043768fdf9",
+          "max_corner_error_m": 0.0025283217650622085,
+          "mean_corner_error_m": 0.0009043379687652203,
+          "reference": "stereo:wrist_left+wrist_right",
+          "rotation_error_deg": 0.023611499796940577,
+          "translation_error_m": 0.00013584115877275613
         }
       ],
       "ok": true,
       "recalibration": {
-        "method": "Stationary board transfer from 2 frozen calibrated cameras; equal camera weights.",
+        "method": "Stationary board transfer from shared corners triangulated by two frozen calibrated cameras; rigid metric board fit without scale changes or outlier removal.",
         "report": "side_b-recalibration-report.json",
-        "source_manifest_sha256": "4f6a00b438497b9a75a5295a4e151e6abc8dd6753f7ff8492ed62a84bb3cef00"
+        "source_manifest_sha256": "86e21a5ae63c5a3453e526da1324e2eaef01794cff7382959c6c03398955bf7a"
       },
       "stationary_board_residuals": [
         {
-          "frame": "/home/jerry/rax-runtime/sessions/20261103T073444Z_unscrew_bottle_b1d812/agent-workspace/runtime/frames/20261103085342df362b",
-          "reference": "wrist_left",
-          "rotation_error_deg": 0.37493993017461497,
-          "translation_error_m": 0.0027695453627164662
+          "frame": "/home/jerry/rax-runtime/sessions/20261103T073444Z_unscrew_bottle_b1d812/agent-workspace/runtime/frames/20261104010357db6c3c",
+          "max_corner_error_m": 0.0026170159536621235,
+          "mean_corner_error_m": 0.0009051680321690958,
+          "reference": "stereo:wrist_left+wrist_right",
+          "rotation_error_deg": 0.11839444400445565,
+          "translation_error_m": 0.00017555501715831671
         },
         {
-          "frame": "/home/jerry/rax-runtime/sessions/20261103T073444Z_unscrew_bottle_b1d812/agent-workspace/runtime/frames/20261103085342df362b",
-          "reference": "wrist_right",
-          "rotation_error_deg": 0.355909398143716,
-          "translation_error_m": 0.0028995818912729548
+          "frame": "/home/jerry/rax-runtime/sessions/20261103T073444Z_unscrew_bottle_b1d812/agent-workspace/runtime/frames/202611040103599b043d",
+          "max_corner_error_m": 0.0025366567917404024,
+          "mean_corner_error_m": 0.0008979066828635836,
+          "reference": "stereo:wrist_left+wrist_right",
+          "rotation_error_deg": 0.0649540701034055,
+          "translation_error_m": 0.00017932282058540444
         },
         {
-          "frame": "/home/jerry/rax-runtime/sessions/20261103T073444Z_unscrew_bottle_b1d812/agent-workspace/runtime/frames/20261103085344a8adc5",
-          "reference": "wrist_left",
-          "rotation_error_deg": 0.33336939717117997,
-          "translation_error_m": 0.0027032027565750054
+          "frame": "/home/jerry/rax-runtime/sessions/20261103T073444Z_unscrew_bottle_b1d812/agent-workspace/runtime/frames/2026110401040157cacc",
+          "max_corner_error_m": 0.002367538030435348,
+          "mean_corner_error_m": 0.0008066586791526585,
+          "reference": "stereo:wrist_left+wrist_right",
+          "rotation_error_deg": 0.08801857239862292,
+          "translation_error_m": 0.0001576132362200883
         },
         {
-          "frame": "/home/jerry/rax-runtime/sessions/20261103T073444Z_unscrew_bottle_b1d812/agent-workspace/runtime/frames/20261103085344a8adc5",
-          "reference": "wrist_right",
-          "rotation_error_deg": 0.41559496828645315,
-          "translation_error_m": 0.0030525149073048073
+          "frame": "/home/jerry/rax-runtime/sessions/20261103T073444Z_unscrew_bottle_b1d812/agent-workspace/runtime/frames/20261104010403f7480e",
+          "max_corner_error_m": 0.002554185465371007,
+          "mean_corner_error_m": 0.0008968135615397135,
+          "reference": "stereo:wrist_left+wrist_right",
+          "rotation_error_deg": 0.10531446440456999,
+          "translation_error_m": 0.00022012901271801697
         },
         {
-          "frame": "/home/jerry/rax-runtime/sessions/20261103T073444Z_unscrew_bottle_b1d812/agent-workspace/runtime/frames/2026110308534640c564",
-          "reference": "wrist_left",
-          "rotation_error_deg": 0.5007577415481209,
-          "translation_error_m": 0.002776613252488785
+          "frame": "/home/jerry/rax-runtime/sessions/20261103T073444Z_unscrew_bottle_b1d812/agent-workspace/runtime/frames/20261104010405650ab3",
+          "max_corner_error_m": 0.002537983800814321,
+          "mean_corner_error_m": 0.0009024310051976754,
+          "reference": "stereo:wrist_left+wrist_right",
+          "rotation_error_deg": 0.043649159777744424,
+          "translation_error_m": 0.0001568556414212245
         },
         {
-          "frame": "/home/jerry/rax-runtime/sessions/20261103T073444Z_unscrew_bottle_b1d812/agent-workspace/runtime/frames/2026110308534640c564",
-          "reference": "wrist_right",
-          "rotation_error_deg": 0.2885145516774363,
-          "translation_error_m": 0.0034713779108257637
+          "frame": "/home/jerry/rax-runtime/sessions/20261103T073444Z_unscrew_bottle_b1d812/agent-workspace/runtime/frames/20261104010407973e63",
+          "max_corner_error_m": 0.002533222397843853,
+          "mean_corner_error_m": 0.0009053436459596608,
+          "reference": "stereo:wrist_left+wrist_right",
+          "rotation_error_deg": 0.11500785736759435,
+          "translation_error_m": 0.00035547106879263635
         },
         {
-          "frame": "/home/jerry/rax-runtime/sessions/20261103T073444Z_unscrew_bottle_b1d812/agent-workspace/runtime/frames/20261103085348e37dd9",
-          "reference": "wrist_left",
-          "rotation_error_deg": 0.3832740281675644,
-          "translation_error_m": 0.0025185015528006688
+          "frame": "/home/jerry/rax-runtime/sessions/20261103T073444Z_unscrew_bottle_b1d812/agent-workspace/runtime/frames/20261104010410d38aa6",
+          "max_corner_error_m": 0.0024487663359754005,
+          "mean_corner_error_m": 0.0009305502763498978,
+          "reference": "stereo:wrist_left+wrist_right",
+          "rotation_error_deg": 0.08300638419405357,
+          "translation_error_m": 0.00019255680363138703
         },
         {
-          "frame": "/home/jerry/rax-runtime/sessions/20261103T073444Z_unscrew_bottle_b1d812/agent-workspace/runtime/frames/20261103085348e37dd9",
-          "reference": "wrist_right",
-          "rotation_error_deg": 0.3889425176262465,
-          "translation_error_m": 0.003047514343499874
+          "frame": "/home/jerry/rax-runtime/sessions/20261103T073444Z_unscrew_bottle_b1d812/agent-workspace/runtime/frames/2026110401041246b667",
+          "max_corner_error_m": 0.0025133944175229797,
+          "mean_corner_error_m": 0.0008808826161809628,
+          "reference": "stereo:wrist_left+wrist_right",
+          "rotation_error_deg": 0.009668406992687803,
+          "translation_error_m": 0.0001018566080760918
         },
         {
-          "frame": "/home/jerry/rax-runtime/sessions/20261103T073444Z_unscrew_bottle_b1d812/agent-workspace/runtime/frames/202611030853500fea72",
-          "reference": "wrist_left",
-          "rotation_error_deg": 0.36734664266091077,
-          "translation_error_m": 0.003057297532020532
+          "frame": "/home/jerry/rax-runtime/sessions/20261103T073444Z_unscrew_bottle_b1d812/agent-workspace/runtime/frames/20261104010414dd734b",
+          "max_corner_error_m": 0.0026345582862661787,
+          "mean_corner_error_m": 0.0008791543127614562,
+          "reference": "stereo:wrist_left+wrist_right",
+          "rotation_error_deg": 0.07020139370240701,
+          "translation_error_m": 0.00022168838039914949
         },
         {
-          "frame": "/home/jerry/rax-runtime/sessions/20261103T073444Z_unscrew_bottle_b1d812/agent-workspace/runtime/frames/202611030853500fea72",
-          "reference": "wrist_right",
-          "rotation_error_deg": 0.44283577138605384,
-          "translation_error_m": 0.0030265570755882007
+          "frame": "/home/jerry/rax-runtime/sessions/20261103T073444Z_unscrew_bottle_b1d812/agent-workspace/runtime/frames/202611040104168b1eeb",
+          "max_corner_error_m": 0.0025808639255950187,
+          "mean_corner_error_m": 0.0008197310542865905,
+          "reference": "stereo:wrist_left+wrist_right",
+          "rotation_error_deg": 0.027523336262713017,
+          "translation_error_m": 0.0001369246854654837
         },
         {
-          "frame": "/home/jerry/rax-runtime/sessions/20261103T073444Z_unscrew_bottle_b1d812/agent-workspace/runtime/frames/20261103085351a58615",
-          "reference": "wrist_left",
-          "rotation_error_deg": 0.3813693928360257,
-          "translation_error_m": 0.003155983581823166
+          "frame": "/home/jerry/rax-runtime/sessions/20261103T073444Z_unscrew_bottle_b1d812/agent-workspace/runtime/frames/202611040104184fdd5f",
+          "max_corner_error_m": 0.002540832765319229,
+          "mean_corner_error_m": 0.0008832948495789506,
+          "reference": "stereo:wrist_left+wrist_right",
+          "rotation_error_deg": 0.059969726895711346,
+          "translation_error_m": 0.00024814276345376133
         },
         {
-          "frame": "/home/jerry/rax-runtime/sessions/20261103T073444Z_unscrew_bottle_b1d812/agent-workspace/runtime/frames/20261103085351a58615",
-          "reference": "wrist_right",
-          "rotation_error_deg": 0.3601861208109898,
-          "translation_error_m": 0.0026433780983559792
-        },
-        {
-          "frame": "/home/jerry/rax-runtime/sessions/20261103T073444Z_unscrew_bottle_b1d812/agent-workspace/runtime/frames/20261103085355713298",
-          "reference": "wrist_left",
-          "rotation_error_deg": 0.3823820363321438,
-          "translation_error_m": 0.003383603162476684
-        },
-        {
-          "frame": "/home/jerry/rax-runtime/sessions/20261103T073444Z_unscrew_bottle_b1d812/agent-workspace/runtime/frames/20261103085355713298",
-          "reference": "wrist_right",
-          "rotation_error_deg": 0.37005522565512844,
-          "translation_error_m": 0.0026584699775127106
-        },
-        {
-          "frame": "/home/jerry/rax-runtime/sessions/20261103T073444Z_unscrew_bottle_b1d812/agent-workspace/runtime/frames/20261103085359233524",
-          "reference": "wrist_left",
-          "rotation_error_deg": 0.3910174780261448,
-          "translation_error_m": 0.003387814575896363
-        },
-        {
-          "frame": "/home/jerry/rax-runtime/sessions/20261103T073444Z_unscrew_bottle_b1d812/agent-workspace/runtime/frames/20261103085359233524",
-          "reference": "wrist_right",
-          "rotation_error_deg": 0.3690241304823985,
-          "translation_error_m": 0.0026457571788961313
-        },
-        {
-          "frame": "/home/jerry/rax-runtime/sessions/20261103T073444Z_unscrew_bottle_b1d812/agent-workspace/runtime/frames/2026110308540097f89f",
-          "reference": "wrist_left",
-          "rotation_error_deg": 0.39096524362035484,
-          "translation_error_m": 0.002784968860719189
-        },
-        {
-          "frame": "/home/jerry/rax-runtime/sessions/20261103T073444Z_unscrew_bottle_b1d812/agent-workspace/runtime/frames/2026110308540097f89f",
-          "reference": "wrist_right",
-          "rotation_error_deg": 0.3557091762405218,
-          "translation_error_m": 0.0029616031653940745
-        },
-        {
-          "frame": "/home/jerry/rax-runtime/sessions/20261103T073444Z_unscrew_bottle_b1d812/agent-workspace/runtime/frames/20261103085404af1f7f",
-          "reference": "wrist_left",
-          "rotation_error_deg": 0.3808853725668061,
-          "translation_error_m": 0.0028475940043069348
-        },
-        {
-          "frame": "/home/jerry/rax-runtime/sessions/20261103T073444Z_unscrew_bottle_b1d812/agent-workspace/runtime/frames/20261103085404af1f7f",
-          "reference": "wrist_right",
-          "rotation_error_deg": 0.3983682316687324,
-          "translation_error_m": 0.002978763140854159
-        },
-        {
-          "frame": "/home/jerry/rax-runtime/sessions/20261103T073444Z_unscrew_bottle_b1d812/agent-workspace/runtime/frames/2026110308540601cd55",
-          "reference": "wrist_left",
-          "rotation_error_deg": 0.33163149485706583,
-          "translation_error_m": 0.002921316634901997
-        },
-        {
-          "frame": "/home/jerry/rax-runtime/sessions/20261103T073444Z_unscrew_bottle_b1d812/agent-workspace/runtime/frames/2026110308540601cd55",
-          "reference": "wrist_right",
-          "rotation_error_deg": 0.4240046795145205,
-          "translation_error_m": 0.00305702770090511
-        },
-        {
-          "frame": "/home/jerry/rax-runtime/sessions/20261103T073444Z_unscrew_bottle_b1d812/agent-workspace/runtime/frames/20261103085407db0dc9",
-          "reference": "wrist_left",
-          "rotation_error_deg": 0.35114710152413364,
-          "translation_error_m": 0.0029922030890923933
-        },
-        {
-          "frame": "/home/jerry/rax-runtime/sessions/20261103T073444Z_unscrew_bottle_b1d812/agent-workspace/runtime/frames/20261103085407db0dc9",
-          "reference": "wrist_right",
-          "rotation_error_deg": 0.39347711055424184,
-          "translation_error_m": 0.0028932766415312883
+          "frame": "/home/jerry/rax-runtime/sessions/20261103T073444Z_unscrew_bottle_b1d812/agent-workspace/runtime/frames/20261104010420c1b5d2",
+          "max_corner_error_m": 0.0025299935044121526,
+          "mean_corner_error_m": 0.0008932137265582744,
+          "reference": "stereo:wrist_left+wrist_right",
+          "rotation_error_deg": 0.08717460643761722,
+          "translation_error_m": 0.000255625446126171
         }
       ],
       "training_count": 12
@@ -1544,7 +1264,7 @@
         "wrist_left",
         "wrist_right"
       ],
-      "report": "side_b-recalibration-report.json",
+      "report": "side_b-recalibration-report-d2aee9dafb21738a.json",
       "unchanged_cameras": [
         "wrist_left",
         "wrist_right"
@@ -1558,7 +1278,7 @@
         "wrist_left",
         "wrist_right"
       ],
-      "report": "side_a-recalibration-report.json",
+      "report": "side_a-recalibration-report-5ee87da21453b277.json",
       "unchanged_cameras": [
         "side_b",
         "wrist_left",
@@ -1587,10 +1307,49 @@
         "wrist_left",
         "wrist_right"
       ],
-      "report": "front-recalibration-report.json",
+      "report": "front-recalibration-report-3306fc274191c5fa.json",
       "unchanged_cameras": [
         "side_a",
         "side_b",
+        "wrist_left",
+        "wrist_right"
+      ]
+    },
+    {
+      "camera": "front",
+      "recorded_at": "2026-11-04T09:04:39Z",
+      "reference_cameras": [
+        "wrist_left",
+        "wrist_right"
+      ],
+      "report": "front-recalibration-report.json",
+      "unchanged_cameras": [
+        "wrist_left",
+        "wrist_right"
+      ]
+    },
+    {
+      "camera": "side_a",
+      "recorded_at": "2026-11-04T09:04:39Z",
+      "reference_cameras": [
+        "wrist_left",
+        "wrist_right"
+      ],
+      "report": "side_a-recalibration-report.json",
+      "unchanged_cameras": [
+        "wrist_left",
+        "wrist_right"
+      ]
+    },
+    {
+      "camera": "side_b",
+      "recorded_at": "2026-11-04T09:04:39Z",
+      "reference_cameras": [
+        "wrist_left",
+        "wrist_right"
+      ],
+      "report": "side_b-recalibration-report.json",
+      "unchanged_cameras": [
         "wrist_left",
         "wrist_right"
       ]
@@ -1601,29 +1360,37 @@
       "front": {
         "checks": 8,
         "fresh_frames": 8,
-        "max_corner_error_mm": 0.7870857270351552,
-        "max_reference_ray_error_mm": 2.0189815789596834,
-        "max_reference_rigidity_error_mm": 0.5622098944131854,
-        "max_reprojection_mean_px": 0.46798840165138245,
-        "max_rotation_deg": 0.20511191908534385,
-        "max_translation_mm": 0.4284807006016894,
-        "min_shared_corners": 20,
+        "max_corner_error_mm": 3.4858376385574985,
+        "max_reference_ray_error_mm": 4.633522344438422,
+        "max_reference_rigidity_error_mm": 2.568424630054386,
+        "max_reprojection_mean_px": 0.5957376956939697,
+        "max_rotation_deg": 0.11044762758795197,
+        "max_translation_mm": 1.4835017856577706,
+        "min_shared_corners": 46,
         "report": "front-recalibration-report.json"
       },
       "side_a": {
-        "checks": 24,
+        "checks": 8,
         "fresh_frames": 8,
-        "max_reprojection_mean_px": 0.5447037816047668,
-        "max_rotation_deg": 0.5042985607262909,
-        "max_translation_mm": 3.9894383819101384,
+        "max_corner_error_mm": 2.748597599189075,
+        "max_reference_ray_error_mm": 4.633522344438422,
+        "max_reference_rigidity_error_mm": 2.568424630054386,
+        "max_reprojection_mean_px": 0.5534328818321228,
+        "max_rotation_deg": 0.13670266797461247,
+        "max_translation_mm": 0.4916690009848345,
+        "min_shared_corners": 46,
         "report": "side_a-recalibration-report.json"
       },
       "side_b": {
-        "checks": 16,
+        "checks": 8,
         "fresh_frames": 8,
-        "max_reprojection_mean_px": 0.3689558506011963,
-        "max_rotation_deg": 0.45127962074104866,
-        "max_translation_mm": 3.2620161548783804,
+        "max_corner_error_mm": 2.8105512432029953,
+        "max_reference_ray_error_mm": 4.633522344438422,
+        "max_reference_rigidity_error_mm": 2.568424630054386,
+        "max_reprojection_mean_px": 0.6634649038314819,
+        "max_rotation_deg": 0.10931566066662397,
+        "max_translation_mm": 0.44811748829369014,
+        "min_shared_corners": 46,
         "report": "side_b-recalibration-report.json"
       },
       "wrist_left": {
@@ -1648,6 +1415,50 @@
   "installed_at": "2026-11-03T10:36:07.379626+00:00",
   "method": "Coverage-guided 18-pose sweep inside original envelope; original hand-eye fit; three reserved views per arm; stationary shared board; original training-only Brown5 wrist color refinement",
   "ok": true,
+  "operator_acceptance": {
+    "accepted": true,
+    "accepted_at": "2026-11-04T08:59:28.545297+00:00",
+    "criteria_chosen_after_measurement": true,
+    "limits": {
+      "cross_wrist": {
+        "max_rotation_deg": 1.5,
+        "max_translation_mm": 20.0
+      },
+      "individual_wrist": {
+        "max_reprojection_mean_px_exclusive": 1.0,
+        "max_rotation_deg": 1.0,
+        "max_translation_mm": 10.0
+      }
+    },
+    "note": "Operator acceptance of measured board-pose consistency at higher home poses. Original 5 mm / 1 degree results are preserved in the validation report; this is not independent absolute accuracy or depth validation.",
+    "results": {
+      "cross_wrist": {
+        "accepted": true,
+        "count": 36,
+        "max_rotation_deg": 1.1773025168846412,
+        "max_translation_mm": 17.61660991593167
+      },
+      "wrist_left": {
+        "accepted": true,
+        "count": 18,
+        "max_reprojection_mean_px": 0.26893848180770874,
+        "max_rotation_deg": 0.938861554590501,
+        "max_translation_mm": 8.57654101944952
+      },
+      "wrist_right": {
+        "accepted": true,
+        "count": 18,
+        "max_reprojection_mean_px": 0.2688860595226288,
+        "max_rotation_deg": 0.5633432035205591,
+        "max_translation_mm": 5.717318330246104
+      }
+    },
+    "scope": "Existing wrist transforms, matching lens models and inter-base transform; fixed-camera recalibration deferred.",
+    "source_manifest_sha256": "50ce93b719cb3beb25bbe4a7e8f6bba191f9ec4f59568c5b3f9b2a0398d441d4",
+    "user_instruction": "just keep todays worst; it's fine lets relax the reqs a little",
+    "validation_report": "wrist-validation-20261104.json",
+    "validation_report_sha256": "33349eb12f6bf3cd2fcb3696e846d28dd0d7c2c3e33b72e75c8225dfcbed2942"
+  },
   "optical_training_collection": "/home/jerry/rax-runtime/sessions/20261103T073444Z_unscrew_bottle_b1d812/operator/full-recalibration-20261103T100920Z/collection-initial",
   "status": "rgb_extrinsics_verified",
   "wrists": {
