@@ -1,6 +1,24 @@
 # Verified bimanual RGB extrinsics
 
-## Latest November 5 front-only refresh using camera-only capture
+## Latest November 5 front-only refresh using side B and left wrist
+
+The front camera alone was refitted against unchanged side B and left wrist
+stereo references. Side A had insufficient board detections from glare; the
+chosen reference pair passed the unchanged geometry gates with 17 shared corners.
+Actual MCP arm telemetry was used, with no robot motion commands. Twelve training
+and eight fresh verification captures passed: maximum position residual
+**0.280 mm**, rotation **0.067°**, mean reprojection **0.249 px**, and
+triangulated-corner error **0.933 mm**. All other camera transforms, every optical
+model, and the inter-base transform were checked unchanged. The previous front
+camera pose differs by 27.64 mm / 1.172°. These are consistency measurements
+relative to the retained references, not independent absolute metrology.
+
+Evidence is in `front-recalibration-report.json` and the active session's
+`operator/front-only-sideb-leftwrist-1793898408988865301/` directory. The running
+robot service must restart to load this saved calibration. Previous reports and
+geometry are preserved.
+
+## Earlier November 5 front-only refresh using camera-only capture
 
 Only the front extrinsics were refitted against unchanged side A and side B
 stereo references, using 12 training and eight fresh verification captures.
