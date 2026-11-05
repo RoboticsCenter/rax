@@ -461,6 +461,38 @@ Recovery evidence is saved in `operator/thermal-recovery-*.json`. This occurs
 only on an explicit operator preparation request; there is no background reset
 or replay of an interrupted grasp.
 
+For bimanual sessions, explicit **Ready & Send Reply** also recovers retained
+`excluded joint is not disabled: Init` observations on configured excluded joints.
+It requires two seconds of fresh, stationary, fully disabled native feedback,
+cleared native error codes, and temperatures below the existing cutoffs before
+one reconnect and normal preparation. Init during control remains latched and
+stops the assembly; enabled excluded joints, ongoing Init, unrelated faults, and
+missing feedback still block recovery. Evidence is saved in
+`operator/initialization-recovery-*.json`. No interrupted target is replayed.
+Retained Init observations may coexist with a cleared AutoClear Stall or cooled
+thermal fault: the same native-feedback checks must pass for the whole hand,
+then one operator-requested reconnect recovers the combined software latches.
+
+The bimanual Prepare path uses one shared recovery for every combination of
+recognized cleared Stall, cooled thermal, and excluded-joint Init latches. It
+revalidates the complete native disabled state for two seconds, preserves the
+before/reconnect/after evidence in `operator/retained-recovery-*.json`, reconnects
+once, and waits up to three seconds for transient Init to become Ready. A new
+recognized cleared latch during those checks is handled in the same attempt;
+unknown faults, active native errors, hot joints, motion, and missing feedback
+still block. This does not replay the interrupted target.
+
+Requested stops track a bounded Init transition window. Init without any enabled
+joint is recorded as a warning during that window; Init still prevents disabled
+confirmation, and persistent Init, Init during control, enabled excluded joints,
+and actual diagnostic faults retain their normal protection.
+
+Hand IPC serves clients independently, and snapshot persistence runs separately
+from request acceptance. An incomplete client or delayed disk write therefore
+does not hold up heartbeat and priority-stop requests. The existing IPC,
+device-feedback, scheduler and parent-heartbeat deadlines are unchanged. Parent
+errors explicitly identify heartbeat IPC failures instead of only “timed out.”
+
 The operator hand commands reach the private hand service directly, bypassing a
 long-running MCP dispatcher call. `scripts/xarm disarm` changes the arming files,
 queues hand emergency stops and requests arm hold. Dashboard Disarm/Disarm All also

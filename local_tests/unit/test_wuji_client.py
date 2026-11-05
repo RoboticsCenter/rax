@@ -2,6 +2,7 @@
 import threading
 import time
 from copy import deepcopy
+from pathlib import Path
 
 import pytest
 
@@ -26,6 +27,7 @@ def client():
     value = WujiClient.__new__(WujiClient)
     value.cfg = hand_config()
     value.path = '/unused-fake-socket'
+    value.root = Path('/unused-fake-session')
     value.stop_event = threading.Event()
     value.received = time.monotonic()
     value.cached = {'fresh': False, 'enabled': False, 'mode': 'starting'}

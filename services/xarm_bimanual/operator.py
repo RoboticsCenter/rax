@@ -13,7 +13,7 @@ from services.xarm import arming
 from services.xarm.backend import DEFAULTS
 from services.xarm.sdk import XArmDriver
 from services.wuji.client import operation, request, socket_path, recorded_status
-from services.wuji.preparation import preparation_action, recover_cleared_stall, recover_cooled_thermal
+from services.wuji.preparation import preparation_action, recover_retained_faults
 from services.wuji.partial import control_enabled
 from services.operator_audit import action
 from .config import SIDES, validate_options, arm_options
@@ -122,10 +122,9 @@ def prepare(root, options, *, minutes, confirmed=False):
                 raise RuntimeError('preparation cancelled')
     try:
         for side, action in actions.items():
-            if action in ('reconnect', 'reconnect-stall'):
+            if action in ('reconnect', 'reconnect-stall', 'reconnect-init'):
                 arming.write(root, False, reason=f'operator recovery of {side} hand')
-                recover = recover_cleared_stall if action == 'reconnect-stall' else recover_cooled_thermal
-                recover(root, side=side)
+                recover_retained_faults(root, side=side)
         for side in SIDES:
             with tempfile.NamedTemporaryFile(mode='w', suffix='.json', prefix=f'rax-{side}-ready-') as saved:
                 json.dump(arm_options(options, side), saved)

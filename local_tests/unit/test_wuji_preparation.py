@@ -232,3 +232,132 @@ def test_thermal_command_cannot_clear_a_stall_fault(recovery):
     with pytest.raises(PreparationBlocked, match='No recoverable thermal fault'):
         preparation.recover_cooled_thermal(recovery.root)
     assert recovery.operations == []
+
+
+def initialization_state():
+    state = thermal_state(58.)
+    state.update(partial_hand=True, disabled_joints=['thumb_S3', 'middle_S1'],
+                 faults=[{'joint': joint, 'reason': 'excluded joint is not disabled',
+                          'native_state': 'Init'} for joint in ['thumb_S3', 'middle_S1']])
+    state['diagnostics']['states'] = [1]*20
+    return state
+
+
+def test_explicit_prepare_can_recover_only_retained_excluded_init_after_native_ready():
+    state = initialization_state()
+    cfg = {'disabled_joints': state['disabled_joints']}
+    assert preparation_action(state, cfg) == 'reconnect-init'
+    assert state['faults']  # Classifying recovery does not erase fault evidence.
+
+
+@pytest.mark.parametrize('change', [
+    {'fresh': False}, {'enabled': True}, {'owns_control': True}, {'mode': 'executing'},
+    {'velocity_rad_s': [.06]*20},
+    {'diagnostics': {'states': [0]*20}},
+    {'diagnostics': {'state_names': ['Enabled']*20}},
+    {'diagnostics': {'error_code_current': [7]+[0]*19}},
+    {'diagnostics': {'mcu_temp_c_fb': [66.]*20}},
+    {'fault_change': {'joint': 'index_S1'}},
+    {'fault_change': {'native_state': 'Enabled'}},
+    {'fault_change': {'code': 7}},
+    {'additional_fault': {'joint': 'thumb_S2', 'code': 9, 'name': 'motor error'}},
+])
+def test_initialization_recovery_rejects_unhealthy_or_different_faults(change):
+    state = initialization_state()
+    for key, value in change.items():
+        if key == 'diagnostics':
+            state[key].update(value)
+        elif key == 'fault_change':
+            state['faults'][0].update(value)
+        elif key == 'additional_fault':
+            state['faults'].append(value)
+        else:
+            state[key] = value
+    with pytest.raises(PreparationBlocked):
+        preparation_action(state, {'disabled_joints': state['disabled_joints']})
+
+
+def test_init_recovery_checks_two_seconds_and_only_reconnects_once(recovery):
+    recovery.state = initialization_state()
+    (recovery.root/'operator-input.json').write_text(json.dumps({'backend_options': {
+        'end_effector': {'max_temperature_c': 65., 'disabled_joints': recovery.state['disabled_joints']}}}))
+    result = preparation.recover_disabled_initialization(recovery.root)
+    assert result['outcome'] == 'initialization_reconnected'
+    assert recovery.operations == ['connect']
+    assert recovery.now >= 102 and recovery.reads > 10
+    assert not arming.read(recovery.root)['armed'] and not recovery.state['enabled']
+    record = json.loads((recovery.root/'operator/initialization-recovery-123456.json').read_text())
+    assert record['before']['faults'] and not record['after']['faults']
+
+
+@pytest.mark.parametrize('stall,thermal,action', [
+    (True, False, 'reconnect-stall'), (False, True, 'reconnect'),
+    (True, True, 'reconnect-stall'),
+])
+def test_cleared_recoverable_faults_can_coexist_with_retained_excluded_init(stall, thermal, action):
+    state = initialization_state()
+    if stall:
+        state['faults'] += stall_state()['faults']
+    if thermal:
+        state['faults'] += thermal_state()['faults']
+    assert preparation_action(state, {'disabled_joints': state['disabled_joints']}) == action
+    state['diagnostics']['error_code_current'][1] = 7
+    with pytest.raises(PreparationBlocked, match='zero native error codes'):
+        preparation_action(state, {'disabled_joints': state['disabled_joints']})
+
+
+def test_operator_recovery_of_stall_and_init_uses_one_reconnect(recovery):
+    recovery.state = initialization_state()
+    recovery.state['faults'] += stall_state()['faults']
+    (recovery.root/'operator-input.json').write_text(json.dumps({'backend_options': {
+        'end_effector': {'max_temperature_c': 65., 'disabled_joints': recovery.state['disabled_joints']}}}))
+    result = preparation.recover_cleared_stall(recovery.root)
+    assert result['outcome'] == 'stall_reconnected'
+    assert recovery.operations == ['connect']
+    assert recovery.now >= 102 and recovery.reads > 10
+    assert not arming.read(recovery.root)['armed']
+
+
+@pytest.mark.parametrize('stall,thermal,initializing', [
+    (True, False, False), (False, True, False), (False, False, True),
+    (True, True, False), (True, False, True), (False, True, True), (True, True, True),
+])
+def test_generic_ready_recovery_covers_every_recognized_combination(recovery, stall, thermal, initializing):
+    recovery.state = initialization_state()
+    recovery.state['faults'] = ([] if not initializing else recovery.state['faults'])
+    if stall: recovery.state['faults'] += stall_state()['faults']
+    if thermal: recovery.state['faults'] += thermal_state()['faults']
+    (recovery.root/'operator-input.json').write_text(json.dumps({'backend_options': {
+        'end_effector': {'max_temperature_c': 65., 'disabled_joints': recovery.state['disabled_joints']}}}))
+    result = preparation.recover_retained_faults(recovery.root)
+    assert result['outcome'] == 'retained_reconnected'
+    assert recovery.operations == ['connect'] and recovery.now >= 102
+    assert not arming.read(recovery.root)['armed']
+
+
+def test_generic_recovery_handles_new_cleared_latch_during_confirmation(recovery, monkeypatch):
+    original = preparation.request
+    def read(*args):
+        if recovery.reads == 3:
+            recovery.state['faults'] += stall_state()['faults']
+        return original(*args)
+    monkeypatch.setattr(preparation, 'request', read)
+    preparation.recover_retained_faults(recovery.root)
+    assert recovery.operations == ['connect']
+
+
+def test_reconnect_waits_for_transient_init_without_a_second_operator_click(recovery, monkeypatch):
+    original = preparation.request
+    reads_after_connect = []
+    def after():
+        recovery.state['diagnostics']['state_names'] = ['Init']*20
+    recovery.after = after
+    def read(*args):
+        if recovery.operations:
+            reads_after_connect.append(True)
+            if len(reads_after_connect) == 4:
+                recovery.state['diagnostics']['state_names'] = ['Ready']*20
+        return original(*args)
+    monkeypatch.setattr(preparation, 'request', read)
+    assert preparation.recover_retained_faults(recovery.root)['outcome'] == 'retained_reconnected'
+    assert recovery.operations == ['connect'] and len(reads_after_connect) == 4

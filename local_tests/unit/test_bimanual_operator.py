@@ -112,3 +112,29 @@ def test_status_keeps_both_readings_if_one_disconnect_fails(setup, monkeypatch):
                              DisconnectErrorArm() if cfg['xarm_ip'] == '192.0.2.1' else Arm())
     assert result['arms']['left']['arm']['close_error'] == 'disconnect failed'
     assert all(result['arms'][s]['arm']['ok'] for s in controls.SIDES)
+
+
+def test_ready_recovers_combined_cleared_faults_before_enabling_either_arm(setup, monkeypatch):
+    from test_wuji_preparation import initialization_state, stall_state, thermal_state
+    state = initialization_state()
+    state['target_positions'] = [0.]*20
+    state['faults'] += stall_state()['faults'] + thermal_state()['faults']
+    setup.states['left'] = state
+    setup.options['arms']['left']['end_effector']['disabled_joints'] = state['disabled_joints']
+    def recover(root, *, side):
+        assert root == setup.root and side == 'left'
+        assert not arming.read(root)['armed'] and not setup.calls
+        setup.calls.append(('recover', side))
+        setup.states[side].update(fault=None, faults=[], mode='disabled')
+    monkeypatch.setattr(controls, 'recover_retained_faults', recover)
+    operate = controls.operation
+    def operation(root, op, *, side):
+        result = operate(root, op, side=side)
+        if side == 'left' and op == 'prepare':
+            setup.states[side]['diagnostics']['states'] = [1 if i in (2, 8) else 2 for i in range(20)]
+        return result
+    monkeypatch.setattr(controls, 'operation', operation)
+    controls.prepare(setup.root, setup.options, minutes=5, confirmed=True)
+    assert setup.calls == [('recover', 'left'), ('ready', '192.0.2.1'),
+                           ('ready', '192.0.2.2'), ('prepare', 'left'), ('prepare', 'right')]
+    assert arming.read(setup.root)['armed']

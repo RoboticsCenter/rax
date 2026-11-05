@@ -47,3 +47,36 @@ def test_init_during_control_or_with_any_enabled_joint_still_latches(profile_loa
     emit(hand, clock, 2, initializing=False)
     assert driver.snapshot()['faults']  # Never clear an existing latch automatically.
     driver.close()
+
+
+def test_requested_stop_init_is_warning_but_never_disabled_confirmation():
+    driver, hand, clock, _ = driver_setup(disabled_joints=['thumb_S3', 'middle_S1'])
+    driver.connect(); driver.profile = effective_parameters(driver.cfg)
+    hand.emergency_stop = lambda: None
+    hand.disable = lambda: None
+    driver.stop()
+    emit(hand, clock, 1)
+    state = driver.snapshot()
+    assert not state['faults'] and len(state['warnings']) == 2
+    assert all(w['during_requested_stop'] for w in state['warnings'])
+    with pytest.raises(PreparationBlocked, match='confirmed disabled'):
+        preparation_action(state, driver.cfg)
+    clock.now += .01; emit(hand, clock, 2, initializing=False)
+    assert preparation_action(driver.snapshot(), driver.cfg) == 'prepare'
+    driver.close()
+
+
+def test_requested_stop_does_not_hide_persistent_init_or_temperature_fault():
+    driver, hand, clock, _ = driver_setup(disabled_joints=['thumb_S3', 'middle_S1'])
+    driver.connect(); driver.profile = effective_parameters(driver.cfg)
+    hand.emergency_stop = lambda: None
+    hand.disable = lambda: None
+    driver.stop()
+    f = frame(clock, 1)
+    f.joints[2].status_word.ext_state = 0; f.joints[2].status_word.ext_state_name = 'Init'
+    f.joints[0].mcu_temp_c_fb = driver.cfg['max_temperature_c']
+    hand.states.callback(f); hand.diagnostics.callback(f)
+    assert any(x.get('reason') == 'temperature limit exceeded' for x in driver.snapshot()['faults'])
+    clock.now += driver.cfg['stop_timeout_s']+.01; emit(hand, clock, 2)
+    assert any(x.get('reason') == 'excluded joint is not disabled' for x in driver.snapshot()['faults'])
+    driver.close()

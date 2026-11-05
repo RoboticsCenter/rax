@@ -148,7 +148,8 @@ class WujiClient:
             except Exception as exc:
                 bad = previously_owned
                 self.cached = {**self.cached, 'fresh': False, 'enabled': False, 'active_enabled': False,
-                               'mode': 'uncertain', 'fault': str(exc)}
+                               'mode': 'uncertain',
+                               'fault': f'hand service heartbeat IPC failed ({type(exc).__name__}): {exc}'}
             if bad and not notified:
                 notified = True
                 if not self.cached.get('fresh'):

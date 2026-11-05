@@ -1,5 +1,39 @@
 # Verified bimanual RGB extrinsics
 
+## Latest November 5 front-only refresh using camera-only capture
+
+Only the front extrinsics were refitted against unchanged side A and side B
+stereo references, using 12 training and eight fresh verification captures.
+Maximum verification residuals were **0.622 mm / 0.212°**, mean reprojection
+**0.222 px**, and triangulated-corner error **0.970 mm**. The original 5 mm / 1°
+and 1 px limits were retained. All other four camera transforms, every optical
+model, and the inter-base transform were verified unchanged. These are board
+consistency measurements relative to the retained references.
+
+The temporary camera-only owner was released after collection; no robot
+connections or motion commands were used. The next robot-service start loads
+the saved update. Evidence is in `front-recalibration-report.json` and
+`operator/front-camera-only-recalibration-1793878971267437718/` in the active
+session. Previous calibration files and reports are preserved.
+
+## Earlier November 5 front-only refresh
+
+Following a confirmed front-camera bump, only the front extrinsics were refitted
+against unchanged side A and side B stereo references. Twelve training captures
+and eight fresh verification captures passed the existing 5 mm / 1° and 1 px
+limits: maximum position residual **0.418 mm**, rotation **0.150°**, mean
+reprojection **0.263 px**, and triangulated-corner error **1.187 mm**. At least
+20 shared reference corners were available. The front camera pose changed by
+9.49 mm / 0.337° relative to the previous saved fit. These are consistency
+measurements relative to the retained side-camera geometry.
+
+Both wrist transforms, both side-camera transforms, every optical model, and
+the inter-base alignment were checked unchanged. Evidence is in
+`front-recalibration-report.json` and the active session's
+`operator/front-final-recalibration-1793874532624000624/` directory. Earlier
+attempts interrupted by camera movement were not installed. No robot motion was
+commanded. The running robot service must restart to load the updated manifest.
+
 ## November 5: wrist comparison and all three fixed cameras
 
 Both wrists were refitted using the stationary 10×13 ChArUco board, with every

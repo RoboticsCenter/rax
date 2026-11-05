@@ -1,4 +1,4 @@
-"""Operator-requested recovery of retained thermal or cleared stall faults."""
+"""Operator-requested recovery after fresh native disabled feedback is verified."""
 import json
 import math
 import time
@@ -33,19 +33,26 @@ def preparation_action(state, cfg):
     faults = state.get('faults') or []
     if not faults:
         return 'prepare'
-    kinds = {_recoverable_fault(f) for f in faults}
+    # A stop can transiently report Init on excluded joints. Keep that latch
+    # during control, but permit an explicit operator Prepare to reconnect once
+    # after complete, stationary, fault-free native disabled feedback returns.
+    kinds = {_recoverable_fault(f, excluded) for f in faults}
     if None in kinds:
         details = '; '.join(f"{f.get('joint', 'hand')}: {f.get('name') or f.get('reason') or f.get('code')}"
                             if isinstance(f, dict) else str(f) for f in faults)
         raise PreparationBlocked(f'Hand fault requires inspection; it will not be cleared automatically: {details}')
-    kind = 'stall' if 'stall' in kinds else 'thermal'
+    kind = 'stall' if 'stall' in kinds else 'thermal' if 'thermal' in kinds else 'initialization'
     _require_disabled_feedback(state, cfg, kind)
-    return 'reconnect-stall' if kind == 'stall' else 'reconnect'
+    return {'stall': 'reconnect-stall', 'thermal': 'reconnect',
+            'initialization': 'reconnect-init'}[kind]
 
 
-def _recoverable_fault(fault):
+def _recoverable_fault(fault, excluded=()):
     if not isinstance(fault, dict) or fault.get('joint') not in JOINT_NAMES:
         return None
+    if (fault['joint'] in excluded and fault.get('reason') == 'excluded joint is not disabled'
+            and fault.get('native_state') == 'Init' and fault.get('code') is None):
+        return 'initialization'
     if fault.get('reason') == 'temperature limit exceeded' and fault.get('code') is None:
         return 'thermal'
     if (type(fault.get('code')) is int and fault['code'] == 7 and fault.get('name') == 'Stall'
@@ -119,6 +126,16 @@ def recover_cleared_stall(root, *, side=None):
     return _recover_retained_fault(root, 'stall', 'reconnect-stall', side=side)
 
 
+def recover_disabled_initialization(root, *, side=None):
+    """Operator-only recovery of an Init latch after native disabled confirmation."""
+    return _recover_retained_fault(root, 'initialization', 'reconnect-init', side=side)
+
+
+def recover_retained_faults(root, *, side=None):
+    """One explicit Prepare recovery for any combination of recognized cleared latches."""
+    return _recover_retained_fault(root, 'retained', None, side=side)
+
+
 def _recover_retained_fault(root, kind, expected_action, *, side=None):
     """One explicit operator reconnect, never an automatic motion retry."""
     root = Path(root)
@@ -134,7 +151,9 @@ def _recover_retained_fault(root, kind, expected_action, *, side=None):
         if arming.read(root)['armed']:
             raise PreparationBlocked(f'Disarm the session before {kind} reconnection.')
         state = request(path, 'status')
-        if preparation_action(state, cfg) != expected_action:
+        action = preparation_action(state, cfg)
+        if (action not in ('reconnect', 'reconnect-stall', 'reconnect-init')
+                or (expected_action is not None and action != expected_action)):
             raise PreparationBlocked(f'No recoverable {kind} fault is pending; reconnection was not performed.')
         return state
 
@@ -147,15 +166,21 @@ def _recover_retained_fault(root, kind, expected_action, *, side=None):
     record = {'before': before, 'source': 'explicit_operator_prepare', 'time': time.time()}
     write_private_json(evidence, record)
     try:
-        ready_sample()  # Check arming/health again immediately before the one reconnect.
+        record['immediately_before_reconnect'] = ready_sample()
         result = operation(root, 'connect', **({'side': side} if side else {}))
         deadline = time.monotonic()+3.
         while True:
             after = request(path, 'status')
-            if after.get('fresh'):
+            record['after'] = after
+            initializing = any(str(name).lower() == 'init'
+                               for name in after.get('diagnostics', {}).get('state_names', []))
+            if after.get('fault') or after.get('faults') or after.get('enabled') or after.get('owns_control'):
+                break  # A real post-reconnect fault must fail immediately, not retry.
+            if after.get('fresh') and not initializing:
                 break
             if time.monotonic() >= deadline:
-                raise PreparationBlocked('Fresh diagnostics did not return after reconnection; hand remains disabled.')
+                raise PreparationBlocked('Fresh diagnostics with confirmed disabled joints did not return '
+                                         'after reconnection; hand remains disabled.')
             time.sleep(.05)
         record.update(after=after, reconnect=result)
         if (after.get('enabled') or after.get('mode') != 'disabled' or after.get('fault')

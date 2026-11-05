@@ -443,7 +443,6 @@ function renderRequests(value) {
       buttons.push(el('button', {
         class: r.kind === 'reset' ? null : 'primary', onclick: () => send(input.value),
       }, r.prepare ? 'Ready & send reply' : 'Send reply'));
-      if (r.prepare) buttons.push(el('button', { onclick: () => send(input.value, false) }, 'Send reply only'));
       return el('div', { class: 'request' },
         el('div', {}, el('b', {}, r.kind === 'reset' ? 'SCENE RESET' : 'HELP'), ` · ${r.task} · ${when(r.created)}`),
         el('pre', {}, r.message), input,

@@ -74,6 +74,7 @@ class WujiDriver:
         self.disabled_reference = None
         self.identity = {'serial': config['serial'], 'handedness': config['handedness'], 'sdk_version': SDK_VERSION}
         self.profile = None
+        self.stop_initializing_until = None
 
     def connect(self):
         if self.hand is not None:
@@ -219,16 +220,19 @@ class WujiDriver:
                                    'temperature_c': temperature})
             for i in disabled_indices(self.cfg):
                 if data['states'][i] not in DISABLED_STATES:
-                    booting = (self.profile is None and data['states'][i] == 0
+                    stopping = (self.stop_initializing_until is not None
+                                and self.clock() <= self.stop_initializing_until)
+                    booting = ((self.profile is None or stopping) and data['states'][i] == 0
                                and data['state_names'][i] == 'Init'
                                and all(state in (0, *DISABLED_STATES) for state in data['states']))
                     if booting:
                         # Init is not disabled confirmation: admission still blocks
-                        # preparation. Before any profile/enable, let Ready replace
-                        # this transient observation without a permanent fault latch.
+                        # preparation. At startup or during the bounded requested
+                        # stop, retain this transient as a warning, not a fault latch.
                         warnings.append({'joint': JOINT_NAMES[i], 'code': None,
                                          'name': 'ExcludedJointInitializing', 'native_state': 'Init',
-                                         'reason': 'preparation requires fresh disabled feedback'})
+                                         'reason': 'preparation requires fresh disabled feedback',
+                                         'during_requested_stop': stopping})
                     else:
                         faults.append({'joint': JOINT_NAMES[i], 'reason': 'excluded joint is not disabled',
                                        'native_state': data['state_names'][i]})
@@ -346,6 +350,7 @@ class WujiDriver:
                              for position, velocity, current in zip(q, v, currents)])
 
     def enable(self, *, check=None):
+        self.stop_initializing_until = None
         excluded = disabled_indices(self.cfg)
         if not excluded:
             self.hand.enable()
@@ -375,6 +380,7 @@ class WujiDriver:
     def stop(self, behavior='emergency'):
         if self.hand is None:
             raise ConnectionError('hand is disconnected; stop delivery unavailable')
+        self.stop_initializing_until = self.clock()+self.cfg['stop_timeout_s']
         if behavior == 'disable':
             self.hand.disable()
         else:
@@ -388,6 +394,7 @@ class WujiDriver:
                 self.hand.disable()
 
     def close(self):
+        self.stop_initializing_until = None
         errors = []
         for obj in [*self.subscriptions, self.publisher]:
             if obj is not None:

@@ -136,3 +136,44 @@ def test_status_and_priority_stop_remain_available_during_native_call(service):
     result = until(lambda: (r if (r := request(path, 'result', id='operator-stop'))['done'] else None))
     assert result['confirmed']
     assert request(path, 'status')['mode'] in ('faulted', 'disabled')
+
+
+def test_incomplete_ipc_client_does_not_starve_heartbeats_or_priority_stop(service):
+    import socket
+    root, path, _, _, _, _, _ = service
+    arming.write(root, True); operation(root, 'prepare')
+    with socket.socket(socket.AF_UNIX) as stalled:
+        stalled.connect(str(path)); stalled.sendall(b'{')
+        time.sleep(.02)
+        started = time.monotonic()
+        assert request(path, 'heartbeat', timeout=.2)['fresh']
+        assert time.monotonic()-started < .2
+        result = operation(root, 'emergency')
+        assert result['confirmed']
+
+
+def slow_snapshot_child(config, root, path, entered, release):
+    from pathlib import Path
+    original = Path.write_text
+    def write(self, *args, **kwargs):
+        if self.name == 'wuji-state.tmp':
+            entered.set(); release.wait(5)
+        return original(self, *args, **kwargs)
+    Path.write_text = write
+    serve(config, root, path, driver=FakeHand(config, continuous=True))
+
+
+def test_disk_stall_does_not_block_live_status_or_stop(tmp_path, monkeypatch):
+    context = multiprocessing.get_context('fork')
+    entered, release = context.Event(), context.Event(); path = tmp_path/'slow.sock'
+    config = hand_config(parent_timeout_s=.3)
+    process = context.Process(target=slow_snapshot_child, args=(config, tmp_path, path, entered, release))
+    process.start()
+    try:
+        assert entered.wait(2)
+        assert request(path, 'heartbeat', timeout=.2)['fresh']
+        monkeypatch.setattr('services.wuji.client.socket_path', lambda root: path)
+        assert operation(tmp_path, 'emergency')['confirmed']
+    finally:
+        release.set(); process.terminate(); process.join(3)
+        if process.is_alive(): process.kill(); process.join(1)

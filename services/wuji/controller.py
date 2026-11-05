@@ -721,16 +721,38 @@ def serve(config, root, socket_path, *, driver=None, parent_pid=None, side=None)
                 response = {'ok': True, 'value': value}
             except Exception as exc:
                 response = {'ok': False, 'error': str(exc)}
-            self.wfile.write(json.dumps(response, allow_nan=False).encode()+b'\n')
+            try:
+                self.wfile.write(json.dumps(response, allow_nan=False).encode()+b'\n')
+            except (BrokenPipeError, ConnectionResetError, TimeoutError):
+                pass  # A departed reader must not block other clients or the writer.
 
-    class Server(socketserver.UnixStreamServer):
+    class Server(socketserver.ThreadingMixIn, socketserver.UnixStreamServer):
         timeout = .05
+        daemon_threads = True
+        block_on_close = False
 
     socket_path.unlink(missing_ok=True)
     worker = threading.Thread(target=engine.run, args=(stop,), name='wuji-writer', daemon=True)
     from .client import state_path as snapshot_path
     state_path = snapshot_path(root, side)
     state_path.parent.mkdir(parents=True, exist_ok=True)
+    def record_snapshots():
+        # Dashboard persistence is not a control transport. Disk stalls must not
+        # prevent accepting parent heartbeats or priority stop requests.
+        while not stop.is_set():
+            try:
+                snapshot = engine.status()
+                snapshot['recorded_unix'] = time.time()
+                temporary = state_path.with_suffix('.tmp')
+                temporary.write_text(json.dumps(snapshot, allow_nan=False))
+                temporary.chmod(0o600)
+                os.replace(temporary, state_path)
+            except OSError:
+                # Consumers age old snapshots out; live IPC and device watchdogs
+                # remain authoritative. Retry persistence without blocking them.
+                pass
+            stop.wait(.1)
+    recorder = threading.Thread(target=record_snapshots, name='wuji-snapshots', daemon=True)
     if threading.current_thread() is threading.main_thread():
         signal.signal(signal.SIGTERM, lambda *_: stop.set())
         signal.signal(signal.SIGINT, lambda *_: stop.set())
@@ -738,17 +760,9 @@ def serve(config, root, socket_path, *, driver=None, parent_pid=None, side=None)
         with Server(str(socket_path), Handler) as server:
             socket_path.chmod(0o600)
             worker.start()
-            last_record = 0.
+            recorder.start()
             while not stop.is_set():
                 server.handle_request()
-                if time.monotonic()-last_record >= .1:
-                    snapshot = engine.status()
-                    snapshot['recorded_unix'] = time.time()
-                    temporary = state_path.with_suffix('.tmp')
-                    temporary.write_text(json.dumps(snapshot, allow_nan=False))
-                    temporary.chmod(0o600)
-                    os.replace(temporary, state_path)
-                    last_record = time.monotonic()
                 if engine.closed:
                     break
                 if parent_pid is not None and os.getppid() != parent_pid:
@@ -756,6 +770,8 @@ def serve(config, root, socket_path, *, driver=None, parent_pid=None, side=None)
     finally:
         stop.set()
         worker.join(timeout=config['stop_timeout_s']+2)
+        if recorder.ident is not None:
+            recorder.join(timeout=1)
         socket_path.unlink(missing_ok=True)
 
 
