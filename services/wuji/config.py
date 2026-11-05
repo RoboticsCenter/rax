@@ -17,10 +17,10 @@ DEFAULTS = {
     'max_step_rad': .35, 'max_tracking_error_rad': .35,
     'tolerance_rad': .04, 'settle_s': .2, 'settle_timeout_s': 3.,
     'max_duration_s': 60., 'stop_timeout_s': 2., 'stopped_velocity_rad_s': .05,
-    'motion_mode': 'timed', 'max_jerk_rad_s3': .8,
+    'motion_mode': 'timed', 'max_jerk_rad_s3': .8, 'reference_timeout_scale': 3.,
     'feedback_transition_s': 1., 'feedback_slow_error_rad': .06,
     'feedback_pause_error_rad': .10, 'settle_position_range_rad': .004,
-    'allow_encoder_warning': False, 'max_temperature_c': 65.,
+    'allow_encoder_warning': False, 'max_temperature_c': 65., 'stall_warning_grace_s': 0.,
     'allow_init_current_calib_failed': {},
     'disabled_joints': [], 'isolated_joint_faults': {},
     'max_effort_slew_a_s': .5,
@@ -103,12 +103,13 @@ def validate_config(value):
         'max_step_rad': (.001, math.pi), 'max_tracking_error_rad': (.01, 1),
         'tolerance_rad': (.001, .2), 'settle_s': (.01, 2), 'settle_timeout_s': (.1, 10),
         'max_duration_s': (.1, 60), 'stop_timeout_s': (.1, 5), 'stopped_velocity_rad_s': (.001, .2),
-        'max_jerk_rad_s3': (.01, 100), 'feedback_transition_s': (.2, 3),
+        'max_jerk_rad_s3': (.01, 100), 'reference_timeout_scale': (1., 5.), 'feedback_transition_s': (.2, 3),
         'feedback_slow_error_rad': (.001, .3), 'feedback_pause_error_rad': (.002, .34),
         'settle_position_range_rad': (.0001, .05),
         'max_temperature_c': (20, 90),
         'max_effort_slew_a_s': (.01, 2.),
         'effort_velocity_grace_s': (0., .02),
+        'stall_warning_grace_s': (0., .2),
     }
     for key, (lo, hi) in bounds.items():
         cfg[key] = number(cfg[key], key, lo, hi)
@@ -224,16 +225,17 @@ def tools(cfg):
             'type': 'object', 'properties': properties or {}, 'required': list(required),
             'additionalProperties': False}}
     duration = {'type': 'number', 'minimum': .1, 'maximum': cfg['max_duration_s'],
-                'description': 'Optional nominal duration; rejected if too short for configured reference limits. '
+                'description': 'Optional nominal duration; automatically stretched to satisfy configured reference limits. '
                                'Measured settling may add time, bounded by settle_timeout_s. '
-                               'S-curve durations are rounded up to a control tick.'}
+                               'S-curve durations are rounded up to a control tick; reference execution allows '
+                               'reference_timeout_scale times nominal duration, followed by measured settling.'}
     return [
         tool('wuji_status', 'Right/left Wuji Hand 2 measured and commanded joints (rad), effort (A), '
              'freshness, faults, current action, limits and commissioned postures. Does not enable or move.'),
         tool('wuji_move_joints', 'Move configured active joints with bounded interpolation and wait for measured settling. '
              'In partial-hand mode, copy target_positions and leave disabled_joints entries unchanged; '
              'completion covers active_joints only. Disabled joints are passive, not position-held. '
-             'In partial-hand mode, a completed reference that misses position tolerance returns '
+             'A completed reference that misses position tolerance returns '
              'target_not_reached with reached=false and holding=true without disabling the hand. '
              'Configured S-curve mode limits jerk and publishes matching position/velocity references. '
              'Configured feedback mode slows progress when measured joints lag and requires stable final positions. '

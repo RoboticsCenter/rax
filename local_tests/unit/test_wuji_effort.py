@@ -182,7 +182,9 @@ def test_effort_does_not_report_success_when_final_command_fails():
 def test_private_effort_endpoint_checks_duration_and_profile_ceiling():
     r = Rig()
     r.prepare()
-    for i, args in enumerate([{'effort_a': [.6]*20}, {'effort_a': [.2]*20, 'duration_s': .1},
+    for i, args in enumerate([{'effort_a': [.6]*20},
                               {'effort_a': [.1]*20, 'duration_s': None}]):
         assert not finish(r, f'invalid{i}', 'set_effort', args)['ok']
         assert r.driver.command_effort == [0.]*20
+    result = finish(r, 'stretched', 'set_effort', {'effort_a': [.2]*20, 'duration_s': .1})
+    assert result['ok'] and result['ramp_seconds'] >= 1.875*.2/r.cfg['max_effort_slew_a_s']

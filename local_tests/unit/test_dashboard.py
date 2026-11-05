@@ -5,6 +5,8 @@ from pathlib import Path
 import subprocess
 import sys
 import threading
+from datetime import datetime, timezone
+import time
 from urllib.error import HTTPError
 from urllib.request import Request, urlopen
 
@@ -18,6 +20,68 @@ from services.xarm import arming
 
 PROJECT = Path(__file__).resolve().parents[2]
 START_Q = [0.0, -0.72, -1.18, 0.0, 1.9, 0.0]
+
+
+def test_finished_turn_alerts_while_launcher_is_still_running(dashboard, monkeypatch):
+    base, token, sessions = dashboard
+    root = sessions.root(configure(base)['id'])
+    now = time.time()
+    (root/'agent-lifecycle.json').write_text(json.dumps({'status': 'running', 'started_at': now-60}))
+    monkeypatch.setattr(sessions, 'process', lambda root: {'pid': 123})
+    transcript = root/'claude-home/projects/-ws/idle.jsonl'
+    transcript.parent.mkdir(parents=True)
+    end = {'type': 'assistant', 'uuid': 'turn-1',
+           'timestamp': datetime.fromtimestamp(now-11, timezone.utc).isoformat(),
+           'message': {'stop_reason': 'end_turn', 'content': [{'type': 'text', 'text': 'Done for now.'}]}}
+    transcript.write_text(json.dumps(end)+'\n'+json.dumps({'type': 'system', 'subtype': 'turn_duration'})+'\n')
+    summary = sessions.summary(root)
+    assert summary['running'] and not summary['exit_notice']
+    assert summary['idle_notice']['title'] == 'CLAUDE TURN FINISHED'
+    for wake in [{'type': 'user'}, {'type': 'api-request'},
+                 {'type': 'assistant', 'message': {'stop_reason': 'tool_use'}}]:
+        transcript.write_text(json.dumps(end)+'\n'+json.dumps(wake)+'\n')
+        assert sessions.summary(root)['idle_notice'] is None
+    transcript.write_text(json.dumps(end)+'\n')
+    assert sessions.idle_notice(root, now) is None  # Old attempt's final turn cannot alert on resume.
+    end['timestamp'] = datetime.fromtimestamp(now, timezone.utc).isoformat()
+    transcript.write_text(json.dumps(end)+'\n')
+    assert sessions.summary(root)['idle_notice'] is None  # Brief handoff between turns stays quiet.
+
+
+@pytest.mark.parametrize('status', ['exited', 'failed', 'running', 'budget-exhausted'])
+def test_ended_session_notice_and_intentional_stop_suppression(dashboard, monkeypatch, status):
+    base, token, sessions = dashboard
+    session_id = configure(base)['id']
+    root = sessions.root(session_id)
+    monkeypatch.setattr(sessions, 'process', lambda root: None)
+    (root/'agent-lifecycle.json').write_text(json.dumps({'status': status, 'started_at': 100, 'returncode': 0}))
+    notice = sessions.summary(root)['exit_notice']
+    assert notice['id'] == 'exit-100' and 'no longer running' in notice['message']
+    (root/'operator').mkdir(exist_ok=True)
+    (root/'operator/dashboard-stop.json').write_text(json.dumps({'started_at': 100}))
+    assert sessions.summary(root)['exit_notice'] is None
+    (root/'agent-lifecycle.json').write_text(json.dumps({'status': status, 'started_at': 200}))
+    assert sessions.summary(root)['exit_notice']['id'] == 'exit-200'
+    monkeypatch.setattr(sessions, 'process', lambda root: {'pid': 123})
+    assert sessions.summary(root)['exit_notice'] is None
+
+
+def test_usage_estimate_includes_cache_and_resumes_without_charging_stopped_time(tmp_path):
+    (tmp_path/'operator-input.json').write_text(json.dumps({'agent_provider': 'claude-login'}))
+    (tmp_path/'agent-lifecycle.json').write_text(json.dumps({
+        'attempts': [{'started_at': 100, 'finished_at': 1900}], 'started_at': 5500}))
+    (tmp_path/'model-usage.jsonl').write_text(json.dumps({
+        'time': 7300, 'model': 'claude-opus-5-5', 'input_tokens': 1000000,
+        'output_tokens': 1000000, 'cache_creation_input_tokens': 1000000,
+        'cache_read_input_tokens': 1000000})+'\n{partial')
+    usage = Sessions.usage(tmp_path)
+    assert usage['estimated_cost_usd'] == pytest.approx(29.2*1.1)
+    assert usage['active_hours'] == 1
+    assert usage['estimated_usd_per_hour'] == pytest.approx(32.12)
+    assert usage['cost_usd'] == 0  # No provider-reported dollar charge.
+    with (tmp_path/'model-usage.jsonl').open('w') as log:
+        log.write(json.dumps({'time': 7300, 'model': 'unknown-model', 'input_tokens': 10})+'\n')
+    assert Sessions.usage(tmp_path)['estimated_cost_usd'] is None
 
 
 class FakeRobot:

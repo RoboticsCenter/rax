@@ -69,11 +69,12 @@ def test_stable_contact_preserves_target_bias_and_gains_without_claiming_grasp(m
 
 
 @pytest.mark.parametrize('mode', ['scurve', 'timed', 'feedback'])
-def test_position_completion_still_rejects_the_same_shortfall(mode):
+def test_position_completion_reports_shortfall_without_claiming_contact(mode):
     r = rig(mode)
     r.engine.submit('move', 'move', {'positions': [.2]*20})
     result = finish(r)
-    assert not result['ok'] and not result['reached'] and result['outcome'] == 'target_not_reached'
+    assert result['ok'] and not result['reached'] and result['outcome'] == 'target_not_reached'
+    assert result['holding'] and not result['contact_verified']
     assert result['max_joint_error_rad'] == pytest.approx(.0747)
 
 
@@ -84,7 +85,8 @@ def test_contact_requires_stability_and_low_measured_velocity(mode, unstable):
     r.engine.submit('move', 'move', {'positions': [.2]*20, 'completion': 'contact'})
     result = finish(r, step=lambda r: step_contact(r, oscillate=unstable == 'oscillating',
                                                  velocity=.06 if unstable == 'moving' else 0.))
-    assert not result['ok'] and result['outcome'] == 'target_not_reached'
+    assert result['ok'] and result['outcome'] == 'target_not_reached'
+    assert not result['reached'] and not result['contact_verified']
 
 
 def test_contact_mode_does_not_waive_tracking_bound_during_closure_or_hold():
@@ -181,12 +183,10 @@ def test_controller_result_survives_client_and_mcp_without_disabling_contact_hol
     try:
         reply = front.call('wuji_move_joints', {'positions': [.2]*20, 'completion': completion})
         result = json.loads(reply['content'][0]['text'])
-        if completion == 'contact':
-            assert not reply.get('isError') and result['outcome'] == 'held_short_of_target'
-            assert not result['reached'] and result['holding'] and not result['contact_verified']
-            assert not arm.holds and not hand.stops and not front.control_uncertain
-            assert arming.read(root)['armed'] and r.engine.status()['enabled']
-        else:
-            assert reply['isError'] and arm.holds and hand.stops
+        assert not reply.get('isError')
+        assert result['outcome'] == ('held_short_of_target' if completion == 'contact' else 'target_not_reached')
+        assert not result['reached'] and result['holding'] and not result['contact_verified']
+        assert not arm.holds and not hand.stops and not front.control_uncertain
+        assert arming.read(root)['armed'] and r.engine.status()['enabled']
     finally:
         front.close()

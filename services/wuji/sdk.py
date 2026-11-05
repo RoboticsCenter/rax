@@ -68,6 +68,7 @@ class WujiDriver:
         self.frames, self.received, self.headers, self.errors, self.offsets = {}, {}, {}, {}, {}
         self.error_details, self.warning_history, self.latched_faults = {}, {}, {}
         self.warnings = []
+        self.stall_warning_started = {}
         self.diagnostic_exceptions, self.diagnostic_exception_history = [], {}
         self.isolated_faults, self.isolated_fault_history = [], {}
         self.disabled_reference = None
@@ -109,7 +110,7 @@ class WujiDriver:
         with self.lock:
             self.errors[stream] = str(error)
 
-    def _save(self, stream, frame, data, *, warnings=(), faults=(), exceptions=(), isolated=()):
+    def _save(self, stream, frame, data, *, warnings=(), faults=(), exceptions=(), isolated=(), stall_warnings=()):
         now = self.clock()
         sequence, timestamp = int(frame.header.seq), int(frame.header.timestamp_us)
         with self.lock:
@@ -130,6 +131,18 @@ class WujiDriver:
             self.headers[stream] = {'sequence': sequence, 'timestamp_us': timestamp}
             self.errors.pop(stream, None)
             if stream == 'diagnostics':
+                warnings, faults = list(warnings), list(faults)
+                active_stalls = {event['joint'] for event in stall_warnings}
+                for joint in list(self.stall_warning_started):
+                    if joint not in active_stalls:
+                        del self.stall_warning_started[joint]
+                for event in stall_warnings:
+                    started = self.stall_warning_started.setdefault(event['joint'], now)
+                    if now-started < self.cfg['stall_warning_grace_s']:
+                        warnings.append({**event, 'grace_s': self.cfg['stall_warning_grace_s'],
+                                         'elapsed_s': now-started})
+                    else:
+                        faults.append(event)
                 self.warnings = list(warnings)
                 self.diagnostic_exceptions = list(exceptions)
                 self.isolated_faults = list(isolated)
@@ -167,7 +180,7 @@ class WujiDriver:
                     raise ValueError('nonfinite diagnostics')
                 data[key] = values
             data['error_code_current'] = [int(v) for v in data['error_code_current']]
-            warnings, faults, exceptions, isolated = [], [], [], []
+            warnings, faults, exceptions, isolated, stall_warnings = [], [], [], [], []
             for i, code in enumerate(data['error_code_current']):
                 if not code:
                     continue
@@ -186,7 +199,12 @@ class WujiDriver:
                     and detail.get('severity') == 'Fatal' and detail.get('clear_policy') == 'NonClearable'
                     and self.cfg['allow_init_current_calib_failed'].get(JOINT_NAMES[i])
                     == self.identity.get('firmware') and self.identity.get('firmware') is not None)
-                if isolated_diagnostic(self.cfg, JOINT_NAMES[i], code, detail,
+                transient_stall = (self.cfg['stall_warning_grace_s'] > 0 and code == 7
+                                   and detail.get('name') == 'Stall' and detail.get('severity') == 'Warning'
+                                   and detail.get('clear_policy') == 'AutoClear' and data['states'][i] == 2)
+                if transient_stall:
+                    stall_warnings.append(record)
+                elif isolated_diagnostic(self.cfg, JOINT_NAMES[i], code, detail,
                                        self.identity.get('firmware'), data['states'][i]):
                     isolated.append({**record, 'isolated': True, 'native_state': data['state_names'][i]})
                 elif current_calibration_exception:
@@ -201,10 +219,21 @@ class WujiDriver:
                                    'temperature_c': temperature})
             for i in disabled_indices(self.cfg):
                 if data['states'][i] not in DISABLED_STATES:
-                    faults.append({'joint': JOINT_NAMES[i], 'reason': 'excluded joint is not disabled',
-                                   'native_state': data['state_names'][i]})
+                    booting = (self.profile is None and data['states'][i] == 0
+                               and data['state_names'][i] == 'Init'
+                               and all(state in (0, *DISABLED_STATES) for state in data['states']))
+                    if booting:
+                        # Init is not disabled confirmation: admission still blocks
+                        # preparation. Before any profile/enable, let Ready replace
+                        # this transient observation without a permanent fault latch.
+                        warnings.append({'joint': JOINT_NAMES[i], 'code': None,
+                                         'name': 'ExcludedJointInitializing', 'native_state': 'Init',
+                                         'reason': 'preparation requires fresh disabled feedback'})
+                    else:
+                        faults.append({'joint': JOINT_NAMES[i], 'reason': 'excluded joint is not disabled',
+                                       'native_state': data['state_names'][i]})
             self._save('diagnostics', frame, data, warnings=warnings, faults=faults,
-                       exceptions=exceptions, isolated=isolated)
+                       exceptions=exceptions, isolated=isolated, stall_warnings=stall_warnings)
         except Exception as exc:
             self._error('diagnostics', exc)
 
@@ -389,6 +418,7 @@ class WujiDriver:
             self.isolated_fault_history.clear()
             self.latched_faults.clear()
             self.warnings.clear()
+            self.stall_warning_started.clear()
             self.diagnostic_exceptions.clear()
             self.isolated_faults.clear()
         self.disabled_reference = None

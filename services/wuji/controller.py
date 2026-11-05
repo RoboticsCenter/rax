@@ -48,9 +48,7 @@ class Trajectory:
             minimum = max(minimum, smooth_minimum_duration(distance, cfg))
         if duration is not None:
             duration = number(duration, 'duration_s', .1, cfg['max_duration_s'])
-            if duration < minimum-1e-9:
-                raise ValueError(f'duration_s must be at least {minimum:.3f} for the configured reference limits')
-        self.duration = minimum if duration is None else duration
+        self.duration = minimum if duration is None else max(minimum, duration)
         if self.duration > cfg['max_duration_s']:
             raise ValueError('trajectory exceeds max_duration_s')
 
@@ -65,8 +63,8 @@ class EffortRamp:
         self.start, self.goal = list(start), list(goal)
         self.delta = [b-a for a, b in zip(start, goal)]
         minimum = max(.1, 1.875*max(map(abs, self.delta))/cfg['max_effort_slew_a_s'])
-        self.duration = minimum if duration is None else number(duration, 'duration_s', .1, cfg['max_duration_s'])
-        if self.duration < minimum-1e-9 or self.duration > cfg['max_duration_s']:
+        self.duration = minimum if duration is None else max(minimum, number(duration, 'duration_s', .1, cfg['max_duration_s']))
+        if self.duration > cfg['max_duration_s']:
             raise ValueError(f'effort ramp requires {minimum:.3f}..{cfg["max_duration_s"]:g} seconds')
 
     sample = Trajectory.sample
@@ -102,17 +100,14 @@ class Controller:
 
     def _finish(self, job, outcome, **extra):
         if job is not None and job['id'] is not None:
+            if outcome == 'target_not_reached' and extra.get('trajectory_complete') is True:
+                # A bounded reference finished and remains held. Report measured
+                # shortfall without treating it as an execution/transport failure.
+                # Feedback, tracking, native fault and current guards still apply.
+                extra.update(ok=True, reached=False, holding=True, contact_verified=False,
+                             note='Reference completed; position tolerance was not met. '
+                                  'The bounded target remains held; inspect measured shortfall before continuing.')
             if self.cfg['disabled_joints']:
-                if outcome == 'target_not_reached' and extra.get('trajectory_complete') is True:
-                    # A completed, bounded reference can remain held even when
-                    # friction prevents tight position convergence. Report the
-                    # shortfall without turning it into an assembly-stop error.
-                    # Native faults, isolation, freshness and tracking guards
-                    # still run before completion and throughout holding.
-                    extra.update(ok=True, reached=False, holding=True,
-                                 contact_verified=False,
-                                 note='Reference completed; position tolerance was not met. '
-                                      'The bounded target remains held; measured shortfall is informational.')
                 extra.update(partial_hand=True,
                              completion_scope='all_joints' if outcome in ('stopped', 'uncertain') else 'active_joints',
                              active_joints=[JOINT_NAMES[i] for i in active_indices(self.cfg)],
@@ -209,6 +204,7 @@ class Controller:
                                     'persists_until_changed_or_stopped': True},
                  'diagnostics_policy': {k: deepcopy(self.cfg[k]) for k in (
                      'allow_encoder_warning', 'allow_init_current_calib_failed', 'max_temperature_c',
+                     'stall_warning_grace_s',
                      'disabled_joints', 'isolated_joint_faults')},
                  'stop': deepcopy(self.stopping)}
         with self.lock:
@@ -222,8 +218,14 @@ class Controller:
         if not self.parent_alive() or self.clock()-self.parent_seen > self.cfg['parent_timeout_s']:
             raise RuntimeError('backend heartbeat expired')
         state = self.driver.snapshot()
-        if not state['fresh'] or state['faults']:
-            raise RuntimeError('fresh fault-free positions and diagnostics required')
+        if state['faults']:
+            details = '; '.join(f"{fault.get('joint', 'hand')}: "
+                                f"{fault.get('name') or fault.get('reason') or fault.get('code')}"
+                                for fault in state['faults'])
+            raise RuntimeError(f'hand diagnostic fault: {details}')
+        if not state['fresh']:
+            raise RuntimeError(f"fresh positions and diagnostics required; ages_s={state.get('age_s')}; "
+                               f"stream_errors={state.get('stream_errors', {})}")
         if self.cfg['disabled_joints']:
             states = state.get('diagnostics', {}).get('states', [])
             if len(states) != 20 or any(states[i] not in DISABLED_STATES for i in disabled_indices(self.cfg)):
@@ -516,9 +518,11 @@ class Controller:
         else:
             settled = path.complete and job['settler'].update(state['received_monotonic']['state'], state['positions'])
         contact = not settled and self._contact_settled(job, state, path.complete)
-        expired = elapsed > path.duration+self.cfg['settle_timeout_s']
-        if expired and not path.complete:
+        if not path.complete and elapsed > path.reference_deadline_s:
             raise RuntimeError('S-curve reference missed its wall-time deadline; emergency stop required')
+        if path.complete:
+            job.setdefault('reference_completed_at', elapsed)
+        expired = path.complete and elapsed-job['reference_completed_at'] > self.cfg['settle_timeout_s']
         if settled or contact or expired:
             error = max_error(self.cfg, path.goal, state['positions'])
             result = {'reached': bool(settled), 'positions': state['positions'],

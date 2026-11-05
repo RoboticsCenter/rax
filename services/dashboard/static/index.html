@@ -62,7 +62,8 @@ table.kv td { padding:1px 8px 1px 0; vertical-align:top; } table.kv td:first-chi
   <h1>xArm Operator</h1>
   <span id="robot-badge" class="badge">robot ?</span>
   <span id="running-badge" class="badge">no session running</span>
-  <button id="sound-toggle" aria-pressed="false" title="Enable loud alerts for new messages in the selected session and operator requests. Plays a test alert.">Enable sound</button>
+  <button id="sound-toggle" aria-pressed="true" title="Sound starts on every page load. Unanswered requests repeat every 60 seconds. Click to mute for this page visit.">Sound on · mute</button>
+  <span id="sound-status" class="badge" role="status">Browser audio blocked · click anywhere to unlock</span>
   <button id="disarm-all" class="danger big" title="Disarm every session and stop all configured arms and hands">DISARM ALL</button>
 </header>
 <div id="requests" hidden></div>

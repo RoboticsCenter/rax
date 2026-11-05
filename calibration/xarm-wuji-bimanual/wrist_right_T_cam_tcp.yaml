@@ -1,99 +1,20 @@
 matrix:
-- - 0.00841809365106938
-  - 0.9995902040030951
-  - 0.027359820180932904
-  - 0.03105466208956333
-- - -0.9999265527733343
-  - 0.008653195350039833
-  - -0.008485945384606314
-  - -0.06254733112525415
-- - -0.008719217746925318
-  - -0.027286375195053066
-  - 0.9995896302836464
-  - 0.1151903753211669
+- - -0.015371130845952041
+  - 0.9995858295603568
+  - 0.024328947339538547
+  - 0.035423287126442715
+- - -0.9998792372824152
+  - -0.015310839413662458
+  - -0.0026625266166919806
+  - -0.06854500748854613
+- - -0.002288927271053459
+  - -0.02436693535474785
+  - 0.9997004617751086
+  - 0.11945408186029857
 - - 0.0
   - 0.0
   - 0.0
   - 1.0
 source:
-  result: /home/jerry/rax-runtime/sessions/20261103T073444Z_unscrew_bottle_b1d812/operator/full-recalibration-20261103T100920Z/full-intrinsic-diagnostic/result.json
-  board:
-    dictionary: DICT_4X4_100
-    dimension_source: Operator supplied a new accurately printed 10 x 13 board on
-      2026-10-27, confirming the intended 20 mm squares and 15 mm markers.
-    layout_note: Physical board has 13 rows. Live marker positions match the legacy
-      14-row layout with the final row absent; preserve its ID coordinates and exclude
-      missing-row corners.
-    layout_source: .local-runtime/camera-new-board-20261027/layout-check.json
-    layout_squares_y: 14
-    legacy_pattern: true
-    marker_dimension_source: New print at intended dimensions; operator confirmation,
-      replacing the prior undersized print.
-    marker_m: 0.015
-    nominal_design_marker_m: 0.015
-    nominal_design_square_m: 0.02
-    square_m: 0.02
-    squares_x: 10
-    squares_y: 13
-  camera_specs:
-  - calibration_raw_color: true
-    height: 720
-    mount: fixed
-    name: side_a
-    serial: '263322070113'
-    width: 1280
-  - calibration_raw_color: true
-    height: 720
-    mount: fixed
-    name: side_b
-    serial: '262422074331'
-    width: 1280
-  - arm: left
-    calibration_raw_color: true
-    height: 720
-    mount: tcp
-    name: wrist_left
-    serial: '108322071838'
-    width: 1280
-  - arm: right
-    calibration_raw_color: true
-    height: 720
-    mount: tcp
-    name: wrist_right
-    serial: '752112070450'
-    width: 1280
-  arm_identity:
-    left:
-      ip: 192.168.2.205
-      serial: XI130510J56A06
-      tcp_load:
-      - 0.82
-      - - 0.0
-        - 0.0
-        - 48.0
-      tcp_offset_mm_rad:
-      - 0.0
-      - 0.0
-      - 172.0
-      - 0.0
-      - 0.0
-      - 0.0
-    right:
-      ip: 192.168.1.241
-      serial: XI130505F56A0A
-      tcp_load:
-      - 0.82
-      - - 0.0
-        - 0.0
-        - 48.0
-      tcp_offset_mm_rad:
-      - 0.0
-      - 0.0
-      - 172.0
-      - 0.0
-      - 0.0
-      - 0.0
-  method: Coverage-guided 18-pose sweep inside original envelope; original hand-eye
-    fit; three reserved views per arm; stationary shared board; original training-only
-    Brown5 wrist color refinement
-  quality_check_passed: true
+  report: wrist-refit-comparison-20261105.json
+  recorded_at: '2026-11-05T07:55:36.841247+00:00'

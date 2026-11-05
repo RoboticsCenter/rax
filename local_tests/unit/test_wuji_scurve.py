@@ -67,8 +67,9 @@ def test_full_hand_phase_sync_derivatives_and_exact_rest_endpoints():
 def test_explicit_duration_rounding_noop_and_invalid_paths():
     cfg = config()
     short = SCurvePath([0.]*20, [.2]*20, cfg)
-    with pytest.raises(ValueError, match='at least'):
-        SCurvePath([0.]*20, [.2]*20, cfg, .1)
+    stretched = SCurvePath([0.]*20, [.2]*20, cfg, .1)
+    assert stretched.duration == short.duration
+    assert stretched.status()['requested_duration_s'] == .1
     long = SCurvePath([0.]*20, [.2]*20, cfg, short.duration+1.0004)
     assert long.duration == pytest.approx(short.duration+1.001)
     same = SCurvePath([0.]*20, [0.]*20, cfg)
@@ -260,8 +261,39 @@ def test_obstructed_target_is_not_reported_reached():
     r.engine.submit('move', 'move', {'positions': [.1]*20})
     result = finish(r, 'move')
     assert result['outcome'] == 'target_not_reached' and not result['reached']
+    assert result['ok'] and result['holding'] and not result['contact_verified']
     assert result['trajectory_complete'] and r.driver.goal == [.1]*20
     assert r.driver.command_velocity == [0.]*20
+
+
+@pytest.mark.parametrize('slowdown', [1.25, 1.6, 2.5])
+def test_slow_reference_gets_execution_budget_and_separate_settling_window(slowdown):
+    r = rig(settle_timeout_s=.15, settle_s=.1)
+    r.prepare()
+    r.engine.submit('move', 'move', {'positions': [.2]*20, 'duration_s': .1})
+    for _ in range(12000):
+        r.step(.001*slowdown)
+        result = r.engine.result('move')
+        if result['done']:
+            break
+    assert result['ok'] and result['reached']
+    assert result['seconds'] > result['nominal_duration_s']*slowdown
+    assert result['peak_nominal_reference_jerk_rad_s3'] <= 2.+1e-7
+    assert ('emergency',) not in r.driver.writes
+
+
+def test_excessively_slow_reference_still_has_a_finite_deadline():
+    r = rig(reference_timeout_scale=3.)
+    r.prepare()
+    r.engine.submit('move', 'move', {'positions': [.2]*20})
+    for _ in range(12000):
+        r.step(.004)  # Fresh feedback and short gaps, but only a quarter of nominal rate.
+        result = r.engine.result('move')
+        if result['done']:
+            break
+    assert not result['ok'] and 'wall-time deadline' in result['reason']
+    r.step(.001)
+    assert ('emergency',) in r.driver.writes
 
 
 def test_stop_during_planning_fences_reference_before_sdk_write(monkeypatch):

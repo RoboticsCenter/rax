@@ -59,11 +59,37 @@ def observe(session, endpoint, cameras=None):
     return folder
 
 
+def observe_fixed(session, endpoint, cameras, calibration):
+    """Capture fixed references without connecting to either robot assembly."""
+    specs = {spec['name']: spec for spec in calibration.manifest['camera_specs']}
+    if any(specs[name]['mount'] != 'fixed' for name in cameras):
+        raise ValueError('camera-only capture requires fixed cameras exclusively')
+    folder = session/'agent-workspace/runtime/frames'/f'{time.time_ns()}fixed'
+    with socket.socket(socket.AF_UNIX) as connection:
+        connection.settimeout(90)
+        connection.connect(str(endpoint))
+        connection.sendall((json.dumps({'op': 'grab', 'cameras': cameras, 'depth': False,
+                                        'out_dir': str(folder)})+'\n').encode())
+        response = json.loads(connection.makefile('rb').readline())
+    if not response.get('ok'):
+        raise RuntimeError(f'camera capture failed: {response.get("error")}')
+    for name, entry in response['cameras'].items():
+        poses = calibration.poses(specs[name], {})
+        entry['T_left_base_cam'] = poses['left'].tolist() if poses else None
+    write_private_json(folder/'meta.json', {'fixed_camera_only': True,
+                       'calibration': {'sha256': calibration.digest}, 'cameras': response['cameras']})
+    return folder
+
+
 def detect(folder, calibration, board, detector, settings, overlays, models=None):
     meta = json.loads((folder/'meta.json').read_text())
     if meta['calibration']['sha256'] != calibration.digest:
         raise ValueError('running backend and calibration manifest differ; restart the backend')
-    for side in ('left', 'right'):
+    if meta.get('fixed_camera_only'):
+        mounts = {spec['name']: spec['mount'] for spec in calibration.manifest['camera_specs']}
+        if not meta['cameras'] or any(mounts.get(name) != 'fixed' for name in meta['cameras']):
+            raise ValueError('camera-only captures cannot contain wrist cameras')
+    for side in (() if meta.get('fixed_camera_only') else ('left', 'right')):
         before, after = meta['arms_before'][side], meta['arms'][side]
         turn = Rotation.from_quat(before['tcp_quaternion']).inv()*Rotation.from_quat(after['tcp_quaternion'])
         if meta['arm_moved_during_capture_mm'][side] > .2 or np.degrees(turn.magnitude()) > .1:
@@ -82,6 +108,18 @@ def detect(folder, calibration, board, detector, settings, overlays, models=None
         gray = cv.cvtColor(image, cv.COLOR_BGR2GRAY)
         candidates = [detect_board(gray, board, detector, settings),
                       detect_small_board(gray, board, detector, settings)]
+        # Small oblique markers can be missed at both native and 3x resolution.
+        # Always include this predetermined pass; select by decoded coverage only.
+        params = detector.getDetectorParameters()
+        params.adaptiveThreshWinSizeMax = max(53, params.adaptiveThreshWinSizeMax)
+        params.adaptiveThreshWinSizeStep = min(4, params.adaptiveThreshWinSizeStep)
+        dense = cv.aruco.CharucoDetector(board, detector.getCharucoParameters(),
+                                       params, detector.getRefineParameters())
+        enlarged = cv.resize(gray, None, fx=2, fy=2, interpolation=cv.INTER_CUBIC)
+        extra_corners, extra_ids, _, _ = detect_board(enlarged, board, dense, settings)
+        if extra_corners is not None:
+            extra_corners = (extra_corners + .5)/2 - .5
+        candidates.append((extra_corners, extra_ids, (), None))
         # Choose by decoded coverage, before any geometric fit or residual exists.
         corners, ids, _, _ = max(candidates, key=lambda c: 0 if c[1] is None else len(c[1]))
         if ids is None or len(ids) < 12 or board.checkCharucoCornersCollinear(ids):
@@ -97,7 +135,8 @@ def detect(folder, calibration, board, detector, settings, overlays, models=None
         projected, _ = cv.projectPoints(obj, rv, tv, K, D)
         errors = np.linalg.norm(projected.reshape(-1, 2)-pixels.reshape(-1, 2), axis=1)
         quality[name] = {'corners': len(ids), 'reprojection_mean_px': float(errors.mean()),
-                         'reprojection_max_px': float(errors.max()), 'timestamp_ns': entry['timestamp_ns']}
+                         'reprojection_max_px': float(errors.max()), 'timestamp_ns': entry['timestamp_ns'],
+                         'detector_candidates': ['native', 'small-board', '2x-dense']}
         if errors.mean() > 1:
             raise ValueError(f'{name}: mean board reprojection exceeds 1 pixel: {errors.mean():.3f}')
         # Moved target cameras may deliberately have no runtime base transform.
@@ -164,7 +203,7 @@ def stereo_reference(sample, references, board):
     ray_errors = {name: np.linalg.norm(np.cross(xyz-origin, ray), axis=1)
                   for name, origin, ray in zip(references, origins, rays)}
     if rigidity.max() > .005 or any(error.max() > .005 for error in ray_errors.values()):
-        raise ValueError('stereo references exceed the 5 mm board-rigidity or viewing-ray limit')
+        raise ValueError('stereo references exceed 5 mm board rigidity or viewing-ray limit')
     return {'T_left_base_board': T, 'corner_ids': ids, 'board_points': obj,
             'triangulated_points_left_base': xyz, 'ray_angles_deg': angles,
             'rigidity_error_m': rigidity, 'ray_error_m': ray_errors}
@@ -244,7 +283,9 @@ def install(result, manifest_path):
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--session', required=True, type=Path)
-    parser.add_argument('--mcp-socket', required=True, type=Path)
+    source = parser.add_mutually_exclusive_group(required=True)
+    source.add_argument('--mcp-socket', type=Path)
+    source.add_argument('--camera-socket', type=Path, help='camera-only capture; all references must be fixed')
     parser.add_argument('--output', required=True, type=Path)
     parser.add_argument('--target', required=True, nargs='+',
                         help='configured fixed cameras to fit, including newly added views')
@@ -273,6 +314,8 @@ def main():
         parser.error('use at least two distinct unchanged calibrated reference cameras')
     if args.reference_method == 'stereo' and len(references) != 2:
         parser.error('stereo board transfer requires exactly two reference cameras')
+    if args.camera_socket and any(specs[name]['mount'] != 'fixed' for name in references):
+        parser.error('camera-only capture requires fixed reference cameras')
     models = deepcopy(calibration.manifest['camera_models'])
     settings = calibration.manifest['board']
     if not isinstance(settings, dict):
@@ -285,7 +328,8 @@ def main():
     last_timestamps = {}
 
     def capture(phase, index):
-        folder = observe(session, args.mcp_socket, [*references, *args.target])
+        folder = (observe_fixed(session, args.camera_socket, [*references, *args.target], calibration)
+                  if args.camera_socket else observe(session, args.mcp_socket, [*references, *args.target]))
         meta = json.loads((folder/'meta.json').read_text())
         for name in args.target:
             if name in models:

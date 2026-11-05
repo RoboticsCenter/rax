@@ -39,8 +39,12 @@ between calls, including during arm movement.
 Ruckig uses phase synchronization for proportional joint paths from rest, with
 its time-synchronization fallback for states where phase synchronization is not
 possible. Targets have zero terminal velocity and acceleration. An optional
-duration must be at least the feasible duration and rounds upward to a control
-tick. Limits bound the reference, not the measured hand. Feedback guards and
+duration is stretched to at least the feasible duration and rounds upward to a
+control tick. The current runtime gives reference execution up to three times
+nominal duration (`reference_timeout_scale`, never less than the old budget),
+followed by a separate settling window. Completed references with residual
+position error return `reached: false` while retaining the bounded hold.
+Limits bound the reference, not the measured hand. Feedback guards and
 settling checks remain active; the controller does not claim that increasing
 gains eliminates static error or that reaching a posture proves grasp success.
 

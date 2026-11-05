@@ -114,6 +114,12 @@ function renderDetail() {
       el('tr', {}, el('td', {}, 'usage'), el('td', {},
         `${fmt(u.calls)} calls · in ${fmt(u.input_tokens)} · out ${fmt(u.output_tokens)} · cache read ${fmt(u.cache_read_input_tokens)}` +
         (u.cost_usd ? ` · $${u.cost_usd}` : ''))),
+      el('tr', {}, el('td', {}, 'estimated cost'), el('td', { title: u.cost_basis || '' },
+        u.estimated_cost_usd == null ? 'Estimate unavailable for this model' :
+          `$${u.estimated_cost_usd.toFixed(2)} total` +
+          (u.estimated_usd_per_hour == null ? '' : ` · $${u.estimated_usd_per_hour.toFixed(2)}/active hour`),
+        el('div', { class: 'muted' }, `API-equivalent · ${u.active_hours || 0} active hours · usage ${when(u.latest_usage_at)}`),
+        el('div', { class: 'muted' }, 'Includes resumes; excludes stopped intervals. Not a verified account charge.'))),
     ),
     el('div', { class: 'row', style: 'margin:10px 0' },
       el('button', { class: 'primary', disabled: (anyRunning || launched) ? '' : null, onclick: () => act('launch') }, 'Launch headless'),
@@ -277,43 +283,59 @@ async function refreshActivity() {
   const session = state.selected;
   const value = await api(`/api/session/${session}/activity`);
   if (session !== state.selected) return;
-  notifyMessages(session, value);
   renderActivity(value);
 }
 
 const seenRequests = new Set();
-const seenMessages = new Map();
+const requestReminderDue = new Map();
 let audioContext = null;
-let soundEnabled = false;
+let soundEnabled = true;
 let lastBeep = -Infinity;
 
 function updateSoundButton() {
-  const active = soundEnabled && audioContext?.state === 'running';
-  $('sound-toggle').textContent = active ? 'Sound on · mute' : 'Enable sound';
-  $('sound-toggle').setAttribute('aria-pressed', String(active));
+  $('sound-toggle').textContent = soundEnabled ? 'Sound on · mute' : 'Sound off · unmute';
+  $('sound-toggle').setAttribute('aria-pressed', String(soundEnabled));
+  $('sound-status').hidden = !soundEnabled || audioContext?.state === 'running';
+}
+
+async function enableAudio() {
+  if (!audioContext || audioContext.state === 'closed') {
+    audioContext = new AudioContext();
+    audioContext.addEventListener('statechange', updateSoundButton);
+  }
+  const wasRunning = audioContext.state === 'running';
+  await audioContext.resume();
+  updateSoundButton();
+  if (!wasRunning && requestReminderDue.size) beep();
+  return audioContext.state === 'running';
 }
 
 $('sound-toggle').addEventListener('click', async () => {
-  if (soundEnabled && audioContext?.state === 'running') {
+  if (soundEnabled) {
     soundEnabled = false;
   } else {
+    soundEnabled = true;
     try {
-      if (!audioContext || audioContext.state === 'closed') {
-        audioContext = new AudioContext();
-        audioContext.addEventListener('statechange', updateSoundButton);
-      }
-      await audioContext.resume();
-      soundEnabled = audioContext.state === 'running';
-      if (soundEnabled) beep(true);
-      else toast('Sound is blocked. Click Enable sound again.', true);
+      if (await enableAudio()) beep(true);
+      else toast('Browser audio is blocked. Click anywhere on the dashboard to unlock it.', true);
     } catch { toast('Could not enable sound in this browser.', true); }
   }
   updateSoundButton();
 });
 
+// Default to audible alerts; retry blocked autoplay on a real user gesture.
+function unlockAudio(event) {
+  if (event?.target?.closest('#sound-toggle')) return;
+  if (soundEnabled) enableAudio().catch(() => {});
+}
+document.addEventListener('pointerdown', unlockAudio);
+document.addEventListener('keydown', unlockAudio);
+updateSoundButton();
+unlockAudio();
+
 function beep(test = false) {
   if (!soundEnabled || audioContext?.state !== 'running') return;
-  // Coalesce messages and requests arriving in the same polling cycle.
+  // Coalesce requests arriving in the same polling cycle.
   if (!test && performance.now() - lastBeep < 1500) return;
   lastBeep = performance.now();
   [880, 1040, 880].forEach((frequency, index) => {
@@ -331,20 +353,30 @@ function beep(test = false) {
   });
 }
 
-function notifyMessages(session, value) {
-  const key = session;
-  const messages = value.transcript.filter((event) => event.kind === 'assistant')
-    .map((event) => JSON.stringify([event.time, event.text]));
-  const seen = seenMessages.get(key);
-  // First load establishes a baseline; opening old history should stay quiet.
-  if (seen && messages.some((message) => !seen.has(message))) beep();
-  const updated = new Set([...(seen || []), ...messages]);
-  while (updated.size > 500) updated.delete(updated.values().next().value);
-  seenMessages.set(key, updated);
-}
-
 const submittingRequests = new Set();
 const requestDrafts = new Map();
+const watchedSessions = new Set();
+
+function remindRequests(open, allowNew) {
+  const keys = new Set(open.map((r) => `${r.session}/${r.id}`));
+  for (const key of requestReminderDue.keys()) {
+    if (!keys.has(key)) requestReminderDue.delete(key);
+  }
+  const now = performance.now();
+  let announce = false;
+  for (const key of keys) {
+    if (!requestReminderDue.has(key)) {
+      if (!allowNew) continue; // New controls have not been displayed yet.
+      announce ||= !seenRequests.has(key);
+      seenRequests.add(key);
+      requestReminderDue.set(key, now + 60000);
+    } else if (now >= requestReminderDue.get(key)) {
+      announce = true;
+      requestReminderDue.set(key, now + 60000);
+    }
+  }
+  if (announce) beep();
+}
 
 function renderRequests(value) {
   const box = $('requests');
@@ -352,14 +384,32 @@ function renderRequests(value) {
   const open = value.sessions.flatMap((s) => (s.requests || []).map((r) => ({
     ...r, session: s.id, task: s.task, prepare: s.prepare_on_reply,
   })));
+  for (const s of value.sessions) {
+    if (s.running) watchedSessions.add(s.id);
+    const notice = s.exit_notice || s.idle_notice;
+    if (notice && (s.id === state.selected || watchedSessions.has(s.id)) &&
+        localStorage.getItem(`exitAck:${s.id}`) !== notice.id) {
+      open.push({ ...notice, kind: 'exit', session: s.id, task: s.task });
+    }
+  }
   box.hidden = open.length === 0;
   document.title = open.length ? `(${open.length}) Agent needs you - xArm` : 'xArm operator';
-  if (open.some((r) => !seenRequests.has(`${r.session}/${r.id}`))) beep();
-  open.forEach((r) => seenRequests.add(`${r.session}/${r.id}`));
-  if (document.activeElement?.tagName === 'TEXTAREA' && box.contains(document.activeElement)) return;
-  box.replaceChildren(el('h2', {}, `The agent is asking for ${open.length > 1 ? 'you (' + open.length + ')' : 'you'}`),
+  if (document.activeElement?.tagName === 'TEXTAREA' && box.contains(document.activeElement)) {
+    remindRequests(open, false);
+    return;
+  }
+  box.replaceChildren(el('h2', {}, `Agent needs attention${open.length > 1 ? ' (' + open.length + ')' : ''}`),
     ...open.map((r) => {
       const key = `${r.session}/${r.id}`;
+      if (r.kind === 'exit') {
+        return el('div', { class: 'request' },
+          el('div', {}, el('b', {}, r.title || 'AGENT STOPPED'), ` · ${r.task} · ${when(r.created)}`),
+          el('pre', {}, r.message), el('button', { onclick: () => {
+            localStorage.setItem(`exitAck:${r.session}`, r.id);
+            requestReminderDue.delete(key);
+            renderRequests({ sessions: state.sessions });
+          } }, 'Acknowledge'));
+      }
       const input = el('textarea', { placeholder: r.kind === 'reset' ? 'Optional note, e.g. "both cubes back on the left"' : 'Your answer' });
       input.value = requestDrafts.get(key) || '';
       input.addEventListener('input', () => requestDrafts.set(key, input.value));
@@ -377,6 +427,7 @@ function renderRequests(value) {
             request_id: r.id, text, done: true, estop_confirmed: !!prepare,
           });
           requestDrafts.delete(key);
+          requestReminderDue.delete(key);
           toast(prepare ? 'Arms and hands ready; reply sent.' : 'Reply sent.');
         } catch (error) { toast(error.message, true); }
         finally {
@@ -398,6 +449,9 @@ function renderRequests(value) {
         el('pre', {}, r.message), input,
         el('div', { class: 'row', style: 'margin-top:6px' }, ...buttons));
     }));
+  // Only announce requests that are now visible. Editing a reply can defer
+  // rendering; keep those new requests unseen until their controls appear.
+  remindRequests(open, true);
 }
 
 async function refresh() {

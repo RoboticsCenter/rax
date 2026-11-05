@@ -130,6 +130,5 @@ def test_invalid_feedback_limits_are_rejected_before_motion(options):
 def test_feedback_nominal_duration_is_validated_before_motion():
     cfg = feedback_config()
     minimum = Trajectory([0.]*20, [.2]*20, cfg).duration
-    with pytest.raises(ValueError, match='at least'):
-        Trajectory([0.]*20, [.2]*20, cfg, minimum-.01)
+    assert Trajectory([0.]*20, [.2]*20, cfg, minimum-.01).duration == minimum
     assert Trajectory([0.]*20, [.2]*20, cfg, minimum+1).duration == minimum+1

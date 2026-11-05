@@ -1,5 +1,40 @@
 # Verified bimanual RGB extrinsics
 
+## November 5: wrist comparison and all three fixed cameras
+
+Both wrists were refitted using the stationary 10×13 ChArUco board, with every
+optical model unchanged. The downward 18-pose sweeps retained 17 left and 18
+right observations, including three reserved views per wrist. An additional six
+new arm poses, with three frames each, compared the frozen old and new geometry.
+The new coherent wrist pair and its matching inter-base alignment were selected:
+fresh maximum position residuals improved from 6.22 to 4.38 mm left and from
+2.86 to 1.67 mm right. Cross-wrist disagreement improved from
+25.34 mm / 1.92° to 4.84 mm / 0.71°.
+
+Front, side A, and side B were then refitted using the selected wrist stereo
+geometry, with 12 training and eight verification captures. The original 5 mm
+reference ray, rigidity, and target-corner limits were retained. Six additional
+stationary captures checked all five frozen camera transforms:
+
+| Camera | Maximum position residual | Maximum rotation residual |
+| --- | ---: | ---: |
+| Left wrist | 5.09 mm | 0.641° |
+| Right wrist | 3.14 mm | 0.434° |
+| Front | 0.41 mm | 0.143° |
+| Side A | 0.86 mm | 0.138° |
+| Side B | 0.31 mm | 0.031° |
+
+All passed the existing approved limits: wrists 10 mm / 1°, fixed cameras
+5 mm / 1°, cross-wrist 20 mm / 1.5°, and mean reprojection below 1 px.
+The left wrist's final stationary residual exceeds the original 5 mm threshold;
+the separate motion fit and fresh motion checks passed 5 mm / 1°.
+These are board-consistency measurements, not independent absolute metrology.
+Depth remains unqualified. Reports are in
+`wrist-refit-comparison-20261105.json`, `verification-five-camera-20261105.json`,
+and the three current fixed-camera reports. The previous complete bundle and
+all collection evidence are preserved in the active session's
+`operator/all-fixed-calibration-20261105T070552Z/` directory.
+
 On November 4, the operator accepted the unchanged wrist transforms and lens
 models at the higher saved homes with limits of **10 mm / 1° per wrist** and
 **20 mm / 1.5° between wrists in the shared base frame**. Today's maximum
@@ -11,7 +46,66 @@ the measurements. The original stricter results remain in
 No transforms, lens models or robot motion limits changed. The verification
 figures below describe the earlier November 3 validation.
 
-## November 4 fixed-camera update
+## Latest November 4 front-only refresh using camera-only capture
+
+After another front-mount bump, only the front extrinsics were refitted using
+camera-only captures against unchanged side A and side B stereo references.
+No robot connections or actuator commands were used. Twelve training captures
+and eight fresh verification captures passed: maximum position residual
+**0.546 mm**, rotation **0.299°**, mean reprojection **0.453 px**, and
+triangulated-corner error **1.730 mm**. At least 24 shared corners were available.
+All other camera transforms, intrinsics and inter-base geometry were checked
+unchanged. Evidence is in `front-recalibration-report.json` and the session's
+`operator/front-camera-only-20261104T203239Z/` directory. The camera-only service
+was stopped after collection; the saved bundle loads on the next robot-service
+startup.
+
+## Earlier November 4 front-only refresh
+
+Only the front extrinsics were refitted against the unchanged side A and side B
+cameras. Twelve training captures and eight fresh verification captures passed:
+maximum position residual **0.776 mm**, rotation residual **0.515°**, mean
+reprojection **0.478 px**, and triangulated-corner error **1.883 mm**. The original
+5 mm / 1° and 1 px acceptance limits were retained. Fixed-camera detection now
+also evaluates a predetermined 2× dense-threshold pass and chooses by decoded
+coverage before fitting; it does not select by geometric residual. This avoids
+intermittent missed small markers in the oblique reference view. All other camera
+transforms, intrinsics and inter-base geometry were checked unchanged. No robot
+motion was commanded. Evidence is in `front-recalibration-report.json` and the
+session's `operator/front-only-calibration-20261104T201359Z/fit-dense/` directory.
+The robot service must be restarted to load the new manifest.
+
+## Earlier November 4 front and side A update
+
+After homing both arms and hands, only `front` and `side_a` were refitted against
+the unchanged `side_b` and right wrist camera as stereo references. The two wrist
+views at home did not share enough board corners, so their pair was not used.
+Twelve training captures and eight fresh verification captures passed the original
+5 mm / 1° and 1 px limits: front **0.452 mm / 0.092°**, side A
+**0.973 mm / 0.223°**. The maximum mean reprojection errors were 0.728 px and
+0.514 px respectively. These are consistency residuals relative to the retained
+references. Side B, both wrists, all intrinsics, inter-base geometry and wrist
+acceptance were checked unchanged. Evidence is in the current target reports and
+the session's `operator/front-side-a-calibration-20261104T192253Z/` directory;
+superseded reports are retained under hash-suffixed filenames. The robot was left
+homed and disarmed, and the temporary robot owner released for the next resume.
+
+## Earlier November 4 front-only update (11:29 UTC)
+
+The front camera was refitted after homing both arms and hands, using unchanged
+`side_a` and `side_b` cameras as stereo references to the same 10×13 ChArUco board
+(20 mm squares, 15 mm markers). Twelve training captures and eight fresh
+verification captures passed: maximum position residual **0.575 mm**, rotation
+residual **0.318°**, mean reprojection **0.580 px**, and triangulated-corner error
+**1.240 mm**. These are relative consistency checks, not absolute metrology.
+Only the front extrinsics changed; the other four cameras, all lens models,
+inter-base transform and wrist acceptance remain unchanged. The previous front
+report is retained under its hash-suffixed filename. Current evidence is in
+`front-recalibration-report.json` and the session's
+`operator/front-recalibration-20261104T112347Z/` directory. The saved arm poses and
+hand targets were restored after collection.
+
+## Earlier November 4 fixed-camera update
 
 All three fixed cameras were recalibrated against shared board corners
 triangulated by the unchanged wrist cameras. Twelve training captures and eight
@@ -31,8 +125,8 @@ those poses. These are consistency residuals relative to the retained wrist
 geometry, not independent absolute accuracy. Both wrist transforms, every lens
 model, inter-base alignment and the operator's wrist acceptance are unchanged.
 All five cameras are enabled for calibrated RGB geometry in the saved configs.
-See the current `side_a-recalibration-report.json`,
-`side_b-recalibration-report.json` and `front-recalibration-report.json`.
+See `side_a-recalibration-report.json`, `side_b-recalibration-report.json` and the
+hash-suffixed historical front report for this earlier collection.
 
 ## November 3 history
 

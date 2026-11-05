@@ -10,6 +10,18 @@ from wuji_fakes import hand_config
 from services.wuji.client import WujiClient, operation
 
 
+def test_scurve_client_wait_includes_stretched_execution_and_settling(monkeypatch):
+    value = WujiClient.__new__(WujiClient)
+    value.cfg = hand_config(motion_mode='scurve', reference_timeout_scale=3.)
+    captured = {}
+    def operation(op, args, **kwargs):
+        captured.update(kwargs)
+        return {'ok': True}
+    monkeypatch.setattr(value, '_operation', operation)
+    value.move([0.]*20)
+    assert captured['timeout'] == 3*value.cfg['max_duration_s']+value.cfg['settle_timeout_s']+2
+
+
 def client():
     value = WujiClient.__new__(WujiClient)
     value.cfg = hand_config()

@@ -234,9 +234,13 @@ def capture(service, root, specs, drivers):
     meta = {'arms_before': before, 'arms': after, 'capture_movement': movement, 'cameras': {}}
     for spec in specs:
         entry = entries[spec['name']]
+        frozen = spec.get('frozen_pixel_model')
+        if frozen and any(entry.get(k) != frozen.get(k) for k in
+                ('serial', 'width', 'height', 'fps', 'K', 'distortion_coeffs', 'distortion_model', 'intrinsics_source')):
+            raise ValueError(f"{spec['name']}: frozen pixel model changed during collection")
         if (entry['serial'] != spec['serial'] or entry['width'] != spec['width']
                 or entry['height'] != spec['height'] or entry['fps'] != 6
-                or entry.get('intrinsics_source') != 'realsense_factory'):
+                or (not frozen and entry.get('intrinsics_source') != 'realsense_factory')):
             raise ValueError(f"{spec['name']}: calibration capture requires its matching raw factory RGB profile")
         meta['cameras'][spec['name']] = {**entry, 'rgb': Path(entry['rgb']).name,
                                        'mount': spec['mount'], 'arm': spec.get('arm')}
@@ -436,6 +440,8 @@ def main():
     parser.add_argument('--preview-port', type=int, default=8765)
     parser.add_argument('--wrists-only', action='store_true',
                         help='calibrate both wrists and inter-base geometry; defer all fixed cameras')
+    parser.add_argument('--frozen-pixel-models', type=Path,
+                        help='refit wrist extrinsics on an existing camera owner with these exact pixel models')
     parser.add_argument('--sweep-z-direction', choices=('up', 'down'), default='up',
                         help='use downward offsets for higher homes; rotations and reserved views stay unchanged')
     parser.add_argument('--frame-wrists-inward', action='store_true',
@@ -460,6 +466,9 @@ def main():
     args = parser.parse_args()
     if args.coverage_margin_px < 20:
         parser.error('coverage margin must be at least 20 pixels')
+    if args.frozen_pixel_models and (not args.wrists_only or not args.camera_socket or args.refine_wrist_intrinsics
+            or args.refine_wrist_distortion or args.refine_wrist_brown_distortion):
+        parser.error('frozen pixel models require wrists-only, a borrowed camera owner, and no optical refinement')
     def interrupted(*_):
         raise SystemExit('calibration interrupted')
     signal.signal(signal.SIGTERM, interrupted)
@@ -488,6 +497,8 @@ def main():
     options['cameras'] = specs
     for spec in specs:
         spec.update(width=args.width, height=args.height, calibration_raw_color=True)
+        if args.frozen_pixel_models:
+            spec['frozen_pixel_model'] = json.loads(args.frozen_pixel_models.read_text())[spec['name']]
     settings = json.loads(args.board.read_text())
     board, detector = make_board(settings)
     workflow = original_workflow()

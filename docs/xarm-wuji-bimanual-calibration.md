@@ -175,6 +175,12 @@ those runtime capabilities require an explicit configuration integration step.
 
 ## Calibrating individual fixed cameras
 
+When both reference cameras are fixed, `--camera-socket CAMERA_SOCKET` can replace
+`--mcp-socket MCP_SOCKET` to capture directly from an existing camera server.
+This mode never opens arm or hand connections, uses the frozen fixed-camera
+transforms, and rejects wrist-camera references because they require measured arm
+poses. It remains usable while the robot service and hand power are off.
+
 When fixed mounts move or a fixed view is added, preserve the unchanged camera transforms,
 both wrist models and the inter-base transform. The board can be in a new
 position. Place it flat and stationary with at least twelve noncollinear

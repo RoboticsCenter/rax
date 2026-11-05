@@ -43,6 +43,23 @@ def test_bad_targets_rejected(value):
         validate_tool('wuji_move_joints', {'positions': value}, hand_config())
 
 
+def test_native_stall_is_named_in_fault_instead_of_reporting_stale_feedback():
+    rig = Rig()
+    rig.prepare()
+    rig.driver.faults = [{'joint': 'thumb_S3', 'code': 7, 'name': 'Stall',
+                          'severity': 'Warning', 'clear_policy': 'AutoClear'}]
+    with pytest.raises(RuntimeError, match='hand diagnostic fault: thumb_S3: Stall'):
+        rig.engine._admit(rig.engine.epoch)
+
+
+def test_stale_feedback_error_reports_ages_without_waiving_the_guard():
+    rig = Rig()
+    rig.prepare()
+    rig.clock.now += .3
+    with pytest.raises(RuntimeError, match='fresh positions and diagnostics required; ages_s='):
+        rig.engine._admit(rig.engine.epoch)
+
+
 @pytest.mark.parametrize('args', [{'positions': [0]*20, 'duration_s': None},
                                  {'positions': [0]*20, 'duration_s': True},
                                  {'positions': [0]*20, 'force': 10}])
@@ -129,8 +146,7 @@ def test_trajectory_respects_velocity_acceleration_and_never_overshoots():
     assert min(values) >= 0 and max(values) <= .3+1e-12
     assert max(map(abs, velocities)) <= cfg['max_velocity_rad_s']+1e-6
     assert max(map(abs, accelerations)) <= cfg['max_acceleration_rad_s2']+1e-6
-    with pytest.raises(ValueError, match='at least'):
-        Trajectory([0.]*20, [.3]*20, cfg, .1)
+    assert Trajectory([0.]*20, [.3]*20, cfg, .1).duration == path.duration
     with pytest.raises(ValueError, match='max_step'):
         Trajectory([0.]*20, [.5]*20, cfg)
 
@@ -253,7 +269,8 @@ def test_blocked_target_reports_failure_not_grasp_success():
     for _ in range(120):
         rig.step()
     result = rig.engine.result('move')
-    assert result['outcome'] == 'target_not_reached' and not result['ok'] and not result['reached']
+    assert result['outcome'] == 'target_not_reached' and result['ok'] and not result['reached']
+    assert result['holding'] and not result['contact_verified']
 
 
 def test_hold_while_disarmed_falls_back_to_emergency():

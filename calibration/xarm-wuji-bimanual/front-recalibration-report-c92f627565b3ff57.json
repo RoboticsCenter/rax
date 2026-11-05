@@ -1,0 +1,7301 @@
+{
+  "T_cam_left_base": [
+    [
+      0.05420817222569342,
+      -0.9966690735866333,
+      -0.06092808728257003,
+      -0.187911564106922
+    ],
+    [
+      -0.6983506085654906,
+      0.0057711300602249094,
+      -0.7157325768567739,
+      0.5133993417067738
+    ],
+    [
+      0.7137001482276428,
+      0.0813477216263054,
+      -0.6957116116653871,
+      0.8129448675148816
+    ],
+    [
+      0.0,
+      0.0,
+      0.0,
+      1.0
+    ]
+  ],
+  "T_cam_right_base": [
+    [
+      0.07009166673269687,
+      -0.9964834404173186,
+      -0.04591199438815612,
+      0.4304044003228008
+    ],
+    [
+      -0.6858198683220579,
+      -0.014715403128686686,
+      -0.7276225430300228,
+      0.49649934083600217
+    ],
+    [
+      0.7243882014978913,
+      0.08248763473894591,
+      -0.6844395690240493,
+      0.7518363286140625
+    ],
+    [
+      0.0,
+      0.0,
+      0.0,
+      1.0
+    ]
+  ],
+  "T_left_base_board_current": [
+    [
+      -0.9993814268160328,
+      0.03444630840047374,
+      -0.007086294710921924,
+      0.421562855191882
+    ],
+    [
+      0.034806729417559086,
+      0.9976308305456174,
+      -0.059339847759448415,
+      -0.4710165494229201
+    ],
+    [
+      0.0050254673815889345,
+      -0.059549792463459865,
+      -0.998212686202272,
+      0.34998924392616004
+    ],
+    [
+      0.0,
+      0.0,
+      0.0,
+      1.0
+    ]
+  ],
+  "T_target_cam_board_current": [
+    [
+      -0.08917162338244311,
+      -0.9888122692901791,
+      0.11957724568055034,
+      0.28306404050669526
+    ],
+    [
+      0.6945226110495302,
+      0.024323583252021774,
+      0.7190595983913474,
+      -0.03421633595974534
+    ],
+    [
+      -0.713923500330591,
+      0.14716881258945091,
+      0.6845835057001652,
+      0.8320066356513384
+    ],
+    [
+      0.0,
+      0.0,
+      0.0,
+      1.0
+    ]
+  ],
+  "camera_model": {
+    "K": [
+      [
+        912.2591552734375,
+        0.0,
+        655.4686889648438
+      ],
+      [
+        0.0,
+        911.7289428710938,
+        378.68194580078125
+      ],
+      [
+        0.0,
+        0.0,
+        1.0
+      ]
+    ],
+    "distortion_coeffs": [
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0
+    ],
+    "distortion_model": "inverse_brown_conrady",
+    "fps": 6,
+    "height": 720,
+    "serial": "348522070593",
+    "width": 1280
+  },
+  "camera_pose_change": {
+    "rotation_error_deg": 13.00719749565799,
+    "translation_error_m": 0.2937919901207464
+  },
+  "camera_spec": {
+    "height": 720,
+    "mount": "fixed",
+    "name": "front",
+    "serial": "348522070593",
+    "width": 1280
+  },
+  "detection_quality": [
+    {
+      "frame": "/home/jerry/rax-runtime/sessions/20261104T091548Z_unscrew_bottle_b3726a/agent-workspace/runtime/frames/2026110412153452c2b6",
+      "quality": {
+        "front": {
+          "corners": 80,
+          "detector_candidates": [
+            "native",
+            "small-board",
+            "2x-dense"
+          ],
+          "reprojection_max_px": 1.1559162139892578,
+          "reprojection_mean_px": 0.44281262159347534,
+          "timestamp_ns": 1793823334962091711
+        },
+        "side_a": {
+          "corners": 24,
+          "detector_candidates": [
+            "native",
+            "small-board",
+            "2x-dense"
+          ],
+          "reprojection_max_px": 0.9398804306983948,
+          "reprojection_mean_px": 0.4184575080871582,
+          "timestamp_ns": 1793823334928986389
+        },
+        "side_b": {
+          "corners": 83,
+          "detector_candidates": [
+            "native",
+            "small-board",
+            "2x-dense"
+          ],
+          "reprojection_max_px": 1.8360642194747925,
+          "reprojection_mean_px": 0.6166629791259766,
+          "timestamp_ns": 1793823335023300268
+        }
+      }
+    },
+    {
+      "frame": "/home/jerry/rax-runtime/sessions/20261104T091548Z_unscrew_bottle_b3726a/agent-workspace/runtime/frames/20261104121538313ce6",
+      "quality": {
+        "front": {
+          "corners": 97,
+          "detector_candidates": [
+            "native",
+            "small-board",
+            "2x-dense"
+          ],
+          "reprojection_max_px": 1.0419135093688965,
+          "reprojection_mean_px": 0.456377238035202,
+          "timestamp_ns": 1793823338803325950
+        },
+        "side_a": {
+          "corners": 21,
+          "detector_candidates": [
+            "native",
+            "small-board",
+            "2x-dense"
+          ],
+          "reprojection_max_px": 1.1268153190612793,
+          "reprojection_mean_px": 0.4414305090904236,
+          "timestamp_ns": 1793823338771592367
+        },
+        "side_b": {
+          "corners": 87,
+          "detector_candidates": [
+            "native",
+            "small-board",
+            "2x-dense"
+          ],
+          "reprojection_max_px": 1.8470207452774048,
+          "reprojection_mean_px": 0.642790675163269,
+          "timestamp_ns": 1793823338862939946
+        }
+      }
+    },
+    {
+      "frame": "/home/jerry/rax-runtime/sessions/20261104T091548Z_unscrew_bottle_b3726a/agent-workspace/runtime/frames/20261104121542a4d2e1",
+      "quality": {
+        "front": {
+          "corners": 90,
+          "detector_candidates": [
+            "native",
+            "small-board",
+            "2x-dense"
+          ],
+          "reprojection_max_px": 1.101303219795227,
+          "reprojection_mean_px": 0.45603159070014954,
+          "timestamp_ns": 1793823342645631461
+        },
+        "side_a": {
+          "corners": 26,
+          "detector_candidates": [
+            "native",
+            "small-board",
+            "2x-dense"
+          ],
+          "reprojection_max_px": 1.2704613208770752,
+          "reprojection_mean_px": 0.5264198184013367,
+          "timestamp_ns": 1793823342780001851
+        },
+        "side_b": {
+          "corners": 79,
+          "detector_candidates": [
+            "native",
+            "small-board",
+            "2x-dense"
+          ],
+          "reprojection_max_px": 1.977486491203308,
+          "reprojection_mean_px": 0.632390558719635,
+          "timestamp_ns": 1793823342704792818
+        }
+      }
+    },
+    {
+      "frame": "/home/jerry/rax-runtime/sessions/20261104T091548Z_unscrew_bottle_b3726a/agent-workspace/runtime/frames/20261104121546bd2fcc",
+      "quality": {
+        "front": {
+          "corners": 92,
+          "detector_candidates": [
+            "native",
+            "small-board",
+            "2x-dense"
+          ],
+          "reprojection_max_px": 1.0702168941497803,
+          "reprojection_mean_px": 0.4570937752723694,
+          "timestamp_ns": 1793823346319222245
+        },
+        "side_a": {
+          "corners": 32,
+          "detector_candidates": [
+            "native",
+            "small-board",
+            "2x-dense"
+          ],
+          "reprojection_max_px": 1.3642257452011108,
+          "reprojection_mean_px": 0.5366054773330688,
+          "timestamp_ns": 1793823346287521516
+        },
+        "side_b": {
+          "corners": 82,
+          "detector_candidates": [
+            "native",
+            "small-board",
+            "2x-dense"
+          ],
+          "reprojection_max_px": 1.863805890083313,
+          "reprojection_mean_px": 0.6030866503715515,
+          "timestamp_ns": 1793823346212971981
+        }
+      }
+    },
+    {
+      "frame": "/home/jerry/rax-runtime/sessions/20261104T091548Z_unscrew_bottle_b3726a/agent-workspace/runtime/frames/2026110412154999ff00",
+      "quality": {
+        "front": {
+          "corners": 92,
+          "detector_candidates": [
+            "native",
+            "small-board",
+            "2x-dense"
+          ],
+          "reprojection_max_px": 1.080676555633545,
+          "reprojection_mean_px": 0.4690186083316803,
+          "timestamp_ns": 1793823349994179352
+        },
+        "side_a": {
+          "corners": 27,
+          "detector_candidates": [
+            "native",
+            "small-board",
+            "2x-dense"
+          ],
+          "reprojection_max_px": 1.2593514919281006,
+          "reprojection_mean_px": 0.5350601077079773,
+          "timestamp_ns": 1793823349962948244
+        },
+        "side_b": {
+          "corners": 77,
+          "detector_candidates": [
+            "native",
+            "small-board",
+            "2x-dense"
+          ],
+          "reprojection_max_px": 1.8531723022460938,
+          "reprojection_mean_px": 0.6276564598083496,
+          "timestamp_ns": 1793823350054591932
+        }
+      }
+    },
+    {
+      "frame": "/home/jerry/rax-runtime/sessions/20261104T091548Z_unscrew_bottle_b3726a/agent-workspace/runtime/frames/202611041215538482c4",
+      "quality": {
+        "front": {
+          "corners": 93,
+          "detector_candidates": [
+            "native",
+            "small-board",
+            "2x-dense"
+          ],
+          "reprojection_max_px": 0.9958242774009705,
+          "reprojection_mean_px": 0.4600996971130371,
+          "timestamp_ns": 1793823353168311504
+        },
+        "side_a": {
+          "corners": 30,
+          "detector_candidates": [
+            "native",
+            "small-board",
+            "2x-dense"
+          ],
+          "reprojection_max_px": 1.022030234336853,
+          "reprojection_mean_px": 0.4199109971523285,
+          "timestamp_ns": 1793823353136615927
+        },
+        "side_b": {
+          "corners": 87,
+          "detector_candidates": [
+            "native",
+            "small-board",
+            "2x-dense"
+          ],
+          "reprojection_max_px": 1.8595277070999146,
+          "reprojection_mean_px": 0.6167911887168884,
+          "timestamp_ns": 1793823353227534439
+        }
+      }
+    },
+    {
+      "frame": "/home/jerry/rax-runtime/sessions/20261104T091548Z_unscrew_bottle_b3726a/agent-workspace/runtime/frames/2026110412155608009f",
+      "quality": {
+        "front": {
+          "corners": 85,
+          "detector_candidates": [
+            "native",
+            "small-board",
+            "2x-dense"
+          ],
+          "reprojection_max_px": 1.0391160249710083,
+          "reprojection_mean_px": 0.4782017469406128,
+          "timestamp_ns": 1793823356341322167
+        },
+        "side_a": {
+          "corners": 27,
+          "detector_candidates": [
+            "native",
+            "small-board",
+            "2x-dense"
+          ],
+          "reprojection_max_px": 1.0626330375671387,
+          "reprojection_mean_px": 0.5078516602516174,
+          "timestamp_ns": 1793823356309347877
+        },
+        "side_b": {
+          "corners": 94,
+          "detector_candidates": [
+            "native",
+            "small-board",
+            "2x-dense"
+          ],
+          "reprojection_max_px": 1.905643343925476,
+          "reprojection_mean_px": 0.6571437120437622,
+          "timestamp_ns": 1793823356401270496
+        }
+      }
+    },
+    {
+      "frame": "/home/jerry/rax-runtime/sessions/20261104T091548Z_unscrew_bottle_b3726a/agent-workspace/runtime/frames/202611041215594d4162",
+      "quality": {
+        "front": {
+          "corners": 90,
+          "detector_candidates": [
+            "native",
+            "small-board",
+            "2x-dense"
+          ],
+          "reprojection_max_px": 0.9559734463691711,
+          "reprojection_mean_px": 0.45318731665611267,
+          "timestamp_ns": 1793823359681933632
+        },
+        "side_a": {
+          "corners": 21,
+          "detector_candidates": [
+            "native",
+            "small-board",
+            "2x-dense"
+          ],
+          "reprojection_max_px": 0.9428250789642334,
+          "reprojection_mean_px": 0.4571424722671509,
+          "timestamp_ns": 1793823359649930534
+        },
+        "side_b": {
+          "corners": 88,
+          "detector_candidates": [
+            "native",
+            "small-board",
+            "2x-dense"
+          ],
+          "reprojection_max_px": 1.8593205213546753,
+          "reprojection_mean_px": 0.6645140051841736,
+          "timestamp_ns": 1793823359574627217
+        }
+      }
+    },
+    {
+      "frame": "/home/jerry/rax-runtime/sessions/20261104T091548Z_unscrew_bottle_b3726a/agent-workspace/runtime/frames/20261104121602122984",
+      "quality": {
+        "front": {
+          "corners": 97,
+          "detector_candidates": [
+            "native",
+            "small-board",
+            "2x-dense"
+          ],
+          "reprojection_max_px": 1.0213005542755127,
+          "reprojection_mean_px": 0.4611404538154602,
+          "timestamp_ns": 1793823362855649433
+        },
+        "side_a": {
+          "corners": 27,
+          "detector_candidates": [
+            "native",
+            "small-board",
+            "2x-dense"
+          ],
+          "reprojection_max_px": 1.0853800773620605,
+          "reprojection_mean_px": 0.3990541994571686,
+          "timestamp_ns": 1793823362824024854
+        },
+        "side_b": {
+          "corners": 82,
+          "detector_candidates": [
+            "native",
+            "small-board",
+            "2x-dense"
+          ],
+          "reprojection_max_px": 1.5662964582443237,
+          "reprojection_mean_px": 0.5816706418991089,
+          "timestamp_ns": 1793823362748282481
+        }
+      }
+    },
+    {
+      "frame": "/home/jerry/rax-runtime/sessions/20261104T091548Z_unscrew_bottle_b3726a/agent-workspace/runtime/frames/20261104121605b3967a",
+      "quality": {
+        "front": {
+          "corners": 87,
+          "detector_candidates": [
+            "native",
+            "small-board",
+            "2x-dense"
+          ],
+          "reprojection_max_px": 0.9648414850234985,
+          "reprojection_mean_px": 0.4522927701473236,
+          "timestamp_ns": 1793823366028992065
+        },
+        "side_a": {
+          "corners": 31,
+          "detector_candidates": [
+            "native",
+            "small-board",
+            "2x-dense"
+          ],
+          "reprojection_max_px": 1.0336004495620728,
+          "reprojection_mean_px": 0.42471787333488464,
+          "timestamp_ns": 1793823365997250203
+        },
+        "side_b": {
+          "corners": 93,
+          "detector_candidates": [
+            "native",
+            "small-board",
+            "2x-dense"
+          ],
+          "reprojection_max_px": 1.7864423990249634,
+          "reprojection_mean_px": 0.6364171504974365,
+          "timestamp_ns": 1793823365923252689
+        }
+      }
+    },
+    {
+      "frame": "/home/jerry/rax-runtime/sessions/20261104T091548Z_unscrew_bottle_b3726a/agent-workspace/runtime/frames/20261104121609e37205",
+      "quality": {
+        "front": {
+          "corners": 89,
+          "detector_candidates": [
+            "native",
+            "small-board",
+            "2x-dense"
+          ],
+          "reprojection_max_px": 1.041724443435669,
+          "reprojection_mean_px": 0.46781793236732483,
+          "timestamp_ns": 1793823369369706925
+        },
+        "side_a": {
+          "corners": 24,
+          "detector_candidates": [
+            "native",
+            "small-board",
+            "2x-dense"
+          ],
+          "reprojection_max_px": 1.455639123916626,
+          "reprojection_mean_px": 0.5473418235778809,
+          "timestamp_ns": 1793823369337921423
+        },
+        "side_b": {
+          "corners": 86,
+          "detector_candidates": [
+            "native",
+            "small-board",
+            "2x-dense"
+          ],
+          "reprojection_max_px": 1.8853551149368286,
+          "reprojection_mean_px": 0.6777769327163696,
+          "timestamp_ns": 1793823369263127037
+        }
+      }
+    },
+    {
+      "frame": "/home/jerry/rax-runtime/sessions/20261104T091548Z_unscrew_bottle_b3726a/agent-workspace/runtime/frames/20261104121612d33d35",
+      "quality": {
+        "front": {
+          "corners": 89,
+          "detector_candidates": [
+            "native",
+            "small-board",
+            "2x-dense"
+          ],
+          "reprojection_max_px": 0.9845935106277466,
+          "reprojection_mean_px": 0.46994632482528687,
+          "timestamp_ns": 1793823372543320470
+        },
+        "side_a": {
+          "corners": 28,
+          "detector_candidates": [
+            "native",
+            "small-board",
+            "2x-dense"
+          ],
+          "reprojection_max_px": 1.11984384059906,
+          "reprojection_mean_px": 0.48715558648109436,
+          "timestamp_ns": 1793823372511768861
+        },
+        "side_b": {
+          "corners": 92,
+          "detector_candidates": [
+            "native",
+            "small-board",
+            "2x-dense"
+          ],
+          "reprojection_max_px": 1.9030687808990479,
+          "reprojection_mean_px": 0.662466287612915,
+          "timestamp_ns": 1793823372436348801
+        }
+      }
+    },
+    {
+      "frame": "/home/jerry/rax-runtime/sessions/20261104T091548Z_unscrew_bottle_b3726a/agent-workspace/runtime/frames/20261104121615e8cc89",
+      "quality": {
+        "front": {
+          "corners": 89,
+          "detector_candidates": [
+            "native",
+            "small-board",
+            "2x-dense"
+          ],
+          "reprojection_max_px": 1.028950810432434,
+          "reprojection_mean_px": 0.47823086380958557,
+          "timestamp_ns": 1793823375549925980
+        },
+        "side_a": {
+          "corners": 29,
+          "detector_candidates": [
+            "native",
+            "small-board",
+            "2x-dense"
+          ],
+          "reprojection_max_px": 1.6038312911987305,
+          "reprojection_mean_px": 0.5475624799728394,
+          "timestamp_ns": 1793823375518338578
+        },
+        "side_b": {
+          "corners": 85,
+          "detector_candidates": [
+            "native",
+            "small-board",
+            "2x-dense"
+          ],
+          "reprojection_max_px": 1.916063904762268,
+          "reprojection_mean_px": 0.6193458437919617,
+          "timestamp_ns": 1793823375610120891
+        }
+      }
+    },
+    {
+      "frame": "/home/jerry/rax-runtime/sessions/20261104T091548Z_unscrew_bottle_b3726a/agent-workspace/runtime/frames/20261104121618229d88",
+      "quality": {
+        "front": {
+          "corners": 91,
+          "detector_candidates": [
+            "native",
+            "small-board",
+            "2x-dense"
+          ],
+          "reprojection_max_px": 1.0539438724517822,
+          "reprojection_mean_px": 0.4610392451286316,
+          "timestamp_ns": 1793823378556534056
+        },
+        "side_a": {
+          "corners": 26,
+          "detector_candidates": [
+            "native",
+            "small-board",
+            "2x-dense"
+          ],
+          "reprojection_max_px": 1.1787989139556885,
+          "reprojection_mean_px": 0.46541595458984375,
+          "timestamp_ns": 1793823378692300086
+        },
+        "side_b": {
+          "corners": 83,
+          "detector_candidates": [
+            "native",
+            "small-board",
+            "2x-dense"
+          ],
+          "reprojection_max_px": 1.8589632511138916,
+          "reprojection_mean_px": 0.6722095608711243,
+          "timestamp_ns": 1793823378616544576
+        }
+      }
+    },
+    {
+      "frame": "/home/jerry/rax-runtime/sessions/20261104T091548Z_unscrew_bottle_b3726a/agent-workspace/runtime/frames/202611041216219edcb0",
+      "quality": {
+        "front": {
+          "corners": 85,
+          "detector_candidates": [
+            "native",
+            "small-board",
+            "2x-dense"
+          ],
+          "reprojection_max_px": 1.0685441493988037,
+          "reprojection_mean_px": 0.4735619127750397,
+          "timestamp_ns": 1793823381897738804
+        },
+        "side_a": {
+          "corners": 25,
+          "detector_candidates": [
+            "native",
+            "small-board",
+            "2x-dense"
+          ],
+          "reprojection_max_px": 1.076285719871521,
+          "reprojection_mean_px": 0.4822283685207367,
+          "timestamp_ns": 1793823381865854466
+        },
+        "side_b": {
+          "corners": 86,
+          "detector_candidates": [
+            "native",
+            "small-board",
+            "2x-dense"
+          ],
+          "reprojection_max_px": 1.8919942378997803,
+          "reprojection_mean_px": 0.6443345546722412,
+          "timestamp_ns": 1793823381957389382
+        }
+      }
+    },
+    {
+      "frame": "/home/jerry/rax-runtime/sessions/20261104T091548Z_unscrew_bottle_b3726a/agent-workspace/runtime/frames/20261104121624f4b1a5",
+      "quality": {
+        "front": {
+          "corners": 86,
+          "detector_candidates": [
+            "native",
+            "small-board",
+            "2x-dense"
+          ],
+          "reprojection_max_px": 0.9641424417495728,
+          "reprojection_mean_px": 0.4646667242050171,
+          "timestamp_ns": 1793823385071690748
+        },
+        "side_a": {
+          "corners": 23,
+          "detector_candidates": [
+            "native",
+            "small-board",
+            "2x-dense"
+          ],
+          "reprojection_max_px": 0.924482524394989,
+          "reprojection_mean_px": 0.4733915627002716,
+          "timestamp_ns": 1793823385039403660
+        },
+        "side_b": {
+          "corners": 87,
+          "detector_candidates": [
+            "native",
+            "small-board",
+            "2x-dense"
+          ],
+          "reprojection_max_px": 1.877875804901123,
+          "reprojection_mean_px": 0.6526350378990173,
+          "timestamp_ns": 1793823384968294044
+        }
+      }
+    },
+    {
+      "frame": "/home/jerry/rax-runtime/sessions/20261104T091548Z_unscrew_bottle_b3726a/agent-workspace/runtime/frames/20261104121628bf0dec",
+      "quality": {
+        "front": {
+          "corners": 82,
+          "detector_candidates": [
+            "native",
+            "small-board",
+            "2x-dense"
+          ],
+          "reprojection_max_px": 1.165140986442566,
+          "reprojection_mean_px": 0.4542384743690491,
+          "timestamp_ns": 1793823388413020000
+        },
+        "side_a": {
+          "corners": 23,
+          "detector_candidates": [
+            "native",
+            "small-board",
+            "2x-dense"
+          ],
+          "reprojection_max_px": 1.2544646263122559,
+          "reprojection_mean_px": 0.4176991879940033,
+          "timestamp_ns": 1793823388379862351
+        },
+        "side_b": {
+          "corners": 84,
+          "detector_candidates": [
+            "native",
+            "small-board",
+            "2x-dense"
+          ],
+          "reprojection_max_px": 1.9821786880493164,
+          "reprojection_mean_px": 0.6859622597694397,
+          "timestamp_ns": 1793823388304672726
+        }
+      }
+    },
+    {
+      "frame": "/home/jerry/rax-runtime/sessions/20261104T091548Z_unscrew_bottle_b3726a/agent-workspace/runtime/frames/2026110412163176ca14",
+      "quality": {
+        "front": {
+          "corners": 94,
+          "detector_candidates": [
+            "native",
+            "small-board",
+            "2x-dense"
+          ],
+          "reprojection_max_px": 1.0738095045089722,
+          "reprojection_mean_px": 0.4523526132106781,
+          "timestamp_ns": 1793823391752537728
+        },
+        "side_a": {
+          "corners": 23,
+          "detector_candidates": [
+            "native",
+            "small-board",
+            "2x-dense"
+          ],
+          "reprojection_max_px": 1.2527447938919067,
+          "reprojection_mean_px": 0.40352150797843933,
+          "timestamp_ns": 1793823391722430526
+        },
+        "side_b": {
+          "corners": 87,
+          "detector_candidates": [
+            "native",
+            "small-board",
+            "2x-dense"
+          ],
+          "reprojection_max_px": 1.9056514501571655,
+          "reprojection_mean_px": 0.6501113176345825,
+          "timestamp_ns": 1793823391646110011
+        }
+      }
+    },
+    {
+      "frame": "/home/jerry/rax-runtime/sessions/20261104T091548Z_unscrew_bottle_b3726a/agent-workspace/runtime/frames/202611041216351381bb",
+      "quality": {
+        "front": {
+          "corners": 85,
+          "detector_candidates": [
+            "native",
+            "small-board",
+            "2x-dense"
+          ],
+          "reprojection_max_px": 1.147978663444519,
+          "reprojection_mean_px": 0.4591958522796631,
+          "timestamp_ns": 1793823395430908926
+        },
+        "side_a": {
+          "corners": 28,
+          "detector_candidates": [
+            "native",
+            "small-board",
+            "2x-dense"
+          ],
+          "reprojection_max_px": 1.056062936782837,
+          "reprojection_mean_px": 0.46124982833862305,
+          "timestamp_ns": 1793823395395927569
+        },
+        "side_b": {
+          "corners": 91,
+          "detector_candidates": [
+            "native",
+            "small-board",
+            "2x-dense"
+          ],
+          "reprojection_max_px": 1.87238609790802,
+          "reprojection_mean_px": 0.647928774356842,
+          "timestamp_ns": 1793823395487719256
+        }
+      }
+    },
+    {
+      "frame": "/home/jerry/rax-runtime/sessions/20261104T091548Z_unscrew_bottle_b3726a/agent-workspace/runtime/frames/20261104121639519dc7",
+      "quality": {
+        "front": {
+          "corners": 82,
+          "detector_candidates": [
+            "native",
+            "small-board",
+            "2x-dense"
+          ],
+          "reprojection_max_px": 1.2277472019195557,
+          "reprojection_mean_px": 0.43954959511756897,
+          "timestamp_ns": 1793823399270326176
+        },
+        "side_a": {
+          "corners": 31,
+          "detector_candidates": [
+            "native",
+            "small-board",
+            "2x-dense"
+          ],
+          "reprojection_max_px": 1.1136138439178467,
+          "reprojection_mean_px": 0.5254578590393066,
+          "timestamp_ns": 1793823399238322111
+        },
+        "side_b": {
+          "corners": 88,
+          "detector_candidates": [
+            "native",
+            "small-board",
+            "2x-dense"
+          ],
+          "reprojection_max_px": 1.9686073064804077,
+          "reprojection_mean_px": 0.6979014873504639,
+          "timestamp_ns": 1793823399330110359
+        }
+      }
+    }
+  ],
+  "limits": {
+    "mean_reprojection_px": 1.0,
+    "rotation_deg": 1.0,
+    "translation_m": 0.005
+  },
+  "method": "Stationary board transfer from shared corners triangulated by two frozen calibrated cameras; rigid metric board fit without scale changes or outlier removal.",
+  "ok": true,
+  "recorded_at": "2026-11-04T20:16:43Z",
+  "reference_cameras": [
+    "side_a",
+    "side_b"
+  ],
+  "reference_method": "stereo",
+  "scope": "Fresh image board-pose consistency; not independently measured absolute positioning accuracy.",
+  "serial": "348522070593",
+  "source_manifest_sha256": "3b2b5845bb87e252469f9850290ce539bab8ae37e664bd4ceeda531ee131c9ad",
+  "stereo_reference_checks": [
+    {
+      "T_left_base_board": [
+        [
+          -0.9992847209630346,
+          0.037779445958880324,
+          -0.0016612985495886054,
+          0.42152919161741353
+        ],
+        [
+          0.037811190066559704,
+          0.9974968118644001,
+          -0.059753026920055255,
+          -0.47129867576912066
+        ],
+        [
+          -0.0006002962446361692,
+          -0.05977310250771992,
+          -0.9982118091171935,
+          0.3505318940115147
+        ],
+        [
+          0.0,
+          0.0,
+          0.0,
+          1.0
+        ]
+      ],
+      "board_points": [
+        [
+          0.09999999403953552,
+          0.019999999552965164,
+          0.0
+        ],
+        [
+          0.019999999552965164,
+          0.03999999910593033,
+          0.0
+        ],
+        [
+          0.03999999910593033,
+          0.03999999910593033,
+          0.0
+        ],
+        [
+          0.11999999731779099,
+          0.03999999910593033,
+          0.0
+        ],
+        [
+          0.14000000059604645,
+          0.03999999910593033,
+          0.0
+        ],
+        [
+          0.019999999552965164,
+          0.05999999865889549,
+          0.0
+        ],
+        [
+          0.03999999910593033,
+          0.05999999865889549,
+          0.0
+        ],
+        [
+          0.11999999731779099,
+          0.05999999865889549,
+          0.0
+        ],
+        [
+          0.14000000059604645,
+          0.05999999865889549,
+          0.0
+        ],
+        [
+          0.03999999910593033,
+          0.07999999821186066,
+          0.0
+        ],
+        [
+          0.09999999403953552,
+          0.07999999821186066,
+          0.0
+        ],
+        [
+          0.11999999731779099,
+          0.07999999821186066,
+          0.0
+        ],
+        [
+          0.14000000059604645,
+          0.07999999821186066,
+          0.0
+        ],
+        [
+          0.03999999910593033,
+          0.09999999403953552,
+          0.0
+        ],
+        [
+          0.019999999552965164,
+          0.11999999731779099,
+          0.0
+        ]
+      ],
+      "corner_ids": [
+        4,
+        9,
+        10,
+        14,
+        15,
+        18,
+        19,
+        23,
+        24,
+        28,
+        31,
+        32,
+        33,
+        37,
+        45
+      ],
+      "frame": "/home/jerry/rax-runtime/sessions/20261104T091548Z_unscrew_bottle_b3726a/agent-workspace/runtime/frames/2026110412153452c2b6",
+      "ray_angles_deg": [
+        109.68336188898871,
+        116.00438611268362,
+        114.61435769509409,
+        108.00681264837277,
+        106.19573066204704,
+        116.02657639586663,
+        114.61636485046334,
+        108.00286696435145,
+        106.20748537626817,
+        114.48864907985667,
+        109.65204939576012,
+        107.91112565527628,
+        106.11698612046098,
+        114.28878227132054,
+        115.39992990894291
+      ],
+      "ray_error_m": {
+        "side_a": [
+          0.0006074562094507486,
+          4.011251874287696e-05,
+          9.698059792632744e-05,
+          0.000800369927857073,
+          0.0008444043071419549,
+          6.442786359298147e-05,
+          0.00011425074711780306,
+          0.0008892567991637873,
+          0.0009403893416771506,
+          0.00016379191371120432,
+          0.0007093860804532784,
+          0.0008173318753106737,
+          0.0009222846299390623,
+          0.00020014131435157822,
+          4.9698307240543375e-05
+        ],
+        "side_b": [
+          0.0006134348799180928,
+          4.061136438520399e-05,
+          9.822940782833005e-05,
+          0.0008064561241529202,
+          0.0008486838893270661,
+          6.523298077729644e-05,
+          0.00011572565866682659,
+          0.000895889171312536,
+          0.0009449778807912658,
+          0.00016591627077038065,
+          0.0007161180968200043,
+          0.0008232533235922295,
+          0.0009266172400769036,
+          0.00020274146357837034,
+          5.032876325144562e-05
+        ]
+      },
+      "rigidity_error_m": [
+        0.0007697631529585238,
+        0.0005657507911019605,
+        0.0005611749772135207,
+        0.0004519358566304014,
+        0.0003388974253265514,
+        0.00029407835907638107,
+        0.00028291909377561994,
+        0.0004834474042571632,
+        0.00033942199523120985,
+        0.0003249120493993643,
+        0.0005484357858271658,
+        0.00039541852754286717,
+        0.0003627970525671527,
+        0.0007006975970954892,
+        0.0011347476458176903
+      ],
+      "triangulated_points_left_base": [
+        [
+          0.3229334254654193,
+          -0.4470590827150879,
+          0.34930584246291624
+        ],
+        [
+          0.4036088911150787,
+          -0.43052956128223313,
+          0.34814103185582834
+        ],
+        [
+          0.383614216091963,
+          -0.4298380861207712,
+          0.34799323855861214
+        ],
+        [
+          0.3033874682980111,
+          -0.42649734130005895,
+          0.34801058796117007
+        ],
+        [
+          0.28332513962481015,
+          -0.4259978004923001,
+          0.34832002517498023
+        ],
+        [
+          0.40403409131552254,
+          -0.4106695924956272,
+          0.3471228487132989
+        ],
+        [
+          0.38402768534518933,
+          -0.41012012675894527,
+          0.3468505055681999
+        ],
+        [
+          0.3037631021616468,
+          -0.4064649999414246,
+          0.3467311759375515
+        ],
+        [
+          0.2837029707612608,
+          -0.4060197767996974,
+          0.34710548001268626
+        ],
+        [
+          0.38454798528929657,
+          -0.3902191413014235,
+          0.3455015263054995
+        ],
+        [
+          0.3243031529799161,
+          -0.3879043307984259,
+          0.34528549282977555
+        ],
+        [
+          0.3042878693909519,
+          -0.3869091652621929,
+          0.34550067612870683
+        ],
+        [
+          0.28430652759817315,
+          -0.38611474403988266,
+          0.3457313898714437
+        ],
+        [
+          0.3848705848220398,
+          -0.3705600134726672,
+          0.3445062948825535
+        ],
+        [
+          0.40535138909568824,
+          -0.3516060322796187,
+          0.34376976152765076
+        ]
+      ]
+    },
+    {
+      "T_left_base_board": [
+        [
+          -0.999304844313098,
+          0.03688570985003298,
+          -0.0054104104497035045,
+          0.42155099265004703
+        ],
+        [
+          0.03713214742254954,
+          0.9977231390189404,
+          -0.05630045731591752,
+          -0.47114301435188777
+        ],
+        [
+          0.0033214093642799625,
+          -0.056462219891274056,
+          -0.9983992117208347,
+          0.35007956573405197
+        ],
+        [
+          0.0,
+          0.0,
+          0.0,
+          1.0
+        ]
+      ],
+      "board_points": [
+        [
+          0.09999999403953552,
+          0.019999999552965164,
+          0.0
+        ],
+        [
+          0.11999999731779099,
+          0.019999999552965164,
+          0.0
+        ],
+        [
+          0.14000000059604645,
+          0.019999999552965164,
+          0.0
+        ],
+        [
+          0.1599999964237213,
+          0.019999999552965164,
+          0.0
+        ],
+        [
+          0.019999999552965164,
+          0.03999999910593033,
+          0.0
+        ],
+        [
+          0.11999999731779099,
+          0.03999999910593033,
+          0.0
+        ],
+        [
+          0.14000000059604645,
+          0.03999999910593033,
+          0.0
+        ],
+        [
+          0.019999999552965164,
+          0.05999999865889549,
+          0.0
+        ],
+        [
+          0.11999999731779099,
+          0.05999999865889549,
+          0.0
+        ],
+        [
+          0.14000000059604645,
+          0.05999999865889549,
+          0.0
+        ],
+        [
+          0.03999999910593033,
+          0.07999999821186066,
+          0.0
+        ],
+        [
+          0.09999999403953552,
+          0.07999999821186066,
+          0.0
+        ],
+        [
+          0.11999999731779099,
+          0.07999999821186066,
+          0.0
+        ],
+        [
+          0.14000000059604645,
+          0.07999999821186066,
+          0.0
+        ],
+        [
+          0.03999999910593033,
+          0.09999999403953552,
+          0.0
+        ],
+        [
+          0.019999999552965164,
+          0.11999999731779099,
+          0.0
+        ],
+        [
+          0.17999999225139618,
+          0.11999999731779099,
+          0.0
+        ]
+      ],
+      "corner_ids": [
+        4,
+        5,
+        6,
+        7,
+        9,
+        14,
+        15,
+        18,
+        23,
+        24,
+        28,
+        31,
+        32,
+        33,
+        37,
+        45,
+        53
+      ],
+      "frame": "/home/jerry/rax-runtime/sessions/20261104T091548Z_unscrew_bottle_b3726a/agent-workspace/runtime/frames/20261104121538313ce6",
+      "ray_angles_deg": [
+        109.68630214037843,
+        107.88089922344543,
+        106.0455331090516,
+        104.23811149822836,
+        116.00642143260984,
+        108.0061080619257,
+        106.19395988721486,
+        116.034535825538,
+        108.00012078174508,
+        106.20266289353744,
+        114.48996188775766,
+        109.65246105280194,
+        107.91842165611482,
+        106.11096022633951,
+        114.2897848368996,
+        115.399933587363,
+        102.03167536158512
+      ],
+      "ray_error_m": {
+        "side_a": [
+          0.000606914448859303,
+          0.0006911078693630222,
+          0.0008175488382824171,
+          0.0009582945484626805,
+          2.3914511441865687e-05,
+          0.0007682585495536252,
+          0.0008726906129098926,
+          7.694560273415037e-06,
+          0.0008715161023273532,
+          0.0008954182484213028,
+          0.00018634432188978836,
+          0.0006922111148944535,
+          0.0008266153352171013,
+          0.0009510468000589306,
+          0.00014888254238125073,
+          7.164948705545158e-05,
+          0.0013844147395096855
+        ],
+        "side_b": [
+          0.0006128886486724818,
+          0.0006964324271378406,
+          0.0008218548233986755,
+          0.0009606861031978058,
+          2.421257368643418e-05,
+          0.0007740837201472186,
+          0.0008771216419183732,
+          7.791426959316528e-06,
+          0.000878006521903902,
+          0.0008997661600950826,
+          0.00018876718032896444,
+          0.0006987730614944589,
+          0.0008326123344765922,
+          0.0009555248333919608,
+          0.0001508063378221305,
+          7.255585440320789e-05,
+          0.0013821252813147637
+        ]
+      },
+      "rigidity_error_m": [
+        0.0007126884834879898,
+        0.0008064322133389644,
+        0.0005957966015039742,
+        0.0008035729553208768,
+        0.0006381091678235834,
+        0.00040713180835854804,
+        0.00020392266896765085,
+        0.0005156158402158122,
+        0.0005303159169493734,
+        0.0002398758020790991,
+        0.000447873477567691,
+        0.0007313623415045712,
+        0.0005037304949317992,
+        0.0004583694250257664,
+        0.0007826423799522364,
+        0.0011777949345954104,
+        0.001308160904974014
+      ],
+      "triangulated_points_left_base": [
+        [
+          0.3229554680531271,
+          -0.44708802149862403,
+          0.3493173325501514
+        ],
+        [
+          0.30281962400375384,
+          -0.4460751008993333,
+          0.34921603277983104
+        ],
+        [
+          0.28279736162355007,
+          -0.4455669364191658,
+          0.3493331480220973
+        ],
+        [
+          0.2627781950796043,
+          -0.4449784835667454,
+          0.350137741048294
+        ],
+        [
+          0.4035967683978545,
+          -0.4306313919449772,
+          0.34816673432964046
+        ],
+        [
+          0.3033585210822304,
+          -0.42651814568058616,
+          0.34802919855725634
+        ],
+        [
+          0.28331667593380033,
+          -0.4259736382559538,
+          0.34830894647622695
+        ],
+        [
+          0.404117310279075,
+          -0.41062168031549134,
+          0.34713718181022196
+        ],
+        [
+          0.3037427407868937,
+          -0.4064557545527232,
+          0.34672323223948703
+        ],
+        [
+          0.28364289893621414,
+          -0.4059929586603023,
+          0.3471121148549637
+        ],
+        [
+          0.38457874166292305,
+          -0.39023711911876685,
+          0.34549449261655873
+        ],
+        [
+          0.3243158172054127,
+          -0.38791439274913997,
+          0.3452798211450729
+        ],
+        [
+          0.30434760728930005,
+          -0.3868964649414181,
+          0.3455178482481016
+        ],
+        [
+          0.2842882855937713,
+          -0.38611389917417466,
+          0.3456909995945271
+        ],
+        [
+          0.38490618261314113,
+          -0.37057609254201024,
+          0.34449517541933844
+        ],
+        [
+          0.40535588674017325,
+          -0.3515812968334933,
+          0.34377013186597805
+        ],
+        [
+          0.24500562949620205,
+          -0.3447105368816122,
+          0.34461460274830297
+        ]
+      ]
+    },
+    {
+      "T_left_base_board": [
+        [
+          -0.9994242274251478,
+          0.03332361709501653,
+          -0.006383586715274125,
+          0.42156903012320646
+        ],
+        [
+          0.03365977777023616,
+          0.9974497115177604,
+          -0.06293720961081964,
+          -0.4710066936339595
+        ],
+        [
+          0.00427001125349904,
+          -0.06311584220180119,
+          -0.9979970728749922,
+          0.3504039662913476
+        ],
+        [
+          0.0,
+          0.0,
+          0.0,
+          1.0
+        ]
+      ],
+      "board_points": [
+        [
+          0.03999999910593033,
+          0.019999999552965164,
+          0.0
+        ],
+        [
+          0.019999999552965164,
+          0.03999999910593033,
+          0.0
+        ],
+        [
+          0.11999999731779099,
+          0.03999999910593033,
+          0.0
+        ],
+        [
+          0.14000000059604645,
+          0.03999999910593033,
+          0.0
+        ],
+        [
+          0.019999999552965164,
+          0.05999999865889549,
+          0.0
+        ],
+        [
+          0.11999999731779099,
+          0.05999999865889549,
+          0.0
+        ],
+        [
+          0.03999999910593033,
+          0.07999999821186066,
+          0.0
+        ],
+        [
+          0.09999999403953552,
+          0.07999999821186066,
+          0.0
+        ],
+        [
+          0.11999999731779099,
+          0.07999999821186066,
+          0.0
+        ],
+        [
+          0.03999999910593033,
+          0.09999999403953552,
+          0.0
+        ],
+        [
+          0.17999999225139618,
+          0.09999999403953552,
+          0.0
+        ],
+        [
+          0.019999999552965164,
+          0.11999999731779099,
+          0.0
+        ],
+        [
+          0.17999999225139618,
+          0.11999999731779099,
+          0.0
+        ],
+        [
+          0.09999999403953552,
+          0.14000000059604645,
+          0.0
+        ],
+        [
+          0.09999999403953552,
+          0.1599999964237213,
+          0.0
+        ]
+      ],
+      "corner_ids": [
+        1,
+        9,
+        14,
+        15,
+        18,
+        23,
+        28,
+        31,
+        32,
+        37,
+        44,
+        45,
+        53,
+        58,
+        67
+      ],
+      "frame": "/home/jerry/rax-runtime/sessions/20261104T091548Z_unscrew_bottle_b3726a/agent-workspace/runtime/frames/20261104121542a4d2e1",
+      "ray_angles_deg": [
+        114.5178950303163,
+        116.0046357804813,
+        108.00395782404739,
+        106.17917792359614,
+        116.03288993796528,
+        107.99266986694344,
+        114.48934390103796,
+        109.64789252316075,
+        107.91025892150529,
+        114.28715396149201,
+        102.27607997462805,
+        115.40194390647963,
+        102.02990763600715,
+        108.68286202139274,
+        108.12596897787509
+      ],
+      "ray_error_m": {
+        "side_a": [
+          6.52696601101493e-05,
+          1.1830293927880512e-05,
+          0.0008061515119141805,
+          0.0009348729742317831,
+          5.732134672114612e-05,
+          0.0009016284839581271,
+          0.00016634818585242815,
+          0.0007206126731288562,
+          0.00082941622942081,
+          0.0002072792065130077,
+          0.0014124629730951016,
+          3.511278911557565e-05,
+          0.0013917670532443008,
+          0.0008814644918840572,
+          0.0009509723249036962
+        ],
+        "side_b": [
+          6.610519542504234e-05,
+          1.1977980626883446e-05,
+          0.0008122871813452993,
+          0.0009396271658870081,
+          5.8038362172020925e-05,
+          0.0009083560769995463,
+          0.00016850632668172376,
+          0.0007274568222985488,
+          0.0008354308140353991,
+          0.0002099740349555353,
+          0.0014104791585350471,
+          3.555904470140124e-05,
+          0.0013894630248975299,
+          0.0008894914691146776,
+          0.0009594838298774936
+        ]
+      },
+      "rigidity_error_m": [
+        0.0009782183539408485,
+        0.0007257547295209712,
+        0.000771848744151055,
+        0.0006818380392107808,
+        0.000679159054263647,
+        0.0008253669087586382,
+        0.0004437132508347723,
+        0.0005214378675419031,
+        0.0004308038753350366,
+        0.0007294527323666886,
+        0.001089520767564666,
+        0.0013193056256808084,
+        0.0013185947737574654,
+        0.0008861613957015579,
+        0.001458454315531792
+      ],
+      "triangulated_points_left_base": [
+        [
+          0.3832215399386974,
+          -0.4495564548960123,
+          0.3492379417788809
+        ],
+        [
+          0.40359511349396054,
+          -0.4305991436483333,
+          0.34815270751307875
+        ],
+        [
+          0.3033915337782327,
+          -0.4265641797081733,
+          0.3479872849106494
+        ],
+        [
+          0.2832014699884489,
+          -0.42578901264773944,
+          0.34825770714228443
+        ],
+        [
+          0.40405037621701323,
+          -0.41066544604914196,
+          0.3471584344120719
+        ],
+        [
+          0.303707500162142,
+          -0.40642852075662056,
+          0.34668506691970175
+        ],
+        [
+          0.38456134097924755,
+          -0.39018710249503336,
+          0.3454999582208198
+        ],
+        [
+          0.3242873027051147,
+          -0.3878926599564168,
+          0.3452624947964733
+        ],
+        [
+          0.3042831338694598,
+          -0.3869542170055402,
+          0.34549571862635686
+        ],
+        [
+          0.38484501593824083,
+          -0.37059870769410613,
+          0.34450567146504635
+        ],
+        [
+          0.2444544958864604,
+          -0.3647222759719659,
+          0.34566900232895675
+        ],
+        [
+          0.405364452535311,
+          -0.35161540402668007,
+          0.34377689113797766
+        ],
+        [
+          0.2449862268544942,
+          -0.34475612565971303,
+          0.3446092255479858
+        ],
+        [
+          0.32575477021949223,
+          -0.3281638963033743,
+          0.3413098043745198
+        ],
+        [
+          0.32592404350883075,
+          -0.308665546067392,
+          0.3399097577377988
+        ]
+      ]
+    },
+    {
+      "T_left_base_board": [
+        [
+          -0.9994099236759163,
+          0.033607203159178645,
+          -0.007096502935780928,
+          0.42159543594676246
+        ],
+        [
+          0.03397458639758502,
+          0.9976018421123707,
+          -0.060301675707388855,
+          -0.47098238460920205
+        ],
+        [
+          0.005052913734953772,
+          -0.06050719386836373,
+          -0.9981549717117897,
+          0.350055683158632
+        ],
+        [
+          0.0,
+          0.0,
+          0.0,
+          1.0
+        ]
+      ],
+      "board_points": [
+        [
+          0.07999999821186066,
+          0.019999999552965164,
+          0.0
+        ],
+        [
+          0.09999999403953552,
+          0.019999999552965164,
+          0.0
+        ],
+        [
+          0.019999999552965164,
+          0.03999999910593033,
+          0.0
+        ],
+        [
+          0.07999999821186066,
+          0.03999999910593033,
+          0.0
+        ],
+        [
+          0.09999999403953552,
+          0.03999999910593033,
+          0.0
+        ],
+        [
+          0.11999999731779099,
+          0.03999999910593033,
+          0.0
+        ],
+        [
+          0.14000000059604645,
+          0.03999999910593033,
+          0.0
+        ],
+        [
+          0.019999999552965164,
+          0.05999999865889549,
+          0.0
+        ],
+        [
+          0.09999999403953552,
+          0.05999999865889549,
+          0.0
+        ],
+        [
+          0.11999999731779099,
+          0.05999999865889549,
+          0.0
+        ],
+        [
+          0.14000000059604645,
+          0.05999999865889549,
+          0.0
+        ],
+        [
+          0.03999999910593033,
+          0.07999999821186066,
+          0.0
+        ],
+        [
+          0.09999999403953552,
+          0.07999999821186066,
+          0.0
+        ],
+        [
+          0.11999999731779099,
+          0.07999999821186066,
+          0.0
+        ],
+        [
+          0.14000000059604645,
+          0.07999999821186066,
+          0.0
+        ],
+        [
+          0.1599999964237213,
+          0.07999999821186066,
+          0.0
+        ],
+        [
+          0.03999999910593033,
+          0.09999999403953552,
+          0.0
+        ],
+        [
+          0.17999999225139618,
+          0.09999999403953552,
+          0.0
+        ],
+        [
+          0.019999999552965164,
+          0.11999999731779099,
+          0.0
+        ],
+        [
+          0.03999999910593033,
+          0.11999999731779099,
+          0.0
+        ],
+        [
+          0.17999999225139618,
+          0.11999999731779099,
+          0.0
+        ],
+        [
+          0.09999999403953552,
+          0.14000000059604645,
+          0.0
+        ],
+        [
+          0.09999999403953552,
+          0.1599999964237213,
+          0.0
+        ]
+      ],
+      "corner_ids": [
+        3,
+        4,
+        9,
+        12,
+        13,
+        14,
+        15,
+        18,
+        22,
+        23,
+        24,
+        28,
+        31,
+        32,
+        33,
+        34,
+        37,
+        44,
+        45,
+        46,
+        53,
+        58,
+        67
+      ],
+      "frame": "/home/jerry/rax-runtime/sessions/20261104T091548Z_unscrew_bottle_b3726a/agent-workspace/runtime/frames/20261104121546bd2fcc",
+      "ray_angles_deg": [
+        111.34762184730738,
+        109.67824801532393,
+        116.00069580596018,
+        111.43004620565854,
+        109.76400735611129,
+        107.99809426960957,
+        106.19537676542134,
+        116.02476438872591,
+        109.77734707525084,
+        108.02979529603256,
+        106.2158542333389,
+        114.48763493432197,
+        109.649412432714,
+        107.9105655359505,
+        106.10730276061693,
+        104.33733348112652,
+        114.28585084677428,
+        102.27336784082242,
+        115.39812152876736,
+        113.94624620764236,
+        102.01945829420748,
+        108.67116737338884,
+        108.12805218355123
+      ],
+      "ray_error_m": {
+        "side_a": [
+          0.00042303379572154195,
+          0.0005775130016891657,
+          5.220463430490684e-06,
+          0.0004691056682073332,
+          0.0007001958093920138,
+          0.0008127579390010279,
+          0.0008546345064295191,
+          2.79312973118123e-06,
+          0.0006042253397082112,
+          0.0007534296499666424,
+          0.0009307346424245686,
+          0.00014809813656969478,
+          0.0006955074809350349,
+          0.0008469920031521595,
+          0.0009385912395741337,
+          0.0011746992385409227,
+          0.0001747809620092073,
+          0.0013594234284418773,
+          4.0033588367660474e-05,
+          0.00021634725499555671,
+          0.0014195097244230717,
+          0.000862541214673041,
+          0.0009778092768658977
+        ],
+        "side_b": [
+          0.000427888999085563,
+          0.0005831822752756001,
+          5.285696311175113e-06,
+          0.0004744709458997828,
+          0.0007070371488357346,
+          0.0008189457064610012,
+          0.0008589702875055578,
+          2.828312334266659e-06,
+          0.0006100013923834731,
+          0.0007590087779552917,
+          0.0009352675306729021,
+          0.00015001568270289666,
+          0.0007021021216752073,
+          0.0008531423614380342,
+          0.0009430018552972139,
+          0.0011768577423342064,
+          0.00017704563779591474,
+          0.0013575130348883718,
+          4.054205429230453e-05,
+          0.00021915439256899415,
+          0.0014171558156139262,
+          0.000870382627534701,
+          0.0009865726326328305
+        ]
+      },
+      "rigidity_error_m": [
+        0.0008478760344047222,
+        0.0007502296412303955,
+        0.0007509595596687758,
+        0.000723441874818312,
+        0.0005740989221774747,
+        0.0005911357615735322,
+        0.00046049380571203124,
+        0.0007695219911373142,
+        0.00032303102488382795,
+        0.0003525572932781226,
+        0.00046503429853155513,
+        0.00047646816039342187,
+        0.000490759569277201,
+        0.0003564999607033327,
+        0.0003924266964669079,
+        0.0007541216681657456,
+        0.0007780476391817568,
+        0.0010595325276992083,
+        0.001364974900650625,
+        0.0009714905562967543,
+        0.0012641215571916895,
+        0.0011264539855879814,
+        0.0016386187720833884
+      ],
+      "triangulated_points_left_base": [
+        [
+          0.34297982617156636,
+          -0.447890799863863,
+          0.3489353095360935
+        ],
+        [
+          0.3228920548740391,
+          -0.44714208007468,
+          0.34930388513238075
+        ],
+        [
+          0.40356667421953646,
+          -0.4305605806084833,
+          0.348135661054395
+        ],
+        [
+          0.34346132344764474,
+          -0.4282413562904422,
+          0.3475065595698572
+        ],
+        [
+          0.32328587402149667,
+          -0.42724464122471245,
+          0.34790223088795214
+        ],
+        [
+          0.3033578820391914,
+          -0.4266104237563802,
+          0.3479661370640685
+        ],
+        [
+          0.28333145674370036,
+          -0.4259821239988244,
+          0.34831008313715073
+        ],
+        [
+          0.40408956999701945,
+          -0.41069791644955045,
+          0.3470849096416907
+        ],
+        [
+          0.32384272870277525,
+          -0.40758355730911017,
+          0.346698773084332
+        ],
+        [
+          0.30392951738061397,
+          -0.4068789154256439,
+          0.34684632186849984
+        ],
+        [
+          0.2837229063395217,
+          -0.4059066491768332,
+          0.34716281251927555
+        ],
+        [
+          0.3845434454460653,
+          -0.39022153384746294,
+          0.3454968760768899
+        ],
+        [
+          0.3242978844639063,
+          -0.3879578571888568,
+          0.3452665065085561
+        ],
+        [
+          0.3042878625121565,
+          -0.3869729128253245,
+          0.34549413642729004
+        ],
+        [
+          0.28424647252513907,
+          -0.38612329581997246,
+          0.3456926638401024
+        ],
+        [
+          0.2641988943879481,
+          -0.3853578426236057,
+          0.34664944559663563
+        ],
+        [
+          0.384891588527572,
+          -0.3705889691518697,
+          0.3444733067534873
+        ],
+        [
+          0.24442140059374234,
+          -0.36473599890628866,
+          0.34567230010095334
+        ],
+        [
+          0.4053585826001754,
+          -0.3516149169288956,
+          0.3437531009808025
+        ],
+        [
+          0.38526537894045365,
+          -0.3507745495581525,
+          0.3432182734256164
+        ],
+        [
+          0.24494753952750822,
+          -0.34464425142365396,
+          0.34455173034855413
+        ],
+        [
+          0.325675396590514,
+          -0.32824366912304764,
+          0.341255324502166
+        ],
+        [
+          0.3258991384077386,
+          -0.30868977047885665,
+          0.33994037625867674
+        ]
+      ]
+    },
+    {
+      "T_left_base_board": [
+        [
+          -0.9994241616588729,
+          0.0331207481184966,
+          -0.007373000510571542,
+          0.42157079538159187
+        ],
+        [
+          0.033510364367105944,
+          0.9975649884305696,
+          -0.06116493552273376,
+          -0.47096347663542065
+        ],
+        [
+          0.005329218745894331,
+          -0.06137678634131533,
+          -0.9981004406000283,
+          0.35013794080962274
+        ],
+        [
+          0.0,
+          0.0,
+          0.0,
+          1.0
+        ]
+      ],
+      "board_points": [
+        [
+          0.07999999821186066,
+          0.019999999552965164,
+          0.0
+        ],
+        [
+          0.019999999552965164,
+          0.03999999910593033,
+          0.0
+        ],
+        [
+          0.03999999910593033,
+          0.03999999910593033,
+          0.0
+        ],
+        [
+          0.05999999865889549,
+          0.03999999910593033,
+          0.0
+        ],
+        [
+          0.14000000059604645,
+          0.03999999910593033,
+          0.0
+        ],
+        [
+          0.019999999552965164,
+          0.05999999865889549,
+          0.0
+        ],
+        [
+          0.03999999910593033,
+          0.05999999865889549,
+          0.0
+        ],
+        [
+          0.11999999731779099,
+          0.05999999865889549,
+          0.0
+        ],
+        [
+          0.14000000059604645,
+          0.05999999865889549,
+          0.0
+        ],
+        [
+          0.03999999910593033,
+          0.07999999821186066,
+          0.0
+        ],
+        [
+          0.09999999403953552,
+          0.07999999821186066,
+          0.0
+        ],
+        [
+          0.11999999731779099,
+          0.07999999821186066,
+          0.0
+        ],
+        [
+          0.14000000059604645,
+          0.07999999821186066,
+          0.0
+        ],
+        [
+          0.1599999964237213,
+          0.07999999821186066,
+          0.0
+        ],
+        [
+          0.03999999910593033,
+          0.09999999403953552,
+          0.0
+        ],
+        [
+          0.17999999225139618,
+          0.09999999403953552,
+          0.0
+        ],
+        [
+          0.019999999552965164,
+          0.11999999731779099,
+          0.0
+        ],
+        [
+          0.17999999225139618,
+          0.11999999731779099,
+          0.0
+        ],
+        [
+          0.09999999403953552,
+          0.14000000059604645,
+          0.0
+        ],
+        [
+          0.1599999964237213,
+          0.14000000059604645,
+          0.0
+        ],
+        [
+          0.09999999403953552,
+          0.1599999964237213,
+          0.0
+        ]
+      ],
+      "corner_ids": [
+        3,
+        9,
+        10,
+        11,
+        15,
+        18,
+        19,
+        23,
+        24,
+        28,
+        31,
+        32,
+        33,
+        34,
+        37,
+        44,
+        45,
+        53,
+        58,
+        61,
+        67
+      ],
+      "frame": "/home/jerry/rax-runtime/sessions/20261104T091548Z_unscrew_bottle_b3726a/agent-workspace/runtime/frames/2026110412154999ff00",
+      "ray_angles_deg": [
+        111.32787548005835,
+        116.00249547383021,
+        114.61021794882716,
+        113.04959006096506,
+        106.17930374747999,
+        116.02564506159632,
+        114.61413687127884,
+        107.99369376590388,
+        106.20317800328934,
+        114.49176484443461,
+        109.6461279944368,
+        107.91784326999702,
+        106.11436059149567,
+        104.31844184840071,
+        114.28647432478978,
+        102.27506344912217,
+        115.40136864692448,
+        102.01247823551789,
+        108.66621703556362,
+        103.44424795080414,
+        108.12300607630208
+      ],
+      "ray_error_m": {
+        "side_a": [
+          0.0004355951048535421,
+          2.43489553300121e-05,
+          0.00011997482847826344,
+          0.00027031565517582774,
+          0.0009212056674323893,
+          3.272613786338986e-05,
+          0.00014743324969422516,
+          0.0008771232288453773,
+          0.0009102640264615747,
+          0.00019030262307997986,
+          0.000696016975589556,
+          0.0008446708614486328,
+          0.0009225993633521172,
+          0.0010529338939183305,
+          0.00019621245868277245,
+          0.0014201995280702772,
+          2.1301313120743226e-05,
+          0.001444633001766969,
+          0.000864603472918099,
+          0.0013690802160776904,
+          0.0010283455609527016
+        ],
+        "side_b": [
+          0.00044059978190984776,
+          2.465239403200502e-05,
+          0.00012152362324777058,
+          0.0002736953586320829,
+          0.0009258893363640902,
+          3.313679253514026e-05,
+          0.0001493435105246491,
+          0.0008836599396851506,
+          0.0009146931620333854,
+          0.00019277803841841244,
+          0.0007026161195496285,
+          0.0008508029192442521,
+          0.0009269376509817445,
+          0.0010548335601776935,
+          0.00019876066330797804,
+          0.0014182129728798874,
+          2.157252350201908e-05,
+          0.0014422170590896487,
+          0.0008724666177894606,
+          0.0013707089316727095,
+          0.0010375889326076462
+        ]
+      },
+      "rigidity_error_m": [
+        0.0010483139083477073,
+        0.0007994740974832923,
+        0.000693521558131426,
+        0.0007486960167089843,
+        0.0005744749315870072,
+        0.0007731684166197546,
+        0.0006327243227313673,
+        0.0007212417695844599,
+        0.00041285510422486035,
+        0.0004931502766851204,
+        0.0005219994776702789,
+        0.0004060012676918772,
+        0.000391725599030249,
+        0.0007051097879843002,
+        0.0007568536765245049,
+        0.0009644131607370061,
+        0.0014248445349036088,
+        0.0012994784399318218,
+        0.0011087424538409115,
+        0.000895706537683412,
+        0.001512092597017898
+      ],
+      "triangulated_points_left_base": [
+        [
+          0.3429259545614413,
+          -0.44770782115768043,
+          0.34879638438169064
+        ],
+        [
+          0.4036037630759334,
+          -0.43057939118160254,
+          0.3481333479222678
+        ],
+        [
+          0.38359852593191235,
+          -0.42983503675658863,
+          0.34797105162126296
+        ],
+        [
+          0.36352958580814065,
+          -0.4290750626270303,
+          0.3475546946914974
+        ],
+        [
+          0.28321320459119,
+          -0.4258757363550527,
+          0.348255351892433
+        ],
+        [
+          0.404047439576148,
+          -0.4107008229729753,
+          0.34711060846553093
+        ],
+        [
+          0.384066792002796,
+          -0.41014743978346757,
+          0.34681453754711106
+        ],
+        [
+          0.3037237580924991,
+          -0.4065040005641879,
+          0.34668324725952987
+        ],
+        [
+          0.2836662800550773,
+          -0.406019549271658,
+          0.34709739746203305
+        ],
+        [
+          0.38459547170360464,
+          -0.39015825282496147,
+          0.34549963349348534
+        ],
+        [
+          0.3242847339681293,
+          -0.3879129347856389,
+          0.34524957605797124
+        ],
+        [
+          0.3043222628141117,
+          -0.38691011591716556,
+          0.3455322298353761
+        ],
+        [
+          0.2843071317201738,
+          -0.38618202686606545,
+          0.34570500137770266
+        ],
+        [
+          0.2640234338098877,
+          -0.38545324717033375,
+          0.34662422030876056
+        ],
+        [
+          0.38489753183952274,
+          -0.37057672947358333,
+          0.34447502212001185
+        ],
+        [
+          0.24446917526302261,
+          -0.36473313770534765,
+          0.3456429626408172
+        ],
+        [
+          0.4053330248485128,
+          -0.35166431199770093,
+          0.34378275603012
+        ],
+        [
+          0.24488320746568032,
+          -0.3445676815975451,
+          0.34455160822805486
+        ],
+        [
+          0.3256582865077177,
+          -0.3282991545752975,
+          0.34121714218044163
+        ],
+        [
+          0.2654255500624729,
+          -0.3258672151115201,
+          0.3425773375632055
+        ],
+        [
+          0.3258685886646635,
+          -0.30858217123538784,
+          0.33994054868857826
+        ]
+      ]
+    },
+    {
+      "T_left_base_board": [
+        [
+          -0.9993112396767923,
+          0.036586028169050974,
+          -0.006205545781499805,
+          0.4214090325571225
+        ],
+        [
+          0.03686488044451487,
+          0.9979026609146087,
+          -0.053209584938765916,
+          -0.47130494648950233
+        ],
+        [
+          0.0042458032743528775,
+          -0.05340170299117369,
+          -0.9985640847097386,
+          0.34974180099420066
+        ],
+        [
+          0.0,
+          0.0,
+          0.0,
+          1.0
+        ]
+      ],
+      "board_points": [
+        [
+          0.14000000059604645,
+          0.019999999552965164,
+          0.0
+        ],
+        [
+          0.019999999552965164,
+          0.03999999910593033,
+          0.0
+        ],
+        [
+          0.03999999910593033,
+          0.03999999910593033,
+          0.0
+        ],
+        [
+          0.05999999865889549,
+          0.03999999910593033,
+          0.0
+        ],
+        [
+          0.14000000059604645,
+          0.03999999910593033,
+          0.0
+        ],
+        [
+          0.019999999552965164,
+          0.05999999865889549,
+          0.0
+        ],
+        [
+          0.03999999910593033,
+          0.05999999865889549,
+          0.0
+        ],
+        [
+          0.11999999731779099,
+          0.05999999865889549,
+          0.0
+        ],
+        [
+          0.14000000059604645,
+          0.05999999865889549,
+          0.0
+        ],
+        [
+          0.03999999910593033,
+          0.07999999821186066,
+          0.0
+        ],
+        [
+          0.09999999403953552,
+          0.07999999821186066,
+          0.0
+        ],
+        [
+          0.11999999731779099,
+          0.07999999821186066,
+          0.0
+        ],
+        [
+          0.14000000059604645,
+          0.07999999821186066,
+          0.0
+        ],
+        [
+          0.1599999964237213,
+          0.07999999821186066,
+          0.0
+        ],
+        [
+          0.03999999910593033,
+          0.09999999403953552,
+          0.0
+        ],
+        [
+          0.17999999225139618,
+          0.09999999403953552,
+          0.0
+        ],
+        [
+          0.019999999552965164,
+          0.11999999731779099,
+          0.0
+        ],
+        [
+          0.03999999910593033,
+          0.11999999731779099,
+          0.0
+        ],
+        [
+          0.17999999225139618,
+          0.11999999731779099,
+          0.0
+        ]
+      ],
+      "corner_ids": [
+        6,
+        9,
+        10,
+        11,
+        15,
+        18,
+        19,
+        23,
+        24,
+        28,
+        31,
+        32,
+        33,
+        34,
+        37,
+        44,
+        45,
+        46,
+        53
+      ],
+      "frame": "/home/jerry/rax-runtime/sessions/20261104T091548Z_unscrew_bottle_b3726a/agent-workspace/runtime/frames/202611041215538482c4",
+      "ray_angles_deg": [
+        106.0361954553652,
+        116.00835200581656,
+        114.60882014806229,
+        113.02717135633168,
+        106.180627845773,
+        116.01882387490846,
+        114.62051026297503,
+        108.00181918199172,
+        106.20799193953822,
+        114.48849514945688,
+        109.64365877576698,
+        107.90777670549949,
+        106.11750889248015,
+        104.3197176931121,
+        114.28001614383808,
+        102.24867751951832,
+        115.39343534047242,
+        113.94682072154593,
+        102.01396386798343
+      ],
+      "ray_error_m": {
+        "side_a": [
+          0.0008479938102770413,
+          5.5292546219691e-05,
+          7.875338209324754e-05,
+          0.0002531638928268486,
+          0.0009110602942441287,
+          2.4304404715206233e-05,
+          0.00015077211105347398,
+          0.0008476000092086072,
+          0.0009643879650442786,
+          0.00018434562098855893,
+          0.0006900746096367454,
+          0.0008160737832473646,
+          0.0009160724165485821,
+          0.0011411126653790417,
+          0.00021235347606154024,
+          0.0013722686091212893,
+          1.5714786106425098e-05,
+          0.00022148171773925257,
+          0.0014223854263677308
+        ],
+        "side_b": [
+          0.0008524769499674928,
+          5.5978769289929195e-05,
+          7.976538721694451e-05,
+          0.0002563240958716658,
+          0.0009156929321066708,
+          2.460970532251607e-05,
+          0.00015272631025694945,
+          0.000853905943265702,
+          0.0009691006781162802,
+          0.00018674197639076368,
+          0.0006966138190844931,
+          0.0008219846401512184,
+          0.0009203824150040661,
+          0.0011432073127459965,
+          0.0002151158931623952,
+          0.0013703425529989716,
+          1.59150034477419e-05,
+          0.00022435702568957835,
+          0.0014200220826812748
+        ]
+      },
+      "rigidity_error_m": [
+        0.0007847786032064306,
+        0.0008722750370697951,
+        0.0006934724510039044,
+        0.0008105048633782521,
+        0.000498172876950989,
+        0.0006131230505753898,
+        0.0005042234157327646,
+        0.0005015568604743597,
+        0.00029500985498843985,
+        0.0003885764828878652,
+        0.0006773239858754766,
+        0.0005171165968397988,
+        0.00038475968468323934,
+        0.0005441795514103083,
+        0.0005847406760904949,
+        0.0009942518894909057,
+        0.000947296165927916,
+        0.0009192352120406757,
+        0.0011545571757126654
+      ],
+      "triangulated_points_left_base": [
+        [
+          0.2827938279277547,
+          -0.44563270702661906,
+          0.3492583815857708
+        ],
+        [
+          0.4036113006513124,
+          -0.4306478696154585,
+          0.348175572472883
+        ],
+        [
+          0.3835585720136046,
+          -0.42985277435249947,
+          0.3479839902909793
+        ],
+        [
+          0.36349534403298744,
+          -0.42885895833590487,
+          0.3473939965491531
+        ],
+        [
+          0.2832405224062932,
+          -0.4258120007094939,
+          0.3482394311298348
+        ],
+        [
+          0.40402675108327935,
+          -0.41075976123860053,
+          0.3470747498628536
+        ],
+        [
+          0.3840436901703746,
+          -0.4101952285385889,
+          0.3468730751191263
+        ],
+        [
+          0.30376092202646404,
+          -0.4066272133838594,
+          0.3467280832537517
+        ],
+        [
+          0.28370694414672604,
+          -0.4059759692675834,
+          0.3471054616719938
+        ],
+        [
+          0.3845740878421912,
+          -0.390286285180058,
+          0.34548586552240856
+        ],
+        [
+          0.32427052372423054,
+          -0.3878969936975363,
+          0.3452396660226402
+        ],
+        [
+          0.30426014569142884,
+          -0.3869815014441523,
+          0.34549155232161005
+        ],
+        [
+          0.28433921680437907,
+          -0.38620510042003275,
+          0.3457062858768608
+        ],
+        [
+          0.26411322732452547,
+          -0.38542852161224816,
+          0.3465540200150506
+        ],
+        [
+          0.3848604956698393,
+          -0.3705612682403725,
+          0.3444481086014518
+        ],
+        [
+          0.24427443169754465,
+          -0.3649531222778141,
+          0.34554245222728597
+        ],
+        [
+          0.4053362490651626,
+          -0.35157475366395413,
+          0.3437336186733254
+        ],
+        [
+          0.38526846360139655,
+          -0.3507559716886497,
+          0.3432224607938552
+        ],
+        [
+          0.24492409828292475,
+          -0.3445374580835841,
+          0.3445307963642913
+        ]
+      ]
+    },
+    {
+      "T_left_base_board": [
+        [
+          -0.999423117527213,
+          0.032248745564453736,
+          -0.01065131736952094,
+          0.42147753748967826
+        ],
+        [
+          0.03286918804109112,
+          0.9973831512713351,
+          -0.06439305892392493,
+          -0.47084794490217724
+        ],
+        [
+          0.008546849109849368,
+          -0.06470601185036669,
+          -0.9978677684947609,
+          0.34993331246370496
+        ],
+        [
+          0.0,
+          0.0,
+          0.0,
+          1.0
+        ]
+      ],
+      "board_points": [
+        [
+          0.019999999552965164,
+          0.03999999910593033,
+          0.0
+        ],
+        [
+          0.03999999910593033,
+          0.03999999910593033,
+          0.0
+        ],
+        [
+          0.11999999731779099,
+          0.03999999910593033,
+          0.0
+        ],
+        [
+          0.14000000059604645,
+          0.03999999910593033,
+          0.0
+        ],
+        [
+          0.05999999865889549,
+          0.05999999865889549,
+          0.0
+        ],
+        [
+          0.11999999731779099,
+          0.05999999865889549,
+          0.0
+        ],
+        [
+          0.14000000059604645,
+          0.05999999865889549,
+          0.0
+        ],
+        [
+          0.05999999865889549,
+          0.07999999821186066,
+          0.0
+        ],
+        [
+          0.07999999821186066,
+          0.07999999821186066,
+          0.0
+        ],
+        [
+          0.09999999403953552,
+          0.07999999821186066,
+          0.0
+        ],
+        [
+          0.11999999731779099,
+          0.07999999821186066,
+          0.0
+        ],
+        [
+          0.14000000059604645,
+          0.07999999821186066,
+          0.0
+        ],
+        [
+          0.1599999964237213,
+          0.07999999821186066,
+          0.0
+        ],
+        [
+          0.03999999910593033,
+          0.09999999403953552,
+          0.0
+        ],
+        [
+          0.17999999225139618,
+          0.09999999403953552,
+          0.0
+        ],
+        [
+          0.03999999910593033,
+          0.11999999731779099,
+          0.0
+        ],
+        [
+          0.17999999225139618,
+          0.11999999731779099,
+          0.0
+        ],
+        [
+          0.09999999403953552,
+          0.14000000059604645,
+          0.0
+        ],
+        [
+          0.11999999731779099,
+          0.14000000059604645,
+          0.0
+        ],
+        [
+          0.14000000059604645,
+          0.14000000059604645,
+          0.0
+        ],
+        [
+          0.1599999964237213,
+          0.14000000059604645,
+          0.0
+        ],
+        [
+          0.09999999403953552,
+          0.1599999964237213,
+          0.0
+        ]
+      ],
+      "corner_ids": [
+        9,
+        10,
+        14,
+        15,
+        20,
+        23,
+        24,
+        29,
+        30,
+        31,
+        32,
+        33,
+        34,
+        37,
+        44,
+        46,
+        53,
+        58,
+        59,
+        60,
+        61,
+        67
+      ],
+      "frame": "/home/jerry/rax-runtime/sessions/20261104T091548Z_unscrew_bottle_b3726a/agent-workspace/runtime/frames/2026110412155608009f",
+      "ray_angles_deg": [
+        116.00515090504392,
+        114.60414213716162,
+        107.99469446735749,
+        106.16913429762984,
+        113.03944445145744,
+        107.9891251889651,
+        106.2150314808278,
+        112.9252671127007,
+        111.30659278116617,
+        109.64975743822299,
+        107.90907006991348,
+        106.09590300388194,
+        104.31908705319404,
+        114.28652091725557,
+        102.26945948625169,
+        113.94922769078467,
+        102.01689856402544,
+        108.66502608350821,
+        106.93253604824463,
+        105.21506960171992,
+        103.44666743813805,
+        108.12625135837872
+      ],
+      "ray_error_m": {
+        "side_a": [
+          3.7371032692225295e-05,
+          0.00010850118027068454,
+          0.0008614261027718757,
+          0.0009671886090932106,
+          0.0003433112134894691,
+          0.0008913337803941881,
+          0.0009576769420201074,
+          0.00035233476534909155,
+          0.0005119435073988604,
+          0.0006822241748031518,
+          0.0007528168889759003,
+          0.0009971776495186087,
+          0.0011501660748036396,
+          0.00018917836933180282,
+          0.0012455839253917881,
+          0.00018849027587485755,
+          0.001432069798034852,
+          0.0008223048864340313,
+          0.0010520739075635351,
+          0.0009438074108169414,
+          0.0013643431280064506,
+          0.0009795492106928045
+        ],
+        "side_b": [
+          3.7836026865445356e-05,
+          0.00010990001496315749,
+          0.0008680108865759019,
+          0.0009721161828657482,
+          0.00034761154875091055,
+          0.0008979787541074552,
+          0.0009623552288241382,
+          0.0003567263565011768,
+          0.0005177019880093231,
+          0.0006886866711399926,
+          0.0007582399076066704,
+          0.0010018696213707724,
+          0.0011522744478836143,
+          0.00019163329951277293,
+          0.001243814796353389,
+          0.00019092866027884217,
+          0.0014296967543800233,
+          0.0008297561800587729,
+          0.0010592066739333653,
+          0.0009475999765188649,
+          0.0013659662786847401,
+          0.0009883319109352962
+        ]
+      },
+      "rigidity_error_m": [
+        0.0010707986755990552,
+        0.0008331450451404749,
+        0.0007910422643469585,
+        0.0007519075078288028,
+        0.0005200119783573877,
+        0.0007256258392389392,
+        0.0005339568667660868,
+        0.0003656538843120596,
+        0.0005660387243609316,
+        0.00043722490431815985,
+        0.00031116078625716224,
+        0.0006052286182444959,
+        0.0005791905815141592,
+        0.0011166439000863577,
+        0.0009819473467280043,
+        0.0011571775150616209,
+        0.0011819246078081014,
+        0.000759357861806816,
+        0.0008821969233020919,
+        0.0006721202479792537,
+        0.0007383275484132133,
+        0.0011912826035277361
+      ],
+      "triangulated_points_left_base": [
+        [
+          0.40356284565850775,
+          -0.43061369528684085,
+          0.3481723772570149
+        ],
+        [
+          0.3835492635085739,
+          -0.429854073944891,
+          0.3479548137060609
+        ],
+        [
+          0.30336750027144355,
+          -0.4266221299320485,
+          0.34792924730007835
+        ],
+        [
+          0.28315117788310207,
+          -0.42575046829959934,
+          0.3482054146202063
+        ],
+        [
+          0.3639080138493509,
+          -0.40904306780255006,
+          0.3463232552219078
+        ],
+        [
+          0.3036816561065822,
+          -0.40648956641605705,
+          0.34667606789837163
+        ],
+        [
+          0.2837431604752898,
+          -0.4059441583478815,
+          0.3471386162812355
+        ],
+        [
+          0.3643747974923616,
+          -0.3892326253528765,
+          0.34509073910489013
+        ],
+        [
+          0.3443482323068811,
+          -0.3886145056722267,
+          0.34496552626338384
+        ],
+        [
+          0.32430020289440004,
+          -0.3879670611167755,
+          0.3452676719475646
+        ],
+        [
+          0.30422713131402956,
+          -0.38696174687301105,
+          0.345529762850208
+        ],
+        [
+          0.28416382348432134,
+          -0.38592582237118983,
+          0.34566189084887156
+        ],
+        [
+          0.26409722660827406,
+          -0.3854233682851134,
+          0.34656271839286185
+        ],
+        [
+          0.38487057771072003,
+          -0.3706685154508749,
+          0.34448472025354887
+        ],
+        [
+          0.24431502927882154,
+          -0.36476327821785925,
+          0.34573469547810576
+        ],
+        [
+          0.3852559152847019,
+          -0.35073064037563284,
+          0.3432490280501643
+        ],
+        [
+          0.2449554770011945,
+          -0.34455526738415987,
+          0.34452844251306125
+        ],
+        [
+          0.32561872188633534,
+          -0.3283086266279777,
+          0.34123394898100784
+        ],
+        [
+          0.3054778486227327,
+          -0.32759621738458294,
+          0.34132468016107914
+        ],
+        [
+          0.28540291177320226,
+          -0.326655448910082,
+          0.3420440948368665
+        ],
+        [
+          0.26544383967557217,
+          -0.3258389860501444,
+          0.3425897523847927
+        ],
+        [
+          0.325904485795799,
+          -0.3087056330171582,
+          0.3399180721846204
+        ]
+      ]
+    },
+    {
+      "T_left_base_board": [
+        [
+          -0.9993866357744109,
+          0.034238812231362575,
+          -0.007352276687469957,
+          0.4213701866116927
+        ],
+        [
+          0.03460296073486793,
+          0.9977738278919975,
+          -0.057008977206492,
+          -0.4709904697880227
+        ],
+        [
+          0.005383989588102891,
+          -0.05722842048086454,
+          -0.9983465933959912,
+          0.34986628535397973
+        ],
+        [
+          0.0,
+          0.0,
+          0.0,
+          1.0
+        ]
+      ],
+      "board_points": [
+        [
+          0.09999999403953552,
+          0.019999999552965164,
+          0.0
+        ],
+        [
+          0.019999999552965164,
+          0.03999999910593033,
+          0.0
+        ],
+        [
+          0.11999999731779099,
+          0.03999999910593033,
+          0.0
+        ],
+        [
+          0.14000000059604645,
+          0.03999999910593033,
+          0.0
+        ],
+        [
+          0.14000000059604645,
+          0.05999999865889549,
+          0.0
+        ],
+        [
+          0.05999999865889549,
+          0.07999999821186066,
+          0.0
+        ],
+        [
+          0.07999999821186066,
+          0.07999999821186066,
+          0.0
+        ],
+        [
+          0.14000000059604645,
+          0.07999999821186066,
+          0.0
+        ],
+        [
+          0.1599999964237213,
+          0.07999999821186066,
+          0.0
+        ],
+        [
+          0.03999999910593033,
+          0.09999999403953552,
+          0.0
+        ],
+        [
+          0.17999999225139618,
+          0.09999999403953552,
+          0.0
+        ],
+        [
+          0.019999999552965164,
+          0.11999999731779099,
+          0.0
+        ],
+        [
+          0.17999999225139618,
+          0.11999999731779099,
+          0.0
+        ],
+        [
+          0.14000000059604645,
+          0.14000000059604645,
+          0.0
+        ],
+        [
+          0.1599999964237213,
+          0.14000000059604645,
+          0.0
+        ]
+      ],
+      "corner_ids": [
+        4,
+        9,
+        14,
+        15,
+        24,
+        29,
+        30,
+        33,
+        34,
+        37,
+        44,
+        45,
+        53,
+        60,
+        61
+      ],
+      "frame": "/home/jerry/rax-runtime/sessions/20261104T091548Z_unscrew_bottle_b3726a/agent-workspace/runtime/frames/202611041215594d4162",
+      "ray_angles_deg": [
+        109.6804149336225,
+        116.00423285750192,
+        107.99730281619883,
+        106.1788707461985,
+        106.20916288296297,
+        112.92131344585341,
+        111.3118643664848,
+        106.09574980842162,
+        104.31812669704318,
+        114.28455257812816,
+        102.26247049306458,
+        115.40127559267187,
+        102.01470358387766,
+        105.21718108065872,
+        103.43932652219613
+      ],
+      "ray_error_m": {
+        "side_a": [
+          0.0005936857367610136,
+          5.396894148564156e-05,
+          0.0008232143091538482,
+          0.0009122736731345273,
+          0.0009227076519918403,
+          0.00036422499725286163,
+          0.0005089198805141336,
+          0.0009796927001071295,
+          0.0011486375590718685,
+          0.00019601431359303378,
+          0.001334753007875726,
+          4.0946267140459836e-05,
+          0.0014347909794543217,
+          0.0011066497881679425,
+          0.00138177319062355
+        ],
+        "side_b": [
+          0.0005995226440982201,
+          5.4638999312326845e-05,
+          0.0008294815117677464,
+          0.000916915520709897,
+          0.0009272015951054168,
+          0.0003687697360907001,
+          0.0005146401074583487,
+          0.0009843011909478102,
+          0.0011507386566450713,
+          0.00019855977144859715,
+          0.001332866485506292,
+          4.146629236531394e-05,
+          0.001432406240528141,
+          0.0011111706672607509,
+          0.0013834113880487385
+        ]
+      },
+      "rigidity_error_m": [
+        0.0009100930882750835,
+        0.0009509876291934282,
+        0.0006488652079214808,
+        0.0006080479819420029,
+        0.0004200578571235458,
+        0.0006048832626248349,
+        0.0007365259106824749,
+        0.0004950230156208121,
+        0.000497691298077708,
+        0.000829549451665773,
+        0.0008138951529051508,
+        0.0012870957316909533,
+        0.000967247139979883,
+        0.0009969491672562393,
+        0.000873883943027746
+      ],
+      "triangulated_points_left_base": [
+        [
+          0.3229185139098539,
+          -0.447147018083736,
+          0.3493027855635446
+        ],
+        [
+          0.40354907227038667,
+          -0.430571288770749,
+          0.34816987527130083
+        ],
+        [
+          0.30332429571927433,
+          -0.4266057075606942,
+          0.34798527208526786
+        ],
+        [
+          0.28324569582936504,
+          -0.42581006615484696,
+          0.3482186866282545
+        ],
+        [
+          0.28370419652680645,
+          -0.4059133941989677,
+          0.34711734923814064
+        ],
+        [
+          0.3643579305238532,
+          -0.3892613605384244,
+          0.34507025774174893
+        ],
+        [
+          0.3443209006180268,
+          -0.3885878119526205,
+          0.3450252601872557
+        ],
+        [
+          0.284171156976701,
+          -0.3860198027402089,
+          0.345652098967953
+        ],
+        [
+          0.2640812188464686,
+          -0.3853955513703132,
+          0.34656875332861925
+        ],
+        [
+          0.3848625354337516,
+          -0.3706490909836622,
+          0.3444755562704592
+        ],
+        [
+          0.24432124981983985,
+          -0.3648072284638896,
+          0.3456518392221635
+        ],
+        [
+          0.4053357852819204,
+          -0.35164989891522347,
+          0.34378233960330723
+        ],
+        [
+          0.2449178769616145,
+          -0.34462304398654925,
+          0.3445336342476275
+        ],
+        [
+          0.2855285517968181,
+          -0.3266736875909951,
+          0.34195422086690075
+        ],
+        [
+          0.26540043058250995,
+          -0.3257696037137304,
+          0.34256821360292883
+        ]
+      ]
+    },
+    {
+      "T_left_base_board": [
+        [
+          -0.9994806497982347,
+          0.03086906464574619,
+          -0.009248325621165527,
+          0.4219551772061172
+        ],
+        [
+          0.03140615351141309,
+          0.9973893317023788,
+          -0.06502441486011555,
+          -0.4705289696133206
+        ],
+        [
+          0.007216938444791549,
+          -0.06528109875132013,
+          -0.9978408159347384,
+          0.34990838855712486
+        ],
+        [
+          0.0,
+          0.0,
+          0.0,
+          1.0
+        ]
+      ],
+      "board_points": [
+        [
+          0.03999999910593033,
+          0.019999999552965164,
+          0.0
+        ],
+        [
+          0.05999999865889549,
+          0.019999999552965164,
+          0.0
+        ],
+        [
+          0.07999999821186066,
+          0.019999999552965164,
+          0.0
+        ],
+        [
+          0.09999999403953552,
+          0.019999999552965164,
+          0.0
+        ],
+        [
+          0.019999999552965164,
+          0.03999999910593033,
+          0.0
+        ],
+        [
+          0.11999999731779099,
+          0.03999999910593033,
+          0.0
+        ],
+        [
+          0.14000000059604645,
+          0.03999999910593033,
+          0.0
+        ],
+        [
+          0.11999999731779099,
+          0.05999999865889549,
+          0.0
+        ],
+        [
+          0.14000000059604645,
+          0.05999999865889549,
+          0.0
+        ],
+        [
+          0.05999999865889549,
+          0.07999999821186066,
+          0.0
+        ],
+        [
+          0.07999999821186066,
+          0.07999999821186066,
+          0.0
+        ],
+        [
+          0.09999999403953552,
+          0.07999999821186066,
+          0.0
+        ],
+        [
+          0.11999999731779099,
+          0.07999999821186066,
+          0.0
+        ],
+        [
+          0.14000000059604645,
+          0.07999999821186066,
+          0.0
+        ],
+        [
+          0.1599999964237213,
+          0.07999999821186066,
+          0.0
+        ],
+        [
+          0.09999999403953552,
+          0.09999999403953552,
+          0.0
+        ],
+        [
+          0.11999999731779099,
+          0.09999999403953552,
+          0.0
+        ]
+      ],
+      "corner_ids": [
+        1,
+        2,
+        3,
+        4,
+        9,
+        14,
+        15,
+        23,
+        24,
+        29,
+        30,
+        31,
+        32,
+        33,
+        34,
+        40,
+        41
+      ],
+      "frame": "/home/jerry/rax-runtime/sessions/20261104T091548Z_unscrew_bottle_b3726a/agent-workspace/runtime/frames/20261104121602122984",
+      "ray_angles_deg": [
+        114.50902032321335,
+        112.94518095916233,
+        111.33301133903198,
+        109.6790990965393,
+        116.00270534228136,
+        108.00132422850753,
+        106.18207722727914,
+        107.99990834923709,
+        106.21686940393525,
+        112.91762429998984,
+        111.3083648161536,
+        109.64638076726747,
+        107.9028381530961,
+        106.10666475785469,
+        104.32124537051564,
+        109.42478279565532,
+        107.71270544477267
+      ],
+      "ray_error_m": {
+        "side_a": [
+          2.5692736072740124e-05,
+          0.0003014271639360231,
+          0.0003804746082976624,
+          0.0005679163519136786,
+          5.521678148575168e-05,
+          0.0008149844253091384,
+          0.0009129368307644658,
+          0.0008812848872024307,
+          0.0009660794614201338,
+          0.0003248903377171941,
+          0.0004984583021747287,
+          0.0007056961119490777,
+          0.000823989740299567,
+          0.0009127666115954555,
+          0.0011623641516884074,
+          0.0007236835678209632,
+          0.0009712632641666556
+        ],
+        "side_b": [
+          2.6020164509207124e-05,
+          0.00030521802562397305,
+          0.00038482897732160535,
+          0.0005734898383628378,
+          5.59020256560889e-05,
+          0.0008211917221573397,
+          0.0009175786320083868,
+          0.000887853293822672,
+          0.0009708012333974572,
+          0.0003289296170895679,
+          0.0005040555182188657,
+          0.0007123929211540907,
+          0.000829964132510039,
+          0.0009170584988560441,
+          0.0011644995719141443,
+          0.000730439589013251,
+          0.0009781801214767557
+        ]
+      },
+      "rigidity_error_m": [
+        0.0007363103993794466,
+        0.0005063637553556757,
+        0.0006609692453243992,
+        0.00047353874625998807,
+        0.0010339158703225144,
+        0.00039499705466706494,
+        0.0004101444101568553,
+        0.0003689430293534234,
+        0.00046142940232003267,
+        0.00045066889535074335,
+        0.0004698561970738385,
+        0.0004234985400105418,
+        0.00025888148996403005,
+        0.00032436036080569765,
+        0.0008821749910654413,
+        0.0005987368160632759,
+        0.00057584623932147
+      ],
+      "triangulated_points_left_base": [
+        [
+          0.3832614963985261,
+          -0.44949538975881426,
+          0.3491496246178232
+        ],
+        [
+          0.3630279372570832,
+          -0.4485777610796659,
+          0.34878624128176083
+        ],
+        [
+          0.3430272458373804,
+          -0.4477476386803597,
+          0.34877623680370085
+        ],
+        [
+          0.3229280731130292,
+          -0.4470801161271408,
+          0.34927802505834
+        ],
+        [
+          0.4036035014864146,
+          -0.430651289694351,
+          0.34814083776915067
+        ],
+        [
+          0.30338512373101123,
+          -0.42654786452617954,
+          0.3479682095323384
+        ],
+        [
+          0.2832413347183751,
+          -0.4258305347492803,
+          0.3482534107916571
+        ],
+        [
+          0.303734879993978,
+          -0.4065976473871218,
+          0.3467308574742493
+        ],
+        [
+          0.2837566590271221,
+          -0.4058667702592697,
+          0.3471420023272191
+        ],
+        [
+          0.36435134677458625,
+          -0.38928584928756227,
+          0.3450467073743341
+        ],
+        [
+          0.3442988451436228,
+          -0.38858548049199054,
+          0.34501219156195284
+        ],
+        [
+          0.32429218888116107,
+          -0.387942318475927,
+          0.3452456454746121
+        ],
+        [
+          0.304253578131016,
+          -0.3870205279308642,
+          0.34545256023190224
+        ],
+        [
+          0.2842933145995907,
+          -0.3860936037435289,
+          0.34564761388334203
+        ],
+        [
+          0.26412163649286163,
+          -0.38538370103083214,
+          0.3465622591783527
+        ],
+        [
+          0.32471231951789226,
+          -0.3680786591961149,
+          0.34393301422972306
+        ],
+        [
+          0.30470052844734546,
+          -0.36742756925355496,
+          0.3443048661567881
+        ]
+      ]
+    },
+    {
+      "T_left_base_board": [
+        [
+          -0.9993429767465207,
+          0.03541585737721199,
+          -0.007702718587575426,
+          0.4217628739028178
+        ],
+        [
+          0.03580966160923178,
+          0.9976126899526027,
+          -0.0590473452490823,
+          -0.4709750733793869
+        ],
+        [
+          0.005593117452254534,
+          -0.059284381516289626,
+          -0.9982254650856169,
+          0.3498584516087983
+        ],
+        [
+          0.0,
+          0.0,
+          0.0,
+          1.0
+        ]
+      ],
+      "board_points": [
+        [
+          0.03999999910593033,
+          0.019999999552965164,
+          0.0
+        ],
+        [
+          0.05999999865889549,
+          0.019999999552965164,
+          0.0
+        ],
+        [
+          0.07999999821186066,
+          0.019999999552965164,
+          0.0
+        ],
+        [
+          0.09999999403953552,
+          0.019999999552965164,
+          0.0
+        ],
+        [
+          0.11999999731779099,
+          0.019999999552965164,
+          0.0
+        ],
+        [
+          0.14000000059604645,
+          0.019999999552965164,
+          0.0
+        ],
+        [
+          0.1599999964237213,
+          0.019999999552965164,
+          0.0
+        ],
+        [
+          0.019999999552965164,
+          0.03999999910593033,
+          0.0
+        ],
+        [
+          0.03999999910593033,
+          0.03999999910593033,
+          0.0
+        ],
+        [
+          0.05999999865889549,
+          0.03999999910593033,
+          0.0
+        ],
+        [
+          0.11999999731779099,
+          0.03999999910593033,
+          0.0
+        ],
+        [
+          0.14000000059604645,
+          0.03999999910593033,
+          0.0
+        ],
+        [
+          0.019999999552965164,
+          0.05999999865889549,
+          0.0
+        ],
+        [
+          0.03999999910593033,
+          0.05999999865889549,
+          0.0
+        ],
+        [
+          0.05999999865889549,
+          0.05999999865889549,
+          0.0
+        ],
+        [
+          0.11999999731779099,
+          0.05999999865889549,
+          0.0
+        ],
+        [
+          0.14000000059604645,
+          0.05999999865889549,
+          0.0
+        ],
+        [
+          0.03999999910593033,
+          0.07999999821186066,
+          0.0
+        ],
+        [
+          0.05999999865889549,
+          0.07999999821186066,
+          0.0
+        ],
+        [
+          0.07999999821186066,
+          0.07999999821186066,
+          0.0
+        ],
+        [
+          0.09999999403953552,
+          0.07999999821186066,
+          0.0
+        ],
+        [
+          0.11999999731779099,
+          0.07999999821186066,
+          0.0
+        ],
+        [
+          0.14000000059604645,
+          0.07999999821186066,
+          0.0
+        ],
+        [
+          0.1599999964237213,
+          0.07999999821186066,
+          0.0
+        ],
+        [
+          0.17999999225139618,
+          0.09999999403953552,
+          0.0
+        ]
+      ],
+      "corner_ids": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        9,
+        10,
+        11,
+        14,
+        15,
+        18,
+        19,
+        20,
+        23,
+        24,
+        28,
+        29,
+        30,
+        31,
+        32,
+        33,
+        34,
+        44
+      ],
+      "frame": "/home/jerry/rax-runtime/sessions/20261104T091548Z_unscrew_bottle_b3726a/agent-workspace/runtime/frames/20261104121605b3967a",
+      "ray_angles_deg": [
+        114.50993596623613,
+        112.94865926074887,
+        111.32411277444268,
+        109.6760104808911,
+        107.85950724011776,
+        106.03644681093122,
+        104.19796997811466,
+        116.00311591367276,
+        114.60666673791061,
+        113.04553668863998,
+        108.00449689460002,
+        106.18055623835501,
+        116.01856110906719,
+        114.60839165169936,
+        113.03750596425584,
+        108.03231350088662,
+        106.21725590941533,
+        114.49172726058889,
+        112.91424337029198,
+        111.29954754363614,
+        109.64479216736079,
+        107.89918044604353,
+        106.11030865220698,
+        104.32185295338486,
+        102.27512070886166
+      ],
+      "ray_error_m": {
+        "side_a": [
+          6.397581686128483e-05,
+          0.0002881079008223839,
+          0.0003863854806996997,
+          0.0006057357241631304,
+          0.0007871907840970879,
+          0.0008573074390730592,
+          0.0009530772965163721,
+          3.2532629632535284e-05,
+          9.753102998094526e-05,
+          0.0002660652864266383,
+          0.0007945696161327193,
+          0.0009304865176112941,
+          3.096872347215158e-05,
+          8.298584808646345e-05,
+          0.0003423302352648511,
+          0.0007904879635141684,
+          0.0009526983843061544,
+          0.0001886372581339206,
+          0.00034243984126452364,
+          0.0004894757769938347,
+          0.0007091773600560649,
+          0.0008450857799188293,
+          0.0009331986446919744,
+          0.0011399301407692343,
+          0.0014136048228356216
+        ],
+        "side_b": [
+          6.479463543549332e-05,
+          0.0002917263202547705,
+          0.00039080848733336233,
+          0.0006116961990843774,
+          0.0007932886075930054,
+          0.0008618422734815075,
+          0.0009554622977051765,
+          3.293764573296489e-05,
+          9.878694231518396e-05,
+          0.00026939002676311337,
+          0.0008006075391005338,
+          0.000935223870353355,
+          3.135739037355691e-05,
+          8.405348184370098e-05,
+          0.0003466178623999604,
+          0.0007963594196359807,
+          0.0009573515521445592,
+          0.00019109051907181086,
+          0.00034670385767853065,
+          0.000494968825118262,
+          0.000715908297895021,
+          0.0008512235357714597,
+          0.0009375905800030622,
+          0.0011420168861510155,
+          0.001411620131297942
+        ]
+      },
+      "rigidity_error_m": [
+        0.0007733070549654629,
+        0.0005920236732353641,
+        0.0007374769447477782,
+        0.0004961214124104189,
+        0.0007565607921486491,
+        0.00044834747216242096,
+        0.0006911481699481357,
+        0.0007363205804149541,
+        0.0004964584302695002,
+        0.0004378255369335031,
+        0.00029301229536797443,
+        0.00018927198533623808,
+        0.0007715211616926195,
+        0.0006203010368744107,
+        0.0003364675405423495,
+        0.00019129484730224787,
+        0.0002923838465028506,
+        0.0004940977789228338,
+        0.0005389057403577934,
+        0.0007972469365382333,
+        0.0006924423070671747,
+        0.0005854324689346588,
+        0.0004524577163940943,
+        0.0008266954298118194,
+        0.001211896653572069
+      ],
+      "triangulated_points_left_base": [
+        [
+          0.38321269570668637,
+          -0.4495232086780061,
+          0.34918274188821097
+        ],
+        [
+          0.3630122473577673,
+          -0.44861821810138175,
+          0.3488258452440213
+        ],
+        [
+          0.34296971450448277,
+          -0.44771017637905836,
+          0.348740208334988
+        ],
+        [
+          0.32289945468243353,
+          -0.4471059960044775,
+          0.34927554313373205
+        ],
+        [
+          0.302675537155175,
+          -0.4460092875912543,
+          0.3491355074092253
+        ],
+        [
+          0.2827915071624871,
+          -0.4456726759369952,
+          0.34926751660400995
+        ],
+        [
+          0.26262368595097974,
+          -0.44466448759202687,
+          0.3498506281126632
+        ],
+        [
+          0.40357434883472165,
+          -0.43064855115648515,
+          0.3481556548100217
+        ],
+        [
+          0.3835764217200744,
+          -0.42985585276084637,
+          0.347959239753856
+        ],
+        [
+          0.3634851342763862,
+          -0.42914395219362145,
+          0.34755515937004317
+        ],
+        [
+          0.3033641094365004,
+          -0.4265424569467095,
+          0.3480121894819693
+        ],
+        [
+          0.2832357951288226,
+          -0.42587276146990416,
+          0.3482471573263279
+        ],
+        [
+          0.4040264165736264,
+          -0.4107803200341957,
+          0.3470739113605601
+        ],
+        [
+          0.38403029552596735,
+          -0.4102315918607807,
+          0.34679626541881375
+        ],
+        [
+          0.3639004001343271,
+          -0.4090588734033751,
+          0.3463136436480685
+        ],
+        [
+          0.30395058454082496,
+          -0.40697004728812014,
+          0.34685354293079934
+        ],
+        [
+          0.28375805181837127,
+          -0.4059245979177459,
+          0.3471459216232635
+        ],
+        [
+          0.3845787267562986,
+          -0.39019622516642843,
+          0.3455075601539967
+        ],
+        [
+          0.36433629631949704,
+          -0.38917437259329535,
+          0.3450314759308426
+        ],
+        [
+          0.3442745055655236,
+          -0.38865989483652513,
+          0.3449573641915201
+        ],
+        [
+          0.3242777716827567,
+          -0.3879655277413941,
+          0.3452423122796171
+        ],
+        [
+          0.30424554873286974,
+          -0.38703713683345337,
+          0.3454263065965609
+        ],
+        [
+          0.28429297176255075,
+          -0.3861764008120153,
+          0.345679624765629
+        ],
+        [
+          0.26410462773124277,
+          -0.38543417270144775,
+          0.3465828221108174
+        ],
+        [
+          0.24445309489843473,
+          -0.36470897782498857,
+          0.34566134827929057
+        ]
+      ]
+    },
+    {
+      "T_left_base_board": [
+        [
+          -0.999361993665738,
+          0.034792441284266146,
+          -0.008067939385084625,
+          0.42141736740210745
+        ],
+        [
+          0.03520487712331971,
+          0.9976743280709444,
+          -0.05836567257319895,
+          -0.4711773594926853
+        ],
+        [
+          0.006018491768911691,
+          -0.058612465719084114,
+          -0.9982626691503379,
+          0.3497937916959637
+        ],
+        [
+          0.0,
+          0.0,
+          0.0,
+          1.0
+        ]
+      ],
+      "board_points": [
+        [
+          0.019999999552965164,
+          0.03999999910593033,
+          0.0
+        ],
+        [
+          0.03999999910593033,
+          0.03999999910593033,
+          0.0
+        ],
+        [
+          0.14000000059604645,
+          0.03999999910593033,
+          0.0
+        ],
+        [
+          0.05999999865889549,
+          0.05999999865889549,
+          0.0
+        ],
+        [
+          0.11999999731779099,
+          0.05999999865889549,
+          0.0
+        ],
+        [
+          0.05999999865889549,
+          0.07999999821186066,
+          0.0
+        ],
+        [
+          0.07999999821186066,
+          0.07999999821186066,
+          0.0
+        ],
+        [
+          0.09999999403953552,
+          0.07999999821186066,
+          0.0
+        ],
+        [
+          0.11999999731779099,
+          0.07999999821186066,
+          0.0
+        ],
+        [
+          0.03999999910593033,
+          0.09999999403953552,
+          0.0
+        ],
+        [
+          0.17999999225139618,
+          0.09999999403953552,
+          0.0
+        ],
+        [
+          0.019999999552965164,
+          0.11999999731779099,
+          0.0
+        ],
+        [
+          0.17999999225139618,
+          0.11999999731779099,
+          0.0
+        ],
+        [
+          0.09999999403953552,
+          0.14000000059604645,
+          0.0
+        ]
+      ],
+      "corner_ids": [
+        9,
+        10,
+        15,
+        20,
+        23,
+        29,
+        30,
+        31,
+        32,
+        37,
+        44,
+        45,
+        53,
+        58
+      ],
+      "frame": "/home/jerry/rax-runtime/sessions/20261104T091548Z_unscrew_bottle_b3726a/agent-workspace/runtime/frames/20261104121609e37205",
+      "ray_angles_deg": [
+        116.00250258653337,
+        114.60703515285672,
+        106.17969663919072,
+        113.03762263507141,
+        107.99802155259891,
+        112.92766356991805,
+        111.30781897670633,
+        109.64148547956208,
+        107.90042018275427,
+        114.27078073679031,
+        102.27127470277755,
+        115.39162542778044,
+        102.03568664555549,
+        108.66723311045853
+      ],
+      "ray_error_m": {
+        "side_a": [
+          1.6789071257974637e-05,
+          9.298513670250474e-05,
+          0.0009141411528741629,
+          0.0003309409967293242,
+          0.0008698124873975861,
+          0.0003619554674859573,
+          0.0004747633876817467,
+          0.0007236553878335698,
+          0.0008107654325586474,
+          0.00020809515699042242,
+          0.0013889861811221765,
+          3.508278898707276e-05,
+          0.0014026624772862353,
+          0.0008423000927357021
+        ],
+        "side_b": [
+          1.6998549086884178e-05,
+          9.418189795378709e-05,
+          0.0009187904522208789,
+          0.00033508123572989593,
+          0.0008762944341634202,
+          0.00036647123333960897,
+          0.00048008349464158915,
+          0.0007305292311982145,
+          0.0008166369598775954,
+          0.0002108006461441336,
+          0.0013870345617447107,
+          3.552867932899588e-05,
+          0.0014003394246592687,
+          0.0008499460503763139
+        ]
+      },
+      "rigidity_error_m": [
+        0.000938721106977198,
+        0.0007739828917015801,
+        0.0005797554505201524,
+        0.0004897688406950327,
+        0.0005587538028938043,
+        0.0003978466137139713,
+        0.0005727434067614574,
+        0.0004821010522095954,
+        0.00039662209372841615,
+        0.0005174671883629914,
+        0.000931801165280141,
+        0.001260548202491187,
+        0.0011120674843917992,
+        0.001224629503902785
+      ],
+      "triangulated_points_left_base": [
+        [
+          0.4035542047952879,
+          -0.43059444649135553,
+          0.3481561995853578
+        ],
+        [
+          0.38355501008995546,
+          -0.42983232427148677,
+          0.34797136319118316
+        ],
+        [
+          0.28323338534662906,
+          -0.4258712368963403,
+          0.3482413681390897
+        ],
+        [
+          0.3638861383955932,
+          -0.4090533732342308,
+          0.34632288899872105
+        ],
+        [
+          0.30374798506239475,
+          -0.406647190926538,
+          0.3467054182261751
+        ],
+        [
+          0.3643795260431647,
+          -0.38933902155477057,
+          0.3451042127736678
+        ],
+        [
+          0.3442826367110757,
+          -0.3886135332117603,
+          0.3450182412522852
+        ],
+        [
+          0.3242510890500467,
+          -0.3879388806478726,
+          0.3452343802957825
+        ],
+        [
+          0.3042320435108014,
+          -0.3870304132542958,
+          0.34544819377857217
+        ],
+        [
+          0.38480119083390174,
+          -0.3704412043492513,
+          0.3444182634425157
+        ],
+        [
+          0.2444188824665007,
+          -0.3647389108563141,
+          0.3456526256307841
+        ],
+        [
+          0.40530084382768367,
+          -0.3516301418444193,
+          0.34373261039128067
+        ],
+        [
+          0.24501800997324477,
+          -0.3447591324232479,
+          0.34463838789994367
+        ],
+        [
+          0.3256495068662679,
+          -0.3282863742827295,
+          0.3412340203222954
+        ]
+      ]
+    },
+    {
+      "T_left_base_board": [
+        [
+          -0.9993748475023296,
+          0.03447085044720583,
+          -0.00785332089892263,
+          0.421546641414027
+        ],
+        [
+          0.03484894768139481,
+          0.9979008235164835,
+          -0.05458477141679727,
+          -0.4709795844103553
+        ],
+        [
+          0.0059552519001707625,
+          -0.05482432757974305,
+          -0.9984782561880026,
+          0.3495598464349796
+        ],
+        [
+          0.0,
+          0.0,
+          0.0,
+          1.0
+        ]
+      ],
+      "board_points": [
+        [
+          0.07999999821186066,
+          0.019999999552965164,
+          0.0
+        ],
+        [
+          0.019999999552965164,
+          0.03999999910593033,
+          0.0
+        ],
+        [
+          0.14000000059604645,
+          0.03999999910593033,
+          0.0
+        ],
+        [
+          0.019999999552965164,
+          0.05999999865889549,
+          0.0
+        ],
+        [
+          0.11999999731779099,
+          0.05999999865889549,
+          0.0
+        ],
+        [
+          0.14000000059604645,
+          0.05999999865889549,
+          0.0
+        ],
+        [
+          0.03999999910593033,
+          0.07999999821186066,
+          0.0
+        ],
+        [
+          0.05999999865889549,
+          0.07999999821186066,
+          0.0
+        ],
+        [
+          0.07999999821186066,
+          0.07999999821186066,
+          0.0
+        ],
+        [
+          0.09999999403953552,
+          0.07999999821186066,
+          0.0
+        ],
+        [
+          0.11999999731779099,
+          0.07999999821186066,
+          0.0
+        ],
+        [
+          0.14000000059604645,
+          0.07999999821186066,
+          0.0
+        ],
+        [
+          0.1599999964237213,
+          0.07999999821186066,
+          0.0
+        ],
+        [
+          0.17999999225139618,
+          0.09999999403953552,
+          0.0
+        ],
+        [
+          0.17999999225139618,
+          0.11999999731779099,
+          0.0
+        ]
+      ],
+      "corner_ids": [
+        3,
+        9,
+        15,
+        18,
+        23,
+        24,
+        28,
+        29,
+        30,
+        31,
+        32,
+        33,
+        34,
+        44,
+        53
+      ],
+      "frame": "/home/jerry/rax-runtime/sessions/20261104T091548Z_unscrew_bottle_b3726a/agent-workspace/runtime/frames/20261104121612d33d35",
+      "ray_angles_deg": [
+        111.32609477736943,
+        115.99799225304479,
+        106.17761151260497,
+        116.02288289822918,
+        107.99576085786848,
+        106.20514284456297,
+        114.49171053621231,
+        112.92824786943073,
+        111.30672436969428,
+        109.64089638874495,
+        107.90300302558266,
+        106.12155354661934,
+        104.32230529937704,
+        102.24757271461814,
+        102.0257482881138
+      ],
+      "ray_error_m": {
+        "side_a": [
+          0.00046696403695564,
+          5.080968527237343e-05,
+          0.0009275999321334342,
+          1.5944452306321464e-05,
+          0.000859220789305279,
+          0.0009750453323886385,
+          0.00016517850875276573,
+          0.00036917407869216097,
+          0.0004969840554599896,
+          0.0007077324685058326,
+          0.0008451412413113212,
+          0.0009047952994293294,
+          0.0011647419672996405,
+          0.0013944038021553877,
+          0.001436737145645847
+        ],
+        "side_b": [
+          0.0004723425054709428,
+          5.1440562051110415e-05,
+          0.0009323191240457928,
+          1.614494937083513e-05,
+          0.0008656171991555505,
+          0.0009798144078277684,
+          0.00016732120627808137,
+          0.0003737829088015962,
+          0.0005025646302914795,
+          0.0007144476491864723,
+          0.0008512796419292019,
+          0.0009090475487028894,
+          0.0011668839272132832,
+          0.0013924462639504974,
+          0.001434362302393762
+        ]
+      },
+      "rigidity_error_m": [
+        0.0008102805069292065,
+        0.0009309697348742104,
+        0.00040308569853943953,
+        0.0008990257169046103,
+        0.000459854494950029,
+        0.0002941886608030393,
+        0.0005141331096822032,
+        0.0005364015033244166,
+        0.0006943701603005459,
+        0.0006243144283500886,
+        0.0004615507527866191,
+        0.0002793437475283459,
+        0.0005380333697159224,
+        0.0009227274558848858,
+        0.000985168100706429
+      ],
+      "triangulated_points_left_base": [
+        [
+          0.34290209269683547,
+          -0.44772635762373164,
+          0.34879933340627506
+        ],
+        [
+          0.4036152175295059,
+          -0.43055380262566667,
+          0.3480967137998996
+        ],
+        [
+          0.2832124248650872,
+          -0.42583635129557007,
+          0.3482374825301699
+        ],
+        [
+          0.40405960275506536,
+          -0.4107738537699407,
+          0.34708806402450937
+        ],
+        [
+          0.30373352335187126,
+          -0.4065691995100174,
+          0.34669532728903313
+        ],
+        [
+          0.28370159103794196,
+          -0.4059332836021106,
+          0.34708261144752506
+        ],
+        [
+          0.38456269189638503,
+          -0.39019971965867756,
+          0.34551609336417166
+        ],
+        [
+          0.3643727981204351,
+          -0.389389331884054,
+          0.345111637747706
+        ],
+        [
+          0.3443034397524369,
+          -0.3885871992292584,
+          0.34499628572614327
+        ],
+        [
+          0.3242523091364158,
+          -0.38795259485576483,
+          0.3452285269135041
+        ],
+        [
+          0.3042644158513458,
+          -0.38702338250950463,
+          0.3454452582456741
+        ],
+        [
+          0.28434827700041715,
+          -0.3862219590776711,
+          0.3457356900769263
+        ],
+        [
+          0.2641286831171062,
+          -0.38542576842471477,
+          0.3465651489643619
+        ],
+        [
+          0.2442698375621878,
+          -0.36498465034538413,
+          0.34553303035742716
+        ],
+        [
+          0.24499959330627225,
+          -0.34468013007048537,
+          0.34456200469197673
+        ]
+      ]
+    },
+    {
+      "T_left_base_board": [
+        [
+          -0.9993525264497128,
+          0.034964183623792895,
+          -0.008487269413536828,
+          0.4213257670656268
+        ],
+        [
+          0.035428058459412305,
+          0.997407685468911,
+          -0.06263195383626283,
+          -0.47121317987206784
+        ],
+        [
+          0.006275392607058833,
+          -0.06289208877969461,
+          -0.9980006035151253,
+          0.3500978176601342
+        ],
+        [
+          0.0,
+          0.0,
+          0.0,
+          1.0
+        ]
+      ],
+      "board_points": [
+        [
+          0.019999999552965164,
+          0.03999999910593033,
+          0.0
+        ],
+        [
+          0.03999999910593033,
+          0.03999999910593033,
+          0.0
+        ],
+        [
+          0.14000000059604645,
+          0.03999999910593033,
+          0.0
+        ],
+        [
+          0.05999999865889549,
+          0.05999999865889549,
+          0.0
+        ],
+        [
+          0.11999999731779099,
+          0.05999999865889549,
+          0.0
+        ],
+        [
+          0.14000000059604645,
+          0.05999999865889549,
+          0.0
+        ],
+        [
+          0.05999999865889549,
+          0.07999999821186066,
+          0.0
+        ],
+        [
+          0.07999999821186066,
+          0.07999999821186066,
+          0.0
+        ],
+        [
+          0.09999999403953552,
+          0.07999999821186066,
+          0.0
+        ],
+        [
+          0.11999999731779099,
+          0.07999999821186066,
+          0.0
+        ],
+        [
+          0.14000000059604645,
+          0.07999999821186066,
+          0.0
+        ],
+        [
+          0.1599999964237213,
+          0.07999999821186066,
+          0.0
+        ],
+        [
+          0.03999999910593033,
+          0.09999999403953552,
+          0.0
+        ],
+        [
+          0.17999999225139618,
+          0.09999999403953552,
+          0.0
+        ],
+        [
+          0.019999999552965164,
+          0.11999999731779099,
+          0.0
+        ],
+        [
+          0.03999999910593033,
+          0.11999999731779099,
+          0.0
+        ],
+        [
+          0.17999999225139618,
+          0.11999999731779099,
+          0.0
+        ],
+        [
+          0.09999999403953552,
+          0.14000000059604645,
+          0.0
+        ],
+        [
+          0.09999999403953552,
+          0.1599999964237213,
+          0.0
+        ]
+      ],
+      "corner_ids": [
+        9,
+        10,
+        15,
+        20,
+        23,
+        24,
+        29,
+        30,
+        31,
+        32,
+        33,
+        34,
+        37,
+        44,
+        45,
+        46,
+        53,
+        58,
+        67
+      ],
+      "frame": "/home/jerry/rax-runtime/sessions/20261104T091548Z_unscrew_bottle_b3726a/agent-workspace/runtime/frames/20261104121615e8cc89",
+      "ray_angles_deg": [
+        115.99849721661076,
+        114.60227645567409,
+        106.18576449081692,
+        113.03631238240237,
+        108.01370208837702,
+        106.20700962901279,
+        112.93845688990378,
+        111.30694861306598,
+        109.63806800901696,
+        107.90462302010016,
+        106.11791936607746,
+        104.31030894124996,
+        114.28288784270737,
+        102.2704856111983,
+        115.39729550205685,
+        113.9470243447944,
+        102.00353848768074,
+        108.66521212700788,
+        108.11549108467574
+      ],
+      "ray_error_m": {
+        "side_a": [
+          3.735119747482138e-05,
+          7.161055218641707e-05,
+          0.0009186543722244328,
+          0.00037342117327695,
+          0.0008156855204940951,
+          0.0009380724637528058,
+          0.00032326827269975973,
+          0.0005246197135923346,
+          0.0006999477280325513,
+          0.0008597007191955075,
+          0.0009044560604058845,
+          0.001085901833839602,
+          0.00014959817384498685,
+          0.001381436212491597,
+          4.6976755842765904e-05,
+          0.0002046079209968425,
+          0.0014417613921777121,
+          0.0008633680960001889,
+          0.0010231643063940527
+        ],
+        "side_b": [
+          3.781587246726194e-05,
+          7.253002205475863e-05,
+          0.0009233291171939127,
+          0.00037811266593563286,
+          0.0008217489716371259,
+          0.0009426440932048881,
+          0.00032728792987054997,
+          0.0005305252087248018,
+          0.0007065855118839031,
+          0.0008659506189131706,
+          0.0009087046173792539,
+          0.0010878645505067632,
+          0.00015153119322441045,
+          0.0013794910795417814,
+          4.757290665960741e-05,
+          0.00020725956711868117,
+          0.0014393628175969355,
+          0.0008712187115419684,
+          0.0010323669243417215
+        ]
+      },
+      "rigidity_error_m": [
+        0.0009369951980153977,
+        0.0008257198263221552,
+        0.0006488247551981776,
+        0.0006462888192607366,
+        0.0005711538117466934,
+        0.0004925847294027284,
+        0.00045149446646001117,
+        0.0006014782347552129,
+        0.0004904313164594299,
+        0.00042516848522809253,
+        0.0003487217598080824,
+        0.0006385623082622359,
+        0.0007026808778979691,
+        0.00097007227718503,
+        0.001369892951173695,
+        0.000823151607618453,
+        0.0012707401437654152,
+        0.000998862895270288,
+        0.001461490487113667
+      ],
+      "triangulated_points_left_base": [
+        [
+          0.4035794486898382,
+          -0.4305758635709262,
+          0.348117112677277
+        ],
+        [
+          0.38356841642570794,
+          -0.42993605313302047,
+          0.347938379419069
+        ],
+        [
+          0.2832627855750357,
+          -0.4259253371046956,
+          0.348275869474832
+        ],
+        [
+          0.3639304306063591,
+          -0.4090770064406136,
+          0.3462871324890069
+        ],
+        [
+          0.30385067316798475,
+          -0.4067905352682962,
+          0.34676531805861055
+        ],
+        [
+          0.2836830220561643,
+          -0.40595413718926776,
+          0.3471165371248447
+        ],
+        [
+          0.3644399468029819,
+          -0.3894941148886287,
+          0.3451484213469957
+        ],
+        [
+          0.3443217143690853,
+          -0.3886042099359727,
+          0.3449855212864689
+        ],
+        [
+          0.3242492021508451,
+          -0.38790658580177756,
+          0.34520829043261103
+        ],
+        [
+          0.3042741745985904,
+          -0.38696683039463503,
+          0.3454528892830995
+        ],
+        [
+          0.28432284687589365,
+          -0.38621410055242034,
+          0.34572391861088503
+        ],
+        [
+          0.263981243260282,
+          -0.38546067540665585,
+          0.3465830514754725
+        ],
+        [
+          0.38484401941695223,
+          -0.3706219078983701,
+          0.3444751891332514
+        ],
+        [
+          0.24440370870049963,
+          -0.36472980539773925,
+          0.34566008583395075
+        ],
+        [
+          0.4053259826090587,
+          -0.3516256790809592,
+          0.3437612144199658
+        ],
+        [
+          0.3852855749670473,
+          -0.35076975601864424,
+          0.3432140690326715
+        ],
+        [
+          0.24487096315526288,
+          -0.3445195820462183,
+          0.344475626646482
+        ],
+        [
+          0.3256448218178129,
+          -0.3283292885379826,
+          0.3412136121426593
+        ],
+        [
+          0.32588325861146084,
+          -0.30861275916661346,
+          0.33985999568755904
+        ]
+      ]
+    },
+    {
+      "T_left_base_board": [
+        [
+          -0.999482575947668,
+          0.031138971307524327,
+          -0.00805883632566489,
+          0.4217249700332071
+        ],
+        [
+          0.03153423559556062,
+          0.9980025240167586,
+          -0.05474078955937494,
+          -0.4704148586048411
+        ],
+        [
+          0.006338167118210892,
+          -0.054966594601532845,
+          -0.9984680771639585,
+          0.3495512815909219
+        ],
+        [
+          0.0,
+          0.0,
+          0.0,
+          1.0
+        ]
+      ],
+      "board_points": [
+        [
+          0.09999999403953552,
+          0.019999999552965164,
+          0.0
+        ],
+        [
+          0.019999999552965164,
+          0.03999999910593033,
+          0.0
+        ],
+        [
+          0.11999999731779099,
+          0.03999999910593033,
+          0.0
+        ],
+        [
+          0.14000000059604645,
+          0.03999999910593033,
+          0.0
+        ],
+        [
+          0.11999999731779099,
+          0.05999999865889549,
+          0.0
+        ],
+        [
+          0.14000000059604645,
+          0.05999999865889549,
+          0.0
+        ],
+        [
+          0.09999999403953552,
+          0.07999999821186066,
+          0.0
+        ],
+        [
+          0.11999999731779099,
+          0.07999999821186066,
+          0.0
+        ],
+        [
+          0.14000000059604645,
+          0.07999999821186066,
+          0.0
+        ],
+        [
+          0.1599999964237213,
+          0.07999999821186066,
+          0.0
+        ],
+        [
+          0.17999999225139618,
+          0.09999999403953552,
+          0.0
+        ],
+        [
+          0.17999999225139618,
+          0.11999999731779099,
+          0.0
+        ]
+      ],
+      "corner_ids": [
+        4,
+        9,
+        14,
+        15,
+        23,
+        24,
+        31,
+        32,
+        33,
+        34,
+        44,
+        53
+      ],
+      "frame": "/home/jerry/rax-runtime/sessions/20261104T091548Z_unscrew_bottle_b3726a/agent-workspace/runtime/frames/20261104121618229d88",
+      "ray_angles_deg": [
+        109.67517101756361,
+        115.99883963560863,
+        107.99298051844434,
+        106.16910643873386,
+        107.99847142759815,
+        106.22410888212458,
+        109.64141726179778,
+        107.9002641907616,
+        106.08782495220552,
+        104.31683396660338,
+        102.240549407864,
+        102.01608595946733
+      ],
+      "ray_error_m": {
+        "side_a": [
+          0.000597291022837007,
+          3.602631908794373e-05,
+          0.0008062501245431916,
+          0.0009626968393862247,
+          0.0008780108138893479,
+          0.0010029992346642545,
+          0.0007144808468335275,
+          0.0008568668735564358,
+          0.0010302920793308632,
+          0.0011695576815783039,
+          0.001346900860589638,
+          0.0014014561519657281
+        ],
+        "side_b": [
+          0.0006031645611385446,
+          3.647457759190481e-05,
+          0.0008123828824297931,
+          0.000967601856540286,
+          0.0008845547281985939,
+          0.001007916831275805,
+          0.0007212638829298205,
+          0.0008630974713605907,
+          0.001035157125992968,
+          0.001171708258422591,
+          0.0013450035354162816,
+          0.0013991352161083796
+        ]
+      },
+      "rigidity_error_m": [
+        0.0005579174076543675,
+        0.0011719506805152706,
+        0.0003477728245944204,
+        0.0003481348783368038,
+        0.00033985384172650164,
+        0.00029519462858832357,
+        0.0007784769449771619,
+        0.0005443123811398581,
+        0.0004988609466648751,
+        0.0004347616630493746,
+        0.0008070429729948833,
+        0.0008275447849515706
+      ],
+      "triangulated_points_left_base": [
+        [
+          0.32289512915912355,
+          -0.4471281703403038,
+          0.3492744937413305
+        ],
+        [
+          0.4035811707405953,
+          -0.43063801927700096,
+          0.3481229068159152
+        ],
+        [
+          0.30332011577826756,
+          -0.42660122670781486,
+          0.3479509635693068
+        ],
+        [
+          0.28315911939151645,
+          -0.425754386416262,
+          0.3481986708270668
+        ],
+        [
+          0.30373645469565475,
+          -0.40660570738717544,
+          0.346717324110991
+        ],
+        [
+          0.28380475593138865,
+          -0.4058608541282657,
+          0.3471671549031126
+        ],
+        [
+          0.3242568621765081,
+          -0.3879634635556006,
+          0.3452292958841567
+        ],
+        [
+          0.30426537149474314,
+          -0.3870187542149964,
+          0.34542053532928185
+        ],
+        [
+          0.2841505070694704,
+          -0.3859799630410169,
+          0.34559694629636495
+        ],
+        [
+          0.26409982082652284,
+          -0.3854180468068836,
+          0.34653825365467833
+        ],
+        [
+          0.24419991338514763,
+          -0.3650152093586648,
+          0.34552633892783224
+        ],
+        [
+          0.24492811836273182,
+          -0.34466046745781187,
+          0.3445332343181778
+        ]
+      ]
+    },
+    {
+      "T_left_base_board": [
+        [
+          -0.999375156392165,
+          0.03379366146504813,
+          -0.010357858413792387,
+          0.42147176479424575
+        ],
+        [
+          0.034368441207347396,
+          0.9975132008338772,
+          -0.06153230380157221,
+          -0.4710057511079047
+        ],
+        [
+          0.008252698656291324,
+          -0.06184983918279495,
+          -0.9980513465538488,
+          0.3497581800999707
+        ],
+        [
+          0.0,
+          0.0,
+          0.0,
+          1.0
+        ]
+      ],
+      "board_points": [
+        [
+          0.09999999403953552,
+          0.019999999552965164,
+          0.0
+        ],
+        [
+          0.019999999552965164,
+          0.03999999910593033,
+          0.0
+        ],
+        [
+          0.11999999731779099,
+          0.03999999910593033,
+          0.0
+        ],
+        [
+          0.14000000059604645,
+          0.03999999910593033,
+          0.0
+        ],
+        [
+          0.11999999731779099,
+          0.05999999865889549,
+          0.0
+        ],
+        [
+          0.14000000059604645,
+          0.05999999865889549,
+          0.0
+        ],
+        [
+          0.05999999865889549,
+          0.07999999821186066,
+          0.0
+        ],
+        [
+          0.07999999821186066,
+          0.07999999821186066,
+          0.0
+        ],
+        [
+          0.09999999403953552,
+          0.07999999821186066,
+          0.0
+        ],
+        [
+          0.11999999731779099,
+          0.07999999821186066,
+          0.0
+        ],
+        [
+          0.14000000059604645,
+          0.07999999821186066,
+          0.0
+        ],
+        [
+          0.1599999964237213,
+          0.07999999821186066,
+          0.0
+        ],
+        [
+          0.03999999910593033,
+          0.09999999403953552,
+          0.0
+        ],
+        [
+          0.17999999225139618,
+          0.09999999403953552,
+          0.0
+        ],
+        [
+          0.03999999910593033,
+          0.11999999731779099,
+          0.0
+        ],
+        [
+          0.17999999225139618,
+          0.11999999731779099,
+          0.0
+        ],
+        [
+          0.09999999403953552,
+          0.1599999964237213,
+          0.0
+        ]
+      ],
+      "corner_ids": [
+        4,
+        9,
+        14,
+        15,
+        23,
+        24,
+        29,
+        30,
+        31,
+        32,
+        33,
+        34,
+        37,
+        44,
+        46,
+        53,
+        67
+      ],
+      "frame": "/home/jerry/rax-runtime/sessions/20261104T091548Z_unscrew_bottle_b3726a/agent-workspace/runtime/frames/202611041216219edcb0",
+      "ray_angles_deg": [
+        109.6750902161524,
+        116.0015158255685,
+        107.99307592762655,
+        106.1852783585147,
+        108.01853233415328,
+        106.21073509549913,
+        112.91895224038099,
+        111.30818048742174,
+        109.63892644518029,
+        107.90216791561308,
+        106.11095364467411,
+        104.31232659970443,
+        114.28233638710644,
+        102.26667706050763,
+        113.94646997479792,
+        102.00994800377585,
+        108.11728873545164
+      ],
+      "ray_error_m": {
+        "side_a": [
+          0.0005884946763845076,
+          3.624179300970412e-05,
+          0.0008031884329497518,
+          0.0008795438931009104,
+          0.0007972946937672181,
+          0.0009430884472773236,
+          0.00033687139370464834,
+          0.0005363252802191006,
+          0.0007044765029350677,
+          0.0008529769492334994,
+          0.0009162386388867602,
+          0.00108709312163686,
+          0.0001447104828179563,
+          0.0013421182646076418,
+          0.00020198428793548006,
+          0.0014125378790537547,
+          0.0010094605212592688
+        ],
+        "side_b": [
+          0.0005942794354000785,
+          3.6692733115889264e-05,
+          0.0008092938175051073,
+          0.0008840104471093981,
+          0.0008032172010420106,
+          0.0009476877257035305,
+          0.00034106398651760693,
+          0.0005423710134554863,
+          0.0007111602577642427,
+          0.0008591769833189175,
+          0.0009205419562462843,
+          0.0010890700591068552,
+          0.00014657942989279032,
+          0.0013402269627077646,
+          0.00020460103373300914,
+          0.001410197502167287,
+          0.0010185290937715966
+        ]
+      },
+      "rigidity_error_m": [
+        0.0008643012053869405,
+        0.0010431991368099489,
+        0.000669146418604933,
+        0.0005099018165934216,
+        0.0004299385921679179,
+        0.0003956583127710651,
+        0.0003164127828784255,
+        0.0005601635384808174,
+        0.0004581973603324685,
+        0.00036672557009838157,
+        0.0003286601277664501,
+        0.0005350460251379685,
+        0.0009274946153438745,
+        0.0008965902029364648,
+        0.0010498303906369669,
+        0.001133774353554737,
+        0.0015173047376176357
+      ],
+      "triangulated_points_left_base": [
+        [
+          0.3229138627651833,
+          -0.44712436195867494,
+          0.3492600815752957
+        ],
+        [
+          0.4035842494337953,
+          -0.430643762953501,
+          0.34814015710370283
+        ],
+        [
+          0.3033051823221828,
+          -0.42655259961164005,
+          0.34796014430093547
+        ],
+        [
+          0.2832710721683883,
+          -0.42597576068221954,
+          0.3482684178687241
+        ],
+        [
+          0.30388549908454954,
+          -0.4068792470881383,
+          0.34678238138593853
+        ],
+        [
+          0.28370618288425237,
+          -0.405972896567303,
+          0.34713149674663396
+        ],
+        [
+          0.3643399869232506,
+          -0.38930105960754025,
+          0.34506283648080754
+        ],
+        [
+          0.34436293123654477,
+          -0.38865962744165783,
+          0.3449673736981003
+        ],
+        [
+          0.3242563017859182,
+          -0.38793613246656883,
+          0.34520968998650137
+        ],
+        [
+          0.30426663347495214,
+          -0.38704787868792934,
+          0.34543561163845704
+        ],
+        [
+          0.2842743042074094,
+          -0.38619830030747565,
+          0.3457011264590146
+        ],
+        [
+          0.26402900402177065,
+          -0.38549800367794185,
+          0.346557809735855
+        ],
+        [
+          0.38486060451686266,
+          -0.3706192037419893,
+          0.34446289239335054
+        ],
+        [
+          0.24436365648580194,
+          -0.3647738711689647,
+          0.3456564683958385
+        ],
+        [
+          0.38525652085155754,
+          -0.3507675322933828,
+          0.3432252571325066
+        ],
+        [
+          0.24490944018037336,
+          -0.3445747182351056,
+          0.344498063918288
+        ],
+        [
+          0.32586783504445016,
+          -0.3086672303838778,
+          0.3398754358145851
+        ]
+      ]
+    },
+    {
+      "T_left_base_board": [
+        [
+          -0.9992762354546602,
+          0.037419581595500066,
+          -0.006839602969481093,
+          0.4212196289711527
+        ],
+        [
+          0.037729426327611316,
+          0.997889019081571,
+          -0.0528582631705633,
+          -0.47140576258921774
+        ],
+        [
+          0.0048472306064155785,
+          -0.05307806053009938,
+          -0.9985786017363938,
+          0.3496362600058215
+        ],
+        [
+          0.0,
+          0.0,
+          0.0,
+          1.0
+        ]
+      ],
+      "board_points": [
+        [
+          0.019999999552965164,
+          0.03999999910593033,
+          0.0
+        ],
+        [
+          0.03999999910593033,
+          0.03999999910593033,
+          0.0
+        ],
+        [
+          0.11999999731779099,
+          0.03999999910593033,
+          0.0
+        ],
+        [
+          0.14000000059604645,
+          0.03999999910593033,
+          0.0
+        ],
+        [
+          0.11999999731779099,
+          0.05999999865889549,
+          0.0
+        ],
+        [
+          0.14000000059604645,
+          0.05999999865889549,
+          0.0
+        ],
+        [
+          0.09999999403953552,
+          0.07999999821186066,
+          0.0
+        ],
+        [
+          0.11999999731779099,
+          0.07999999821186066,
+          0.0
+        ],
+        [
+          0.14000000059604645,
+          0.07999999821186066,
+          0.0
+        ],
+        [
+          0.1599999964237213,
+          0.07999999821186066,
+          0.0
+        ],
+        [
+          0.03999999910593033,
+          0.09999999403953552,
+          0.0
+        ],
+        [
+          0.17999999225139618,
+          0.09999999403953552,
+          0.0
+        ],
+        [
+          0.019999999552965164,
+          0.11999999731779099,
+          0.0
+        ],
+        [
+          0.03999999910593033,
+          0.11999999731779099,
+          0.0
+        ],
+        [
+          0.17999999225139618,
+          0.11999999731779099,
+          0.0
+        ]
+      ],
+      "corner_ids": [
+        9,
+        10,
+        14,
+        15,
+        23,
+        24,
+        31,
+        32,
+        33,
+        34,
+        37,
+        44,
+        45,
+        46,
+        53
+      ],
+      "frame": "/home/jerry/rax-runtime/sessions/20261104T091548Z_unscrew_bottle_b3726a/agent-workspace/runtime/frames/20261104121624f4b1a5",
+      "ray_angles_deg": [
+        115.99806738395132,
+        114.60450741717138,
+        107.98959143290512,
+        106.17749821290441,
+        108.00539823660476,
+        106.21906262135201,
+        109.64165090037183,
+        107.8987151800605,
+        106.10957337046946,
+        104.30007203578673,
+        114.28243120185084,
+        102.2736729788891,
+        115.39053645904578,
+        113.94820963237314,
+        102.0138111283899
+      ],
+      "ray_error_m": {
+        "side_a": [
+          4.988073628793134e-05,
+          8.514114754339409e-05,
+          0.0008698008625888733,
+          0.0009509262206691953,
+          0.0009138753788558014,
+          0.0009543738100719129,
+          0.0006987942500841352,
+          0.0007836821925846252,
+          0.0009144196483089629,
+          0.0012242933820799488,
+          0.0001743027339527493,
+          0.0013529274321267483,
+          3.48746910143305e-05,
+          0.00023797332656735152,
+          0.0014455469063674679
+        ],
+        "side_b": [
+          5.050023596806091e-05,
+          8.623599561153606e-05,
+          0.0008764538510402571,
+          0.0009557711792714905,
+          0.0009207034786586736,
+          0.0009590328508350646,
+          0.0007054216024119967,
+          0.0007893425691110403,
+          0.000918721242204212,
+          0.0012265451930901553,
+          0.0001765609552686681,
+          0.0013510244167342833,
+          3.531788926704593e-05,
+          0.00024106841598177343,
+          0.0014431481405201875
+        ]
+      },
+      "rigidity_error_m": [
+        0.0009894176034493049,
+        0.0008593516877277714,
+        0.0006511186983011094,
+        0.0005291762544061891,
+        0.0004642285985805248,
+        0.00040659581671756965,
+        0.0006700061047690891,
+        0.0005193037032977272,
+        0.000405573218930758,
+        0.00046647733955001357,
+        0.0005214434200586784,
+        0.000833372513397706,
+        0.0009308705359702087,
+        0.0007947660571361803,
+        0.001019514833648549
+      ],
+      "triangulated_points_left_base": [
+        [
+          0.4035720896362029,
+          -0.43064127414718306,
+          0.3481223583899327
+        ],
+        [
+          0.38356289938171534,
+          -0.429883082983684,
+          0.34795305107615887
+        ],
+        [
+          0.3033461270902379,
+          -0.426657802771078,
+          0.34790424549143933
+        ],
+        [
+          0.2832086428928588,
+          -0.42585479592242215,
+          0.34824083768806174
+        ],
+        [
+          0.3037580048857111,
+          -0.4066893591817223,
+          0.3467623779590628
+        ],
+        [
+          0.2837557744721215,
+          -0.4058922087869819,
+          0.3471637105383965
+        ],
+        [
+          0.3242670264416808,
+          -0.38796085046815826,
+          0.34522417292500374
+        ],
+        [
+          0.30419235696337815,
+          -0.3870636030629458,
+          0.34546393631330213
+        ],
+        [
+          0.2842985958342012,
+          -0.38624111764091795,
+          0.34566664064083774
+        ],
+        [
+          0.26399591854236626,
+          -0.38541835341763825,
+          0.34646947551621937
+        ],
+        [
+          0.3848515677731676,
+          -0.3706073659212391,
+          0.34446836207090703
+        ],
+        [
+          0.24442309868585996,
+          -0.364684471392466,
+          0.34567776049360616
+        ],
+        [
+          0.40535902632983906,
+          -0.35169460987627715,
+          0.3436935342025539
+        ],
+        [
+          0.3853124248212385,
+          -0.350771197571299,
+          0.34320830828347526
+        ],
+        [
+          0.24492670175268924,
+          -0.34461721311227433,
+          0.34451625963211313
+        ]
+      ]
+    },
+    {
+      "T_left_base_board": [
+        [
+          -0.9993384593935869,
+          0.03318851556094285,
+          -0.014871651277290563,
+          0.4214541437078477
+        ],
+        [
+          0.03409288614228582,
+          0.9972786246631303,
+          -0.06536834023060988,
+          -0.47100691978430576
+        ],
+        [
+          0.012661701755349412,
+          -0.06583211393291792,
+          -0.9977503766392584,
+          0.3494421209861647
+        ],
+        [
+          0.0,
+          0.0,
+          0.0,
+          1.0
+        ]
+      ],
+      "board_points": [
+        [
+          0.09999999403953552,
+          0.019999999552965164,
+          0.0
+        ],
+        [
+          0.019999999552965164,
+          0.03999999910593033,
+          0.0
+        ],
+        [
+          0.11999999731779099,
+          0.03999999910593033,
+          0.0
+        ],
+        [
+          0.14000000059604645,
+          0.03999999910593033,
+          0.0
+        ],
+        [
+          0.11999999731779099,
+          0.05999999865889549,
+          0.0
+        ],
+        [
+          0.05999999865889549,
+          0.07999999821186066,
+          0.0
+        ],
+        [
+          0.07999999821186066,
+          0.07999999821186066,
+          0.0
+        ],
+        [
+          0.09999999403953552,
+          0.07999999821186066,
+          0.0
+        ],
+        [
+          0.11999999731779099,
+          0.07999999821186066,
+          0.0
+        ],
+        [
+          0.17999999225139618,
+          0.07999999821186066,
+          0.0
+        ],
+        [
+          0.05999999865889549,
+          0.09999999403953552,
+          0.0
+        ],
+        [
+          0.07999999821186066,
+          0.09999999403953552,
+          0.0
+        ],
+        [
+          0.09999999403953552,
+          0.09999999403953552,
+          0.0
+        ],
+        [
+          0.11999999731779099,
+          0.09999999403953552,
+          0.0
+        ],
+        [
+          0.17999999225139618,
+          0.09999999403953552,
+          0.0
+        ],
+        [
+          0.07999999821186066,
+          0.11999999731779099,
+          0.0
+        ],
+        [
+          0.09999999403953552,
+          0.11999999731779099,
+          0.0
+        ],
+        [
+          0.11999999731779099,
+          0.11999999731779099,
+          0.0
+        ],
+        [
+          0.17999999225139618,
+          0.11999999731779099,
+          0.0
+        ]
+      ],
+      "corner_ids": [
+        4,
+        9,
+        14,
+        15,
+        23,
+        29,
+        30,
+        31,
+        32,
+        35,
+        38,
+        39,
+        40,
+        41,
+        44,
+        48,
+        49,
+        50,
+        53
+      ],
+      "frame": "/home/jerry/rax-runtime/sessions/20261104T091548Z_unscrew_bottle_b3726a/agent-workspace/runtime/frames/20261104121628bf0dec",
+      "ray_angles_deg": [
+        109.67576803562385,
+        115.99233717168677,
+        107.98701514919082,
+        106.19840410122588,
+        108.02040162023623,
+        112.91475905641076,
+        111.30687377797516,
+        109.62883705999428,
+        107.89273729558661,
+        102.42019479314354,
+        112.69768218321545,
+        111.0871399208287,
+        109.41973127022737,
+        107.69620021255186,
+        102.26116040233723,
+        110.75905892326848,
+        109.09261244495083,
+        107.38581117322688,
+        102.01013337473941
+      ],
+      "ray_error_m": {
+        "side_a": [
+          0.000557516418501179,
+          6.177962874844358e-06,
+          0.0008443974116580388,
+          0.0008805905241247452,
+          0.0007765607897569984,
+          0.0003682466741411917,
+          0.0004906833217001334,
+          0.0007429442078933822,
+          0.0008132854179390819,
+          0.0012875037440848128,
+          0.00032569702866471194,
+          0.0005635140078607491,
+          0.0006851518486942706,
+          0.0009099817358809247,
+          0.001435001695339423,
+          0.0005522207369214592,
+          0.0008035815363873739,
+          0.000989920398723895,
+          0.0015186308739975085
+        ],
+        "side_b": [
+          0.0005629790195880061,
+          6.255143554887835e-06,
+          0.0008508466419411372,
+          0.0008850673258894433,
+          0.0007823228035578206,
+          0.00037284341227313136,
+          0.0004961902966156393,
+          0.0007500116726118041,
+          0.0008191744341028289,
+          0.001286024965837497,
+          0.0003297192778700626,
+          0.0005698031261140386,
+          0.000691527450944714,
+          0.0009164458616060398,
+          0.0014329933300975405,
+          0.0005582936365436882,
+          0.0008109911988350423,
+          0.0009967961518605386,
+          0.0015160767274701788
+        ]
+      },
+      "rigidity_error_m": [
+        0.0008650913423764942,
+        0.0012873748754002553,
+        0.000746004535909469,
+        0.0005791486466815609,
+        0.000461497099370614,
+        0.00025228678187400375,
+        0.00028362367840302727,
+        0.0002888381514848878,
+        0.000284683130913785,
+        0.0008323835063379288,
+        0.0006108163642767978,
+        0.0005081736019938397,
+        0.0003834946711014242,
+        0.00029861983790825983,
+        0.0007386788102746146,
+        0.0006512408951511791,
+        0.0005531205434619399,
+        0.00044426985817842276,
+        0.0011721521207845812
+      ],
+      "triangulated_points_left_base": [
+        [
+          0.3228597445932026,
+          -0.4471188794230948,
+          0.34930463446835297
+        ],
+        [
+          0.4035468801963316,
+          -0.4306144612188516,
+          0.34809128740114587
+        ],
+        [
+          0.30334741018544736,
+          -0.4266762878377993,
+          0.3478825323289006
+        ],
+        [
+          0.2833456795057489,
+          -0.42611345615775764,
+          0.348335246462698
+        ],
+        [
+          0.30390139003341105,
+          -0.4069338696792335,
+          0.3467877417843052
+        ],
+        [
+          0.36433774854051326,
+          -0.38931559357506007,
+          0.34503194981615376
+        ],
+        [
+          0.3442961900904036,
+          -0.3886624247662655,
+          0.34500093370119017
+        ],
+        [
+          0.3242169634232579,
+          -0.3878236958912174,
+          0.3451560143062426
+        ],
+        [
+          0.3041843154856072,
+          -0.3870697748360573,
+          0.34541752691060995
+        ],
+        [
+          0.24392549606456046,
+          -0.3843561203530719,
+          0.3467108739824456
+        ],
+        [
+          0.3647719664293994,
+          -0.36980490352784307,
+          0.3438305673883605
+        ],
+        [
+          0.3447295094762477,
+          -0.3690327590825413,
+          0.3437397001721767
+        ],
+        [
+          0.32466114110855726,
+          -0.36814331307621384,
+          0.34392369481518564
+        ],
+        [
+          0.3046995742046356,
+          -0.36733348750582967,
+          0.3441670498046583
+        ],
+        [
+          0.24438631413300385,
+          -0.364824185735471,
+          0.34557232307375385
+        ],
+        [
+          0.3450620837182113,
+          -0.34909683842942507,
+          0.3425351938846214
+        ],
+        [
+          0.32512981511247896,
+          -0.3482531936036587,
+          0.34256658312855987
+        ],
+        [
+          0.3051657059684056,
+          -0.3474362481355285,
+          0.34286941486354805
+        ],
+        [
+          0.24486149697600387,
+          -0.344590466773269,
+          0.34454539873134343
+        ]
+      ]
+    },
+    {
+      "T_left_base_board": [
+        [
+          -0.9993335372030164,
+          0.03446120641723252,
+          -0.012037718786234112,
+          0.4214358069687888
+        ],
+        [
+          0.035111106104741746,
+          0.997654530664553,
+          -0.05875923478562312,
+          -0.47099317524122686
+        ],
+        [
+          0.009984570567086279,
+          -0.05914273156322177,
+          -0.9981996021106357,
+          0.3493283578289235
+        ],
+        [
+          0.0,
+          0.0,
+          0.0,
+          1.0
+        ]
+      ],
+      "board_points": [
+        [
+          0.019999999552965164,
+          0.03999999910593033,
+          0.0
+        ],
+        [
+          0.14000000059604645,
+          0.03999999910593033,
+          0.0
+        ],
+        [
+          0.11999999731779099,
+          0.05999999865889549,
+          0.0
+        ],
+        [
+          0.14000000059604645,
+          0.05999999865889549,
+          0.0
+        ],
+        [
+          0.05999999865889549,
+          0.07999999821186066,
+          0.0
+        ],
+        [
+          0.07999999821186066,
+          0.07999999821186066,
+          0.0
+        ],
+        [
+          0.09999999403953552,
+          0.07999999821186066,
+          0.0
+        ],
+        [
+          0.11999999731779099,
+          0.07999999821186066,
+          0.0
+        ],
+        [
+          0.14000000059604645,
+          0.07999999821186066,
+          0.0
+        ],
+        [
+          0.1599999964237213,
+          0.07999999821186066,
+          0.0
+        ],
+        [
+          0.17999999225139618,
+          0.09999999403953552,
+          0.0
+        ],
+        [
+          0.17999999225139618,
+          0.11999999731779099,
+          0.0
+        ]
+      ],
+      "corner_ids": [
+        9,
+        15,
+        23,
+        24,
+        29,
+        30,
+        31,
+        32,
+        33,
+        34,
+        44,
+        53
+      ],
+      "frame": "/home/jerry/rax-runtime/sessions/20261104T091548Z_unscrew_bottle_b3726a/agent-workspace/runtime/frames/2026110412163176ca14",
+      "ray_angles_deg": [
+        115.98893467298763,
+        106.18183403291825,
+        108.0232936550215,
+        106.20587763210058,
+        112.91692286986242,
+        111.30591867204518,
+        109.63540518059298,
+        107.88653593513283,
+        106.112668356953,
+        104.30842847197076,
+        102.2757542119218,
+        102.00382086883563
+      ],
+      "ray_error_m": {
+        "side_a": [
+          1.0856745057790197e-05,
+          0.0008757060269837407,
+          0.0007604800375418207,
+          0.0009400899828262875,
+          0.0003939589545409187,
+          0.000515194580517877,
+          0.0007212066240952609,
+          0.0008220082734033212,
+          0.0009125589993770169,
+          0.0011548390067948134,
+          0.001412099437005768,
+          0.001429387712724365
+        ],
+        "side_b": [
+          1.0992295774022918e-05,
+          0.0008801586629050577,
+          0.00076611570267629,
+          0.0009446735393431405,
+          0.00039888771716676104,
+          0.000520990506703764,
+          0.000728057778879775,
+          0.0008279656298461069,
+          0.0009168530429711077,
+          0.0011569641062489431,
+          0.0014101209693936142,
+          0.0014270180613042691
+        ]
+      },
+      "rigidity_error_m": [
+        0.001169300841935898,
+        0.0004447490751548758,
+        0.00036786339684211793,
+        0.0003498444434577449,
+        0.00030448258062036664,
+        0.00048423964686443644,
+        0.0004882811188253898,
+        0.0004733790684519319,
+        0.00032708772568995853,
+        0.0003853786908980542,
+        0.0007296475398587122,
+        0.0010083086526378184
+      ],
+      "triangulated_points_left_base": [
+        [
+          0.40352830232313114,
+          -0.43059272678583993,
+          0.3480750364094098
+        ],
+        [
+          0.28328906977554824,
+          -0.42598930286070547,
+          0.3482223667568265
+        ],
+        [
+          0.3039038180965489,
+          -0.4069939531988372,
+          0.3468126917475584
+        ],
+        [
+          0.28368975919605005,
+          -0.40589045171674526,
+          0.3470987069688379
+        ],
+        [
+          0.3643181144010247,
+          -0.38933224640399927,
+          0.3450589075036177
+        ],
+        [
+          0.34433841857000297,
+          -0.3885776408516009,
+          0.3449671815112341
+        ],
+        [
+          0.324243545196975,
+          -0.3879404560236622,
+          0.34518936449361104
+        ],
+        [
+          0.304157963074286,
+          -0.38716767008390807,
+          0.34538174525885645
+        ],
+        [
+          0.2843239282081289,
+          -0.38621149136344063,
+          0.34567437739828694
+        ],
+        [
+          0.2640556834010956,
+          -0.38556636976251074,
+          0.346493028174929
+        ],
+        [
+          0.2444696752269099,
+          -0.364677177917346,
+          0.3456539926773607
+        ],
+        [
+          0.24488622970236756,
+          -0.3445295704532424,
+          0.3444622193449623
+        ]
+      ]
+    },
+    {
+      "T_left_base_board": [
+        [
+          -0.9994181345997601,
+          0.03325081307669429,
+          -0.007601030382435659,
+          0.4216682578256708
+        ],
+        [
+          0.03365511740464451,
+          0.9975498091010607,
+          -0.06133279249240462,
+          -0.47092937804874924
+        ],
+        [
+          0.005543041188333435,
+          -0.06155291863247034,
+          -0.9980884294000252,
+          0.35007254051099457
+        ],
+        [
+          0.0,
+          0.0,
+          0.0,
+          1.0
+        ]
+      ],
+      "board_points": [
+        [
+          0.03999999910593033,
+          0.019999999552965164,
+          0.0
+        ],
+        [
+          0.09999999403953552,
+          0.019999999552965164,
+          0.0
+        ],
+        [
+          0.019999999552965164,
+          0.03999999910593033,
+          0.0
+        ],
+        [
+          0.03999999910593033,
+          0.03999999910593033,
+          0.0
+        ],
+        [
+          0.11999999731779099,
+          0.03999999910593033,
+          0.0
+        ],
+        [
+          0.14000000059604645,
+          0.03999999910593033,
+          0.0
+        ],
+        [
+          0.019999999552965164,
+          0.05999999865889549,
+          0.0
+        ],
+        [
+          0.03999999910593033,
+          0.05999999865889549,
+          0.0
+        ],
+        [
+          0.11999999731779099,
+          0.05999999865889549,
+          0.0
+        ],
+        [
+          0.14000000059604645,
+          0.05999999865889549,
+          0.0
+        ],
+        [
+          0.03999999910593033,
+          0.07999999821186066,
+          0.0
+        ],
+        [
+          0.09999999403953552,
+          0.07999999821186066,
+          0.0
+        ],
+        [
+          0.11999999731779099,
+          0.07999999821186066,
+          0.0
+        ],
+        [
+          0.14000000059604645,
+          0.07999999821186066,
+          0.0
+        ],
+        [
+          0.1599999964237213,
+          0.07999999821186066,
+          0.0
+        ],
+        [
+          0.09999999403953552,
+          0.09999999403953552,
+          0.0
+        ],
+        [
+          0.11999999731779099,
+          0.09999999403953552,
+          0.0
+        ],
+        [
+          0.17999999225139618,
+          0.09999999403953552,
+          0.0
+        ],
+        [
+          0.11999999731779099,
+          0.11999999731779099,
+          0.0
+        ],
+        [
+          0.17999999225139618,
+          0.11999999731779099,
+          0.0
+        ]
+      ],
+      "corner_ids": [
+        1,
+        4,
+        9,
+        10,
+        14,
+        15,
+        18,
+        19,
+        23,
+        24,
+        28,
+        31,
+        32,
+        33,
+        34,
+        40,
+        41,
+        44,
+        50,
+        53
+      ],
+      "frame": "/home/jerry/rax-runtime/sessions/20261104T091548Z_unscrew_bottle_b3726a/agent-workspace/runtime/frames/202611041216351381bb",
+      "ray_angles_deg": [
+        114.50789012330041,
+        109.67500372392564,
+        115.99217493439242,
+        114.60084059568445,
+        107.99059170178353,
+        106.17471266139373,
+        116.01375359712898,
+        114.61267593207492,
+        108.01632670365687,
+        106.21513356089055,
+        114.4828875624357,
+        109.63408695770617,
+        107.88591948837728,
+        106.11826069757068,
+        104.2985967974079,
+        109.420774507151,
+        107.69579897740398,
+        102.27164280735433,
+        107.38663271141482,
+        102.01260862953967
+      ],
+      "ray_error_m": {
+        "side_a": [
+          6.787167705957664e-05,
+          0.0005634828869563104,
+          1.121618319099715e-05,
+          9.913988242990656e-05,
+          0.0008414034353869643,
+          0.0009191427911649857,
+          1.8822739433460083e-05,
+          6.253728447864129e-05,
+          0.0007929353009889275,
+          0.000969585127440489,
+          0.00015160414018131548,
+          0.0007240436362846484,
+          0.0007980731933055339,
+          0.0008781870303235692,
+          0.0011423366131754088,
+          0.0006833181785973264,
+          0.0009023614505023202,
+          0.001395091106987484,
+          0.000827893809027525,
+          0.0013639100906463356
+        ],
+        "side_b": [
+          6.874071183208252e-05,
+          0.0005690064398108601,
+          1.135621855359389e-05,
+          0.00010041670104357514,
+          0.0008478250860546151,
+          0.0009238224915218267,
+          1.905932156654889e-05,
+          6.334006522516098e-05,
+          0.0007988243397610956,
+          0.0009743273940143852,
+          0.00015356781650837652,
+          0.0007309222437889933,
+          0.0008038420398519966,
+          0.0008823117435875157,
+          0.0011444276460037168,
+          0.0006896756823963564,
+          0.0009087667116792841,
+          0.001393129528512773,
+          0.000833562116495927,
+          0.0013616798385523879
+        ]
+      },
+      "rigidity_error_m": [
+        0.0008481273343022783,
+        0.0006664531718191298,
+        0.0007109609914481056,
+        0.0005925212410028949,
+        0.0005905634568640939,
+        0.0005038761957745366,
+        0.0008008812840126323,
+        0.0006910965050973786,
+        0.0003326674489507081,
+        0.0004678341149351539,
+        0.0004887487978810615,
+        0.0005625478880684438,
+        0.0004988180395703607,
+        0.00023471159138831776,
+        0.000638647118490054,
+        0.000734562763983409,
+        0.0006018169910785085,
+        0.001079732588030127,
+        0.0007970448384335672,
+        0.0012256924618863684
+      ],
+      "triangulated_points_left_base": [
+        [
+          0.38319479658801253,
+          -0.449650384907184,
+          0.3491909943698829
+        ],
+        [
+          0.3228555031504114,
+          -0.4471433759919844,
+          0.3493041100145032
+        ],
+        [
+          0.40352727855963066,
+          -0.4306588911339477,
+          0.34810211091274396
+        ],
+        [
+          0.3835636091600103,
+          -0.4299006899937703,
+          0.3479274693808414
+        ],
+        [
+          0.3033446544383623,
+          -0.42661505243531767,
+          0.3479114110277567
+        ],
+        [
+          0.28322745575102837,
+          -0.42587121963164126,
+          0.3482006048835677
+        ],
+        [
+          0.404032080861559,
+          -0.41086247149959676,
+          0.3470406945537543
+        ],
+        [
+          0.3840581262019871,
+          -0.4102725531038611,
+          0.34681417736917586
+        ],
+        [
+          0.30387785838271025,
+          -0.40691756330594187,
+          0.3467701749255281
+        ],
+        [
+          0.28375662270961816,
+          -0.4058978667320975,
+          0.3471267762046007
+        ],
+        [
+          0.38453727506638347,
+          -0.39022099681380057,
+          0.34546598011790713
+        ],
+        [
+          0.3242319524175311,
+          -0.3879234693723128,
+          0.34518704344928675
+        ],
+        [
+          0.3041204049405286,
+          -0.3871626934685343,
+          0.3454061456561189
+        ],
+        [
+          0.2843427211622023,
+          -0.38635550944566327,
+          0.3457070576484577
+        ],
+        [
+          0.2639692563004238,
+          -0.3856392775252639,
+          0.3464746846268054
+        ],
+        [
+          0.32466637725175895,
+          -0.36812192847931685,
+          0.3439300306271431
+        ],
+        [
+          0.30468608852552337,
+          -0.36736308099377785,
+          0.34417212738140046
+        ],
+        [
+          0.24442199585605123,
+          -0.3647154435073234,
+          0.34565519725992994
+        ],
+        [
+          0.30505481955108793,
+          -0.34737723415975097,
+          0.3429707915566821
+        ],
+        [
+          0.2449694587209481,
+          -0.3446427261126149,
+          0.3444580068576807
+        ]
+      ]
+    },
+    {
+      "T_left_base_board": [
+        [
+          -0.9993691604437606,
+          0.031985642265396824,
+          -0.015433724203923312,
+          0.4216434388863859
+        ],
+        [
+          0.0329112902566593,
+          0.9974067515994262,
+          -0.0640048344855535,
+          -0.47073257825015
+        ],
+        [
+          0.01334646498420574,
+          -0.0644724014811859,
+          -0.9978302367234991,
+          0.34922099194102174
+        ],
+        [
+          0.0,
+          0.0,
+          0.0,
+          1.0
+        ]
+      ],
+      "board_points": [
+        [
+          0.11999999731779099,
+          0.019999999552965164,
+          0.0
+        ],
+        [
+          0.14000000059604645,
+          0.019999999552965164,
+          0.0
+        ],
+        [
+          0.019999999552965164,
+          0.03999999910593033,
+          0.0
+        ],
+        [
+          0.11999999731779099,
+          0.03999999910593033,
+          0.0
+        ],
+        [
+          0.14000000059604645,
+          0.03999999910593033,
+          0.0
+        ],
+        [
+          0.1599999964237213,
+          0.03999999910593033,
+          0.0
+        ],
+        [
+          0.11999999731779099,
+          0.05999999865889549,
+          0.0
+        ],
+        [
+          0.14000000059604645,
+          0.05999999865889549,
+          0.0
+        ],
+        [
+          0.1599999964237213,
+          0.05999999865889549,
+          0.0
+        ],
+        [
+          0.05999999865889549,
+          0.07999999821186066,
+          0.0
+        ],
+        [
+          0.07999999821186066,
+          0.07999999821186066,
+          0.0
+        ],
+        [
+          0.09999999403953552,
+          0.07999999821186066,
+          0.0
+        ],
+        [
+          0.11999999731779099,
+          0.07999999821186066,
+          0.0
+        ],
+        [
+          0.14000000059604645,
+          0.07999999821186066,
+          0.0
+        ],
+        [
+          0.1599999964237213,
+          0.07999999821186066,
+          0.0
+        ],
+        [
+          0.09999999403953552,
+          0.09999999403953552,
+          0.0
+        ],
+        [
+          0.11999999731779099,
+          0.09999999403953552,
+          0.0
+        ],
+        [
+          0.17999999225139618,
+          0.09999999403953552,
+          0.0
+        ],
+        [
+          0.09999999403953552,
+          0.11999999731779099,
+          0.0
+        ],
+        [
+          0.17999999225139618,
+          0.11999999731779099,
+          0.0
+        ],
+        [
+          0.09999999403953552,
+          0.14000000059604645,
+          0.0
+        ]
+      ],
+      "corner_ids": [
+        5,
+        6,
+        9,
+        14,
+        15,
+        16,
+        23,
+        24,
+        25,
+        29,
+        30,
+        31,
+        32,
+        33,
+        34,
+        40,
+        41,
+        44,
+        49,
+        53,
+        58
+      ],
+      "frame": "/home/jerry/rax-runtime/sessions/20261104T091548Z_unscrew_bottle_b3726a/agent-workspace/runtime/frames/20261104121639519dc7",
+      "ray_angles_deg": [
+        107.91144116490477,
+        106.03224038584294,
+        115.99148974870519,
+        107.98881939326444,
+        106.19072672564397,
+        104.38879475965398,
+        107.98646897458882,
+        106.21423708747669,
+        104.40701910999746,
+        112.91687365135934,
+        111.30319148458658,
+        109.63415155307106,
+        107.88956883648495,
+        106.11509336353397,
+        104.31180859869171,
+        109.41827577772803,
+        107.70323850986118,
+        102.26761082960759,
+        109.09674891385241,
+        102.02848641858283,
+        108.66080584935402
+      ],
+      "ray_error_m": {
+        "side_a": [
+          0.0006404301986320665,
+          0.0009146704471838407,
+          8.353307179222086e-06,
+          0.0008384490644455726,
+          0.0008539231687931973,
+          0.001062676785625277,
+          0.0009122064068217299,
+          0.0009576567226715514,
+          0.0011555300830332707,
+          0.0003653201551095717,
+          0.0005101731588582348,
+          0.0007366166912727544,
+          0.0008275589090330267,
+          0.0009274164630093399,
+          0.0011643638973646005,
+          0.0006875632446349013,
+          0.0009071410290877472,
+          0.001374913806860507,
+          0.000775387671972804,
+          0.001516879510116599,
+          0.0008290969904646288
+        ],
+        "side_b": [
+          0.0006453570045168213,
+          0.0009195343461525294,
+          8.457633635568359e-06,
+          0.0008448467397775587,
+          0.0008582586304822542,
+          0.00106509534835216,
+          0.0009190219466131309,
+          0.0009623386090118074,
+          0.0011579161509878242,
+          0.0003698801299802632,
+          0.0005159092383789721,
+          0.000743620800548306,
+          0.0008335614618678648,
+          0.0009317846067583474,
+          0.0011665053892498673,
+          0.0006939631292677214,
+          0.0009135823648241242,
+          0.0013729815452871608,
+          0.0007825259594760361,
+          0.0015143218448759135,
+          0.0008366147764699629
+        ]
+      },
+      "rigidity_error_m": [
+        0.0006898326405849565,
+        0.00090389233515503,
+        0.0014155466831165743,
+        0.0005611980657816118,
+        0.0004166803962037555,
+        0.0006589803614253484,
+        0.0004942527281035301,
+        0.00037782696244987923,
+        0.00048649617019043363,
+        0.00044044052977913376,
+        0.00037149469496388016,
+        0.00039321825825036513,
+        0.00032914441251150945,
+        0.00024772780145259054,
+        0.00042181811080455484,
+        0.000556169172267238,
+        0.00048389700904334854,
+        0.0007950836992564648,
+        0.0006978897674812476,
+        0.001085323489846087,
+        0.0008578927039089218
+      ],
+      "triangulated_points_left_base": [
+        [
+          0.3030129569370856,
+          -0.4466626942947547,
+          0.34939784217361597
+        ],
+        [
+          0.282806053327392,
+          -0.44564509269526226,
+          0.3492123604770408
+        ],
+        [
+          0.4035371765079352,
+          -0.43066672162623704,
+          0.3480934949237292
+        ],
+        [
+          0.3033376294043407,
+          -0.42660016901008463,
+          0.3479005466606548
+        ],
+        [
+          0.2833239276240852,
+          -0.42607689600404913,
+          0.34828090706326226
+        ],
+        [
+          0.26327433839286135,
+          -0.4250379092790935,
+          0.3490738933244474
+        ],
+        [
+          0.3036938789671113,
+          -0.40655751580561966,
+          0.3466447048705765
+        ],
+        [
+          0.28375736314222444,
+          -0.40593281584459895,
+          0.34711883944649813
+        ],
+        [
+          0.2636980877067964,
+          -0.40527328862802914,
+          0.34782516795335383
+        ],
+        [
+          0.3643794645385045,
+          -0.389351706681117,
+          0.3450230955488241
+        ],
+        [
+          0.344306177032007,
+          -0.3886355352654473,
+          0.344965662004852
+        ],
+        [
+          0.3242217414582097,
+          -0.387982084014274,
+          0.3451936110538745
+        ],
+        [
+          0.30419048579123176,
+          -0.3871372796665059,
+          0.3453833712355332
+        ],
+        [
+          0.28432771237357807,
+          -0.38628262620790643,
+          0.3456918948392459
+        ],
+        [
+          0.2640685804255554,
+          -0.38552388453717235,
+          0.3465152825873935
+        ],
+        [
+          0.3246597717003884,
+          -0.3681594382426154,
+          0.34391148619300915
+        ],
+        [
+          0.3047074142012647,
+          -0.3674478675755015,
+          0.34421515718526347
+        ],
+        [
+          0.24439367007038534,
+          -0.36474754292302924,
+          0.34563852450737187
+        ],
+        [
+          0.32516695102003806,
+          -0.34828466819234993,
+          0.34257151565096233
+        ],
+        [
+          0.2449172418983115,
+          -0.3447735677088882,
+          0.3446602075508144
+        ],
+        [
+          0.3256044957384122,
+          -0.3283455824225362,
+          0.3412027194261501
+        ]
+      ]
+    }
+  ],
+  "summary": {
+    "checks": 8,
+    "fresh_frames": 8,
+    "max_corner_error_mm": 1.8831719320133171,
+    "max_reference_ray_error_mm": 1.5186308739975085,
+    "max_reference_rigidity_error_mm": 1.5173047376176356,
+    "max_reprojection_mean_px": 0.47823086380958557,
+    "max_rotation_deg": 0.5150784375424192,
+    "max_translation_mm": 0.7764325216409197,
+    "min_shared_corners": 12
+  },
+  "target": "front",
+  "training_count": 12,
+  "training_residuals": [
+    {
+      "frame": "/home/jerry/rax-runtime/sessions/20261104T091548Z_unscrew_bottle_b3726a/agent-workspace/runtime/frames/2026110412153452c2b6",
+      "max_corner_error_m": 0.001308713940766289,
+      "mean_corner_error_m": 0.0007315716608540621,
+      "reference": "stereo:side_a+side_b",
+      "rotation_error_deg": 0.42112397276469954,
+      "translation_error_m": 0.0005877536270222064
+    },
+    {
+      "frame": "/home/jerry/rax-runtime/sessions/20261104T091548Z_unscrew_bottle_b3726a/agent-workspace/runtime/frames/20261104121538313ce6",
+      "max_corner_error_m": 0.0013722831033473463,
+      "mean_corner_error_m": 0.0006988299542626166,
+      "reference": "stereo:side_a+side_b",
+      "rotation_error_deg": 0.2460166611747386,
+      "translation_error_m": 0.0001916246227165584
+    },
+    {
+      "frame": "/home/jerry/rax-runtime/sessions/20261104T091548Z_unscrew_bottle_b3726a/agent-workspace/runtime/frames/20261104121542a4d2e1",
+      "max_corner_error_m": 0.0017749625858403122,
+      "mean_corner_error_m": 0.0008664715087423047,
+      "reference": "stereo:side_a+side_b",
+      "rotation_error_deg": 0.20372747622443535,
+      "translation_error_m": 0.000494472196280682
+    },
+    {
+      "frame": "/home/jerry/rax-runtime/sessions/20261104T091548Z_unscrew_bottle_b3726a/agent-workspace/runtime/frames/20261104121546bd2fcc",
+      "max_corner_error_m": 0.0017767441934224697,
+      "mean_corner_error_m": 0.0007733432728862774,
+      "reference": "stereo:side_a+side_b",
+      "rotation_error_deg": 0.07138694547723039,
+      "translation_error_m": 0.00012319301187667853
+    },
+    {
+      "frame": "/home/jerry/rax-runtime/sessions/20261104T091548Z_unscrew_bottle_b3726a/agent-workspace/runtime/frames/2026110412154999ff00",
+      "max_corner_error_m": 0.0017745916763155034,
+      "mean_corner_error_m": 0.0008171331162005532,
+      "reference": "stereo:side_a+side_b",
+      "rotation_error_deg": 0.11399388875225919,
+      "translation_error_m": 0.0002443420738286859
+    },
+    {
+      "frame": "/home/jerry/rax-runtime/sessions/20261104T091548Z_unscrew_bottle_b3726a/agent-workspace/runtime/frames/202611041215538482c4",
+      "max_corner_error_m": 0.001252176502648879,
+      "mean_corner_error_m": 0.0007086978282504646,
+      "reference": "stereo:side_a+side_b",
+      "rotation_error_deg": 0.3661958481193924,
+      "translation_error_m": 0.0004312160652220862
+    },
+    {
+      "frame": "/home/jerry/rax-runtime/sessions/20261104T091548Z_unscrew_bottle_b3726a/agent-workspace/runtime/frames/2026110412155608009f",
+      "max_corner_error_m": 0.0018054105990548252,
+      "mean_corner_error_m": 0.0008270973739351889,
+      "reference": "stereo:side_a+side_b",
+      "rotation_error_deg": 0.38591916500483675,
+      "translation_error_m": 0.00023688948160455238
+    },
+    {
+      "frame": "/home/jerry/rax-runtime/sessions/20261104T091548Z_unscrew_bottle_b3726a/agent-workspace/runtime/frames/202611041215594d4162",
+      "max_corner_error_m": 0.001420368641770529,
+      "mean_corner_error_m": 0.0008194971223401109,
+      "reference": "stereo:side_a+side_b",
+      "rotation_error_deg": 0.11613704127065248,
+      "translation_error_m": 0.0002511805044777922
+    },
+    {
+      "frame": "/home/jerry/rax-runtime/sessions/20261104T091548Z_unscrew_bottle_b3726a/agent-workspace/runtime/frames/20261104121602122984",
+      "max_corner_error_m": 0.0010486528929129725,
+      "mean_corner_error_m": 0.0006682897093063697,
+      "reference": "stereo:side_a+side_b",
+      "rotation_error_deg": 0.4207341489492466,
+      "translation_error_m": 0.0006550262520302298
+    },
+    {
+      "frame": "/home/jerry/rax-runtime/sessions/20261104T091548Z_unscrew_bottle_b3726a/agent-workspace/runtime/frames/20261104121605b3967a",
+      "max_corner_error_m": 0.001064944646681362,
+      "mean_corner_error_m": 0.0006958667030992874,
+      "reference": "stereo:side_a+side_b",
+      "rotation_error_deg": 0.06919893145954878,
+      "translation_error_m": 0.0002963000718159541
+    },
+    {
+      "frame": "/home/jerry/rax-runtime/sessions/20261104T091548Z_unscrew_bottle_b3726a/agent-workspace/runtime/frames/20261104121609e37205",
+      "max_corner_error_m": 0.0013307583596718013,
+      "mean_corner_error_m": 0.0007679071394312692,
+      "reference": "stereo:side_a+side_b",
+      "rotation_error_deg": 0.08790870463031844,
+      "translation_error_m": 0.0003691529884193332
+    },
+    {
+      "frame": "/home/jerry/rax-runtime/sessions/20261104T091548Z_unscrew_bottle_b3726a/agent-workspace/runtime/frames/20261104121612d33d35",
+      "max_corner_error_m": 0.0013554913223898146,
+      "mean_corner_error_m": 0.0006297269896206285,
+      "reference": "stereo:side_a+side_b",
+      "rotation_error_deg": 0.2625250236843235,
+      "translation_error_m": 0.0003825265212015268
+    }
+  ],
+  "verification_count": 8,
+  "verification_residuals": [
+    {
+      "frame": "/home/jerry/rax-runtime/sessions/20261104T091548Z_unscrew_bottle_b3726a/agent-workspace/runtime/frames/20261104121615e8cc89",
+      "max_corner_error_m": 0.0018244859526761743,
+      "mean_corner_error_m": 0.0008081173279090747,
+      "reference": "stereo:side_a+side_b",
+      "rotation_error_deg": 0.1765463580492216,
+      "translation_error_m": 0.00028772244254716685
+    },
+    {
+      "frame": "/home/jerry/rax-runtime/sessions/20261104T091548Z_unscrew_bottle_b3726a/agent-workspace/runtime/frames/20261104121618229d88",
+      "max_corner_error_m": 0.001448508615401685,
+      "mean_corner_error_m": 0.0006958517586004719,
+      "reference": "stereo:side_a+side_b",
+      "rotation_error_deg": 0.3372671327663619,
+      "translation_error_m": 0.0007274262115005051
+    },
+    {
+      "frame": "/home/jerry/rax-runtime/sessions/20261104T091548Z_unscrew_bottle_b3726a/agent-workspace/runtime/frames/202611041216219edcb0",
+      "max_corner_error_m": 0.001883171932013317,
+      "mean_corner_error_m": 0.0007450812523179176,
+      "reference": "stereo:side_a+side_b",
+      "rotation_error_deg": 0.22807942456731672,
+      "translation_error_m": 0.0003709841888634385
+    },
+    {
+      "frame": "/home/jerry/rax-runtime/sessions/20261104T091548Z_unscrew_bottle_b3726a/agent-workspace/runtime/frames/20261104121624f4b1a5",
+      "max_corner_error_m": 0.0013269577850054445,
+      "mean_corner_error_m": 0.0007021833734950126,
+      "reference": "stereo:side_a+side_b",
+      "rotation_error_deg": 0.3971014207773542,
+      "translation_error_m": 0.0006890500416174151
+    },
+    {
+      "frame": "/home/jerry/rax-runtime/sessions/20261104T091548Z_unscrew_bottle_b3726a/agent-workspace/runtime/frames/20261104121628bf0dec",
+      "max_corner_error_m": 0.0011550269034606771,
+      "mean_corner_error_m": 0.0008236793241529856,
+      "reference": "stereo:side_a+side_b",
+      "rotation_error_deg": 0.5150784375424192,
+      "translation_error_m": 0.0005882031471241382
+    },
+    {
+      "frame": "/home/jerry/rax-runtime/sessions/20261104T091548Z_unscrew_bottle_b3726a/agent-workspace/runtime/frames/2026110412163176ca14",
+      "max_corner_error_m": 0.0013773291791792839,
+      "mean_corner_error_m": 0.0005998025276903006,
+      "reference": "stereo:side_a+side_b",
+      "rotation_error_deg": 0.28586380931021976,
+      "translation_error_m": 0.0006513791892955728
+    },
+    {
+      "frame": "/home/jerry/rax-runtime/sessions/20261104T091548Z_unscrew_bottle_b3726a/agent-workspace/runtime/frames/202611041216351381bb",
+      "max_corner_error_m": 0.0011423587481667959,
+      "mean_corner_error_m": 0.0007621264516816831,
+      "reference": "stereo:side_a+side_b",
+      "rotation_error_deg": 0.17622948760575752,
+      "translation_error_m": 0.00033101938714497113
+    },
+    {
+      "frame": "/home/jerry/rax-runtime/sessions/20261104T091548Z_unscrew_bottle_b3726a/agent-workspace/runtime/frames/20261104121639519dc7",
+      "max_corner_error_m": 0.001324861858111236,
+      "mean_corner_error_m": 0.0007244510498842295,
+      "reference": "stereo:side_a+side_b",
+      "rotation_error_deg": 0.44583500514880947,
+      "translation_error_m": 0.0007764325216409197
+    }
+  ]
+}

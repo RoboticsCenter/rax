@@ -192,9 +192,12 @@ class WujiClient:
         return state
 
     def move(self, positions, duration_s=None, completion='position'):
+        duration = self.cfg['max_duration_s']
+        if self.cfg['motion_mode'] == 'scurve':
+            duration = max(duration*self.cfg['reference_timeout_scale'], duration+self.cfg['settle_timeout_s'])
         result = self._operation('move', {'positions': positions, 'duration_s': duration_s,
                                               'completion': completion},
-                           timeout=self.cfg['max_duration_s']+self.cfg['settle_timeout_s']+2)
+                           timeout=duration+self.cfg['settle_timeout_s']+2)
         return result
 
     def hold(self):

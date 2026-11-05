@@ -5,6 +5,7 @@ would: scripts/configure_session.py, scripts/start_agent.sh and services.xarm.ar
 """
 from __future__ import annotations
 
+from datetime import datetime
 import json
 import os
 from pathlib import Path
@@ -132,6 +133,11 @@ class Sessions:
 
     @staticmethod
     def usage(root):
+        config = read_json(root/'operator-input.json', {}) or {}
+        legacy_geo_multiplier = 1.1 if config.get('agent_provider') == 'claude-login' else 1.
+        estimated_cost = 0.
+        unpriced_responses = 0
+        latest_usage = None
         totals = {'calls': (read_json(root/'model-calls.json', {}) or {}).get('calls', 0),
                   'input_tokens': 0, 'output_tokens': 0, 'cache_read_input_tokens': 0,
                   'cache_creation_input_tokens': 0, 'cost_usd': 0.0, 'responses': 0}
@@ -147,9 +153,45 @@ class Sessions:
                                 'cache_creation_input_tokens'):
                         totals[key] += int(row.get(key, 0) or 0)
                     totals['cost_usd'] += float(row.get('cost_usd', 0) or 0)
+                    latest_usage = max(latest_usage or 0, float(row.get('time', 0) or 0))
+                    if isinstance(row.get('cost_usd'), (int, float)):
+                        estimated_cost += row['cost_usd']
+                    elif row.get('model') == 'claude-opus-5-5':
+                        # USD per million tokens; Anthropic standard pricing, Nov 2026.
+                        # Older login logs omit geography; their observed requests used US inference.
+                        geo = row.get('inference_geo')
+                        multiplier = 1.1 if geo == 'us' else (1. if geo else legacy_geo_multiplier)
+                        if row.get('speed') == 'fast':
+                            multiplier *= 2
+                        cache = row.get('cache_creation') or {}
+                        hour_tokens = cache.get('ephemeral_1h_input_tokens', 0) or 0
+                        estimated_cost += multiplier * (
+                            (row.get('input_tokens', 0) or 0)*4 +
+                            (row.get('output_tokens', 0) or 0)*20 +
+                            (row.get('cache_read_input_tokens', 0) or 0)*.2 +
+                            (row.get('cache_creation_input_tokens', 0) or 0)*5 + hour_tokens*3) / 1e6
+                    else:
+                        unpriced_responses += 1
         except OSError:
             pass
         totals['cost_usd'] = round(totals['cost_usd'], 4)
+        lifecycle = read_json(root/'agent-lifecycle.json', {}) or {}
+        active_seconds = 0.
+        if latest_usage:
+            for attempt in [*lifecycle.get('attempts', []), lifecycle]:
+                start = attempt.get('started_at')
+                finish = attempt.get('finished_at') or latest_usage
+                if start:
+                    active_seconds += max(0., min(finish, latest_usage)-start)
+        totals.update(estimated_cost_usd=round(estimated_cost, 4) if not unpriced_responses else None,
+                      estimated_usd_per_hour=round(estimated_cost*3600/active_seconds, 2)
+                      if active_seconds > 0 and not unpriced_responses else None,
+                      active_hours=round(active_seconds/3600, 3), latest_usage_at=latest_usage,
+                      unpriced_responses=unpriced_responses,
+                      cost_basis='API-equivalent estimate; Opus 5.5 standard rates, 5m cache writes; '
+                      + ('US inference assumed where older login logs omit geography. '
+                         if legacy_geo_multiplier == 1.1 else '')
+                      + 'Not a verified account charge. Active hours exclude stopped intervals and end at latest usage.')
         return totals
 
     def summary(self, root):
@@ -159,6 +201,18 @@ class Sessions:
         status = lifecycle.get('status', 'configured')
         if status in ACTIVE and not process:
             status = f'{status} (launcher gone)'
+        exit_notice = None
+        started = lifecycle.get('started_at')
+        intentional_stop = read_json(root/'operator/dashboard-stop.json', {}) or {}
+        if (started and not process and lifecycle.get('status') not in ('stopped', 'prepared-only')
+                and intentional_stop.get('started_at') != started):
+            exit_notice = {'id': f'exit-{started}', 'created': lifecycle.get('finished_at') or started,
+                           'message': f"Agent session ended: {status}. "
+                           + (f"Return code: {lifecycle['returncode']}. " if 'returncode' in lifecycle else '')
+                           + (f"Error: {lifecycle['error_type']}. " if lifecycle.get('error_type') else '')
+                           + 'Autoresearch is no longer running. Review the session logs before resuming.'}
+        requests = operator.pending(root)
+        idle_notice = self.idle_notice(root, started) if process and status == 'running' and not requests else None
         return {
             'id': root.name, 'task': config.get('task'), 'robot': config.get('robot'),
             'created': (root/'operator-input.json').stat().st_mtime,
@@ -167,7 +221,9 @@ class Sessions:
             'attempts': len(lifecycle.get('attempts', [])) + (1 if lifecycle and status != 'prepared-only' else 0),
             'running': bool(process), 'process': process,
             'motion': arming.read(root),
-            'requests': operator.pending(root),
+            'requests': requests,
+            'exit_notice': exit_notice,
+            'idle_notice': idle_notice,
             'prepare_on_reply': config.get('robot') == 'xarm_bimanual' or
                 (config.get('backend_options', {}).get('end_effector') or {}).get('type') == 'wuji_hand2',
             'model': config.get('agent_model') or 'provider default',
@@ -246,6 +302,10 @@ class Sessions:
         process = self.process(root)
         if not process:
             raise RuntimeError('the session is not running')
+        (root/'operator').mkdir(exist_ok=True)
+        (root/'operator/dashboard-stop.json').write_text(json.dumps({
+            'started_at': (read_json(root/'agent-lifecycle.json', {}) or {}).get('started_at'),
+            'requested_at': time.time()}))
 
         def signal_it(sig):
             try:
@@ -514,6 +574,35 @@ class Sessions:
         projects = root/HOME_NAME/'projects'
         files = sorted(projects.glob('*/*.jsonl'), key=lambda p: p.stat().st_mtime) if projects.is_dir() else []
         return files[-1] if files else None
+
+    def idle_notice(self, root, started_at):
+        """An interactive CLI can stay alive after Claude has finished its turn."""
+        path = self.transcript_file(root)
+        finished = None
+        for line in tail_lines(path, 200) if path else []:
+            try:
+                entry = json.loads(line)
+            except ValueError:
+                continue
+            kind = entry.get('type')
+            if kind in ('user', 'api-request'):
+                finished = None
+            elif kind == 'assistant' and (entry.get('message') or {}).get('stop_reason') == 'end_turn':
+                finished = entry
+            elif kind == 'assistant' and (entry.get('message') or {}).get('stop_reason') == 'tool_use':
+                finished = None
+        if not finished:
+            return None
+        try:
+            stamp = datetime.fromisoformat(finished['timestamp'].replace('Z', '+00:00')).timestamp()
+        except (KeyError, ValueError, TypeError):
+            return None
+        if stamp < (started_at or 0) or time.time()-stamp < 10:
+            return None
+        return {'id': f"idle-{path.stem}-{finished.get('uuid') or finished['timestamp']}",
+                'created': stamp, 'title': 'CLAUDE TURN FINISHED',
+                'message': 'Claude finished its turn and is waiting for input. The CLI is still open, '
+                'but autoresearch is not continuing. Review the transcript and send an instruction to continue.'}
 
     @staticmethod
     def transcript_events(lines, limit=80):

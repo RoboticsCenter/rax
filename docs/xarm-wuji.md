@@ -258,13 +258,46 @@ TCP and quaternion order `[x,y,z,w]`.
 
 Commands enforce configured angle limits, maximum step, velocity, acceleration,
 tracking deviation and deadlines. An omitted duration is computed from the bounds;
-an explicit duration that is too short is rejected. State and diagnostic streams
+a valid explicit duration that is too short is stretched to the minimum permitted
+by the reference limits (including current slew limits for effort ramps). S-curve
+preflight uses the same planner as execution. S-curve execution allows
+`reference_timeout_scale` times nominal duration (default 3, configurable 1–5,
+never less than the previous nominal-plus-settling allowance),
+then a separate `settle_timeout_s` window after the reference completes. IPC waits
+include that budget. A completed reference that misses position tolerance returns
+`reached: false`, `holding: true` and measured error instead of stopping the assembly;
+this does not confirm contact or object retention. State and diagnostic streams
 must both remain fresh. Missing or duplicated NIDs, nonfinite values, stale
 sequences, reported faults and an unexpected enabled state prevent continued
 execution. The hand keeps its target during arm motion; calls are sequential,
 not a synchronized arm/hand trajectory.
 
 ### Arm completion and stalled moves
+
+The bimanual grasp profile allows 0.03 rad final position error on the partial
+left hand and 0.10 rad on the right, with 3 s and 10 s settling windows respectively.
+These are completion allowances, not larger force/current limits. Deliberate grasp
+closures can use `completion="contact"` to accept a stable shortfall and retain a
+bounded hold; this is not proof of object retention. Native Stall diagnostics,
+temperature limits, feedback freshness and tracking-error guards still apply.
+Diagnostic failures name the joint and native fault separately from stale data.
+On a fresh partial-hand connection, excluded joints briefly reporting `Init` are
+recorded as startup warnings only while no control profile has been applied and
+every native joint is Init, Ready or Stopped. Preparation still refuses until all
+twenty joints report fresh Ready/Stopped states. Init during control, any enabled
+excluded joint, native faults and previously latched faults retain their stop
+behavior. A new Ready frame never automatically clears an existing fault latch.
+The bimanual left-hand MCU temperature cutoff is 67°C, based on the operator's
+reported vendor approval on November 4; the right-hand cutoff remains 65°C.
+The cutoff remains enforced and changing it does not clear a retained thermal
+fault. Restart the controller service to load a changed threshold, then perform
+operator recovery before resuming motion.
+The right bimanual profile additionally tolerates a continuous native code-7
+`Stall` / `Warning` / `AutoClear` episode for at most 100 ms, only while that joint
+remains natively Enabled. `stall_warning_grace_s` defaults to zero and is capped
+at 200 ms. Tolerated episodes remain visible in warning history. A longer episode,
+a joint leaving Enabled, or any other fault still stops and latches the fault.
+Changing this policy never clears an existing latch or enables a joint.
 
 The default arm deadline is **60 seconds**, with Cartesian `timeout_s` overrides
 from **1 to 120 seconds**. Joint moves share one deadline across all SDK segments,

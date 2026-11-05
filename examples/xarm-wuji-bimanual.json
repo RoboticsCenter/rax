@@ -55,7 +55,7 @@
         "max_jerk_rad_s3": 0.5,
         "max_scheduler_gap_s": 0.25,
         "max_step_rad": 2.1,
-        "max_temperature_c": 65.0,
+        "max_temperature_c": 67.0,
         "max_tracking_error_rad": 0.1,
         "max_velocity_rad_s": 0.15,
         "motion_mode": "scurve",
@@ -87,8 +87,8 @@
         "serial": "WH2JA01260811007",
         "settle_position_range_rad": 0.004,
         "settle_s": 0.4,
-        "settle_timeout_s": 1.0,
-        "tolerance_rad": 0.015,
+        "settle_timeout_s": 3.0,
+        "tolerance_rad": 0.03,
         "type": "wuji_hand2",
         "upper_rad": [
           1.291544,
@@ -292,8 +292,8 @@
         "serial": "WH2KA01260823017",
         "settle_position_range_rad": 0.004,
         "settle_s": 0.4,
-        "settle_timeout_s": 8.0,
-        "tolerance_rad": 0.06,
+        "settle_timeout_s": 10.0,
+        "tolerance_rad": 0.1,
         "type": "wuji_hand2",
         "upper_rad": [
           1.291544,
@@ -316,7 +316,8 @@
           0.698132,
           2.094395,
           1.570796
-        ]
+        ],
+        "stall_warning_grace_s": 0.1
       },
       "home_joints": [
         0.174533,

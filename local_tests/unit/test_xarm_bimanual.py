@@ -109,6 +109,29 @@ def test_each_side_routes_to_its_existing_arm_and_hand_controller(rig):
     assert backend.arms['left'].hand_config['allow_encoder_warning'] is False
 
 
+def test_short_scurve_duration_does_not_stop_either_assembly(rig):
+    backend, arms, hands, _ = rig
+    backend.arms['left'].hand_config['motion_mode'] = 'scurve'
+    arming.write(backend.config.root, True)
+    value, _ = backend.call('wuji_move_joints', {
+        'hand': 'left', 'positions': [.2]*20, 'duration_s': .1})
+    assert value['reached'] and hands['left'].moves == [[.2]*20]
+    assert arming.read(backend.config.root)['armed']
+    assert all(not hand.stops for hand in hands.values())
+    assert all(not arm.holds for arm in arms.values())
+
+
+def test_scurve_infeasible_path_is_rejected_before_any_assembly_moves(rig):
+    backend, arms, hands, _ = rig
+    backend.arms['left'].hand_config.update(motion_mode='scurve', max_duration_s=.1)
+    arming.write(backend.config.root, True)
+    with pytest.raises(ValueError, match='duration limit'):
+        backend.call('wuji_move_joints', {'hand': 'left', 'positions': [.2]*20})
+    assert arming.read(backend.config.root)['armed']
+    assert all(not hand.stops and not hand.moves for hand in hands.values())
+    assert all(not arm.holds and not arm.commands for arm in arms.values())
+
+
 @pytest.mark.parametrize('tool,bad', [
     ('xarm_move_both', {'left': {'position': [.42, 0, .31]}, 'right': {'position': [2, 0, .31]}}),
     ('xarm_move_joints_both', {'left': {'preset': 'home'}, 'right': {'positions': [0]*6, 'preset': 'home'}}),

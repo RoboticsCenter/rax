@@ -61,13 +61,12 @@ class SCurvePath:
         minimum = max(0. if brake else .1, self.trajectory.duration)
         if duration is not None:
             duration = number(duration, 'duration_s', .1, cfg['max_duration_s'])
-            if duration < minimum-1e-9:
-                raise ValueError(f'duration_s must be at least {minimum:.3f} for the configured reference limits')
-        requested = minimum if duration is None else duration
+        requested = minimum if duration is None else max(minimum, duration)
         if requested > self.trajectory.duration:
             inp.minimum_duration = requested
             calculate()
         self.duration = self.trajectory.duration
+        self.requested_duration = duration
         if self.duration > (cfg['stop_timeout_s'] if brake else cfg['max_duration_s'])+1e-9:
             raise ValueError('S-curve exceeds the configured duration limit')
         for bound, low, high in zip(self.trajectory.position_extrema, cfg['lower_rad'], cfg['upper_rad']):
@@ -83,6 +82,11 @@ class SCurvePath:
     @property
     def complete(self):
         return self.clock_s >= self.duration
+
+    @property
+    def reference_deadline_s(self):
+        return max(self.duration*self.cfg['reference_timeout_scale'],
+                   self.duration+self.cfg['settle_timeout_s'])
 
     def sample_state(self, seconds):
         if seconds >= self.duration:
@@ -109,6 +113,8 @@ class SCurvePath:
         return {'phase': 'settling' if self.complete else ('braking' if self.brake else 'approaching'),
                 'progress': 1. if self.duration == 0 else self.clock_s/self.duration,
                 'nominal_duration_s': self.duration, 'reference_time_s': self.clock_s,
+                'requested_duration_s': self.requested_duration,
+                'reference_deadline_s': self.reference_deadline_s,
                 'requested_positions': list(self.goal), 'generator': 'Ruckig', 'ruckig_version': RUCKIG_VERSION,
                 'peak_reference_velocity_rad_s': self.peak_velocity,
                 'peak_reference_acceleration_rad_s2': self.peak_acceleration,

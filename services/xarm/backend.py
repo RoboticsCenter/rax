@@ -493,7 +493,13 @@ class XArmBackend:
                 state = self.end_effector.require_ready()
                 if name in MOTION_TOOLS:
                     goal = validate_tool(name, arguments, self.hand_config, reference=state['target_positions'])
-                    Trajectory(state['target_positions'], goal['positions'], self.hand_config, goal['duration_s'])
+                    if self.hand_config['motion_mode'] == 'scurve':
+                        from services.wuji.scurve import SCurvePath
+                        SCurvePath(state['target_positions'], goal['positions'], self.hand_config, goal['duration_s'],
+                                   velocity=state.get('command_velocity_rad_s'),
+                                   acceleration=state.get('command_acceleration_rad_s2'))
+                    else:
+                        Trajectory(state['target_positions'], goal['positions'], self.hand_config, goal['duration_s'])
                 elif name == 'wuji_set_effort':
                     effort(goal['effort_a'], state['control_parameters']['current_limit_a'])
                     EffortRamp(state['command_effort_a'], goal['effort_a'], self.hand_config, goal['duration_s'])
