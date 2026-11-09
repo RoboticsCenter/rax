@@ -1,0 +1,11 @@
+{
+  "transport": "unitree",
+  "robot_id": "REPLACE_WITH_G1_SERIAL",
+  "network_interface": "eth0",
+  "dds_domain": 0,
+  "motion_commissioned": false,
+  "wuji_mounts_commissioned": false,
+  "allowed_fsm_ids": [],
+  "arms": {},
+  "cameras": []
+}

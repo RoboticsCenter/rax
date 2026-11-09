@@ -40,7 +40,15 @@ def main():
         parser.error('use --task-file or --task-text, not both')
     description = args.task_file.read_text() if args.task_file else (args.task_text or '')
     options = json.loads(args.backend_options.read_text()) if args.backend_options else {}
-    profile = args.observation_profile or ('rgb-only' if args.robot == 'piper' else 'rgbd')
+    profile = args.observation_profile or ('rgb-only' if args.robot in ('piper', 'g1') else 'rgbd')
+    if args.robot == 'g1':
+        from services.g1.config import options as g1_options
+        try:
+            options = g1_options(options)
+        except ValueError as exc:
+            parser.error(str(exc))
+        if profile != 'rgb-only':
+            parser.error('G1 currently requires rgb-only')
     if args.robot == 'piper':
         from services.piper.config import options as piper_options
         try:

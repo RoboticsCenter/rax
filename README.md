@@ -1,3 +1,10 @@
+# RAX on Unitree G1 EDU + Wuji hands
+
+Branch `real/g1`: bounded stock-controller locomotion, body observations and dual
+Wuji hand control behind the existing MCP interface. See the [G1 backend guide](docs/g1-backend.md)
+for setup, dry runs, supported tools and the remaining simulation/arm-control work.
+Hardware commissioning is pending. The original Piper documentation follows.
+
 # RAX on one AgileX Piper + BrainCo Revo 2
 
 This branch ports RAX to **one right-side Piper arm and BrainCo Revo 2 hand**,

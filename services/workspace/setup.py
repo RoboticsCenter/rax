@@ -1,9 +1,11 @@
 """The facts a workspace is generated from; roles live in recipes, not here."""
 from dataclasses import dataclass
+from services.g1.facts import ROBOT_FACTS as G1_FACTS
 
 # Words shared sources use for the robot instead of branching on it. Tool names are the
 # backend's MCP tools (services/backends.py); keep them in sync with the backend.
 ROBOT_FACTS = {
+    'g1': G1_FACTS,
     'piper': {'name': 'AgileX Piper + BrainCo Revo 2 (right pair only)',
               'status': 'piper_status', 'observe': 'piper_observe',
               'move': 'piper_move_pose', 'joints': 'piper_move_joints',

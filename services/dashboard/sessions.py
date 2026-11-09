@@ -287,7 +287,18 @@ class Sessions:
                 disarmed.append(root.name)
         return {'disarmed': disarmed, 'hold': self.hold()}
 
+    def _g1_root(self):
+        for root in self.roots():
+            config = read_json(root/'operator-input.json', {}) or {}
+            if config.get('robot') == 'g1' and (self.process(root) or os.environ.get('RAX_ROBOT') == 'g1'):
+                return root
+        return None
+
     def hold(self):
+        g1_root = self._g1_root()
+        if g1_root is not None:
+            arming.write(g1_root, False, by='dashboard', reason='G1 stop requested from dashboard')
+            return 'G1 disarmed; backend stop requested, physical standstill unverified'
         try:
             self.http_post(ARM_URL + '/hold', {})
             return 'ok'
@@ -296,6 +307,10 @@ class Sessions:
 
     # ----- robot ---------------------------------------------------------------------------
     def robot(self):
+        g1_root = self._g1_root()
+        if g1_root is not None:
+            from services.g1.dashboard import snapshot
+            return snapshot(g1_root)
         from services.franka.kinematics import link8_to_tcp
         value = {'time': time.time()}
         try:

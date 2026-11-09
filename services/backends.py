@@ -17,6 +17,7 @@ from importlib import import_module
 
 # registry key -> "module:Class"; the module is imported only when selected.
 BACKENDS = {
+    'g1': 'services.g1.backend:G1Backend',
     'piper': 'services.piper.backend:PiperBackend',
     'franka': 'services.franka.backend:FrankaBackend',
     'mock': 'services.mock_backend:MockBackend',

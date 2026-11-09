@@ -1,0 +1,197 @@
+"""Operator-requested recovery after fresh native disabled feedback is verified."""
+import json
+import math
+import time
+from pathlib import Path
+
+from services.json_io import write_private_json
+from services.wuji import arming
+
+from .client import operation, request, socket_path
+from .config import DEFAULTS, JOINT_NAMES
+from .partial import DISABLED_STATES, isolated_diagnostic
+
+
+class PreparationBlocked(RuntimeError):
+    pass
+
+
+def preparation_action(state, cfg):
+    """Preflight without enabling, clearing faults, or issuing a robot command."""
+    if state.get('fresh') is not True:
+        raise PreparationBlocked('Hand feedback is stale or unavailable. Check hand connectivity before preparing.')
+    excluded = cfg.get('disabled_joints', [])
+    if excluded:
+        reported = state.get('disabled_joints')
+        if (state.get('partial_hand') is not True or not isinstance(reported, list)
+                or sorted(reported) != sorted(excluded)):
+            raise PreparationBlocked('The requested partial-hand profile is not loaded by the hand owner. '
+                                     'Stop and restart the disarmed session with the matching configuration.')
+        states = state.get('diagnostics', {}).get('states', [])
+        if len(states) != 20 or any(s not in DISABLED_STATES for s in states):
+            raise PreparationBlocked('Partial-hand preparation requires all twenty native joints confirmed disabled.')
+    faults = state.get('faults') or []
+    if not faults:
+        return 'prepare'
+    # A stop can transiently report Init on excluded joints. Keep that latch
+    # during control, but permit an explicit operator Prepare to reconnect once
+    # after complete, stationary, fault-free native disabled feedback returns.
+    kinds = {_recoverable_fault(f, excluded) for f in faults}
+    if None in kinds:
+        details = '; '.join(f"{f.get('joint', 'hand')}: {f.get('name') or f.get('reason') or f.get('code')}"
+                            if isinstance(f, dict) else str(f) for f in faults)
+        raise PreparationBlocked(f'Hand fault requires inspection; it will not be cleared automatically: {details}')
+    kind = 'stall' if 'stall' in kinds else 'thermal' if 'thermal' in kinds else 'initialization'
+    _require_disabled_feedback(state, cfg, kind)
+    return {'stall': 'reconnect-stall', 'thermal': 'reconnect',
+            'initialization': 'reconnect-init'}[kind]
+
+
+def _recoverable_fault(fault, excluded=()):
+    if not isinstance(fault, dict) or fault.get('joint') not in JOINT_NAMES:
+        return None
+    if (fault['joint'] in excluded and fault.get('reason') == 'excluded joint is not disabled'
+            and fault.get('native_state') == 'Init' and fault.get('code') is None):
+        return 'initialization'
+    if fault.get('reason') == 'temperature limit exceeded' and fault.get('code') is None:
+        return 'thermal'
+    if (type(fault.get('code')) is int and fault['code'] == 7 and fault.get('name') == 'Stall'
+            and fault.get('severity') == 'Warning' and fault.get('clear_policy') == 'AutoClear'):
+        return 'stall'
+    return None
+
+
+def _recovery_codes_clear(state, cfg):
+    """Active codes must clear; exact disabled-joint isolation may remain."""
+    diag = state.get('diagnostics', {})
+    codes = diag.get('error_code_current', [])
+    states = diag.get('states', [])
+    if len(codes) != 20 or any(type(code) is not int for code in codes):
+        return False
+    isolated = {item.get('joint'): item for item in state.get('isolated_faults', [])
+                if isinstance(item, dict)}
+    for i, code in enumerate(codes):
+        if code == 0:
+            continue
+        detail = isolated.get(JOINT_NAMES[i], {})
+        if (len(states) != 20 or detail.get('code') != code
+                or not isolated_diagnostic(cfg, JOINT_NAMES[i], code, detail,
+                                           state.get('firmware'), states[i])):
+            return False
+    return True
+
+
+def _require_disabled_feedback(state, cfg, kind):
+    """Require the device itself to be healthy before discarding retained evidence."""
+    label = f'{kind.capitalize()} recovery'
+    if state.get('fresh') is not True:
+        raise PreparationBlocked(f'{label} requires fresh hand feedback.')
+    if (state.get('enabled') is not False or state.get('owns_control') is not False
+            or state.get('mode') not in ('disabled', 'faulted')):
+        raise PreparationBlocked(f'{label} requires a confirmed disabled hand. Stop it before preparing.')
+    diag = state.get('diagnostics', {})
+    temperatures = diag.get('mcu_temp_c_fb')
+    velocities = state.get('velocity_rad_s')
+    names = diag.get('state_names', [])
+    if (not all(isinstance(v, list) and len(v) == 20
+                and all(type(x) in (int, float) and math.isfinite(x) for x in v)
+                for v in (temperatures, velocities))
+            or len(names) != 20 or not all(str(n).lower() in ('ready', 'stopped', 'disabled') for n in names)
+            or not _recovery_codes_clear(state, cfg)):
+        raise PreparationBlocked(f'{label} needs complete disabled feedback and zero native error codes '
+                                 'outside the exact configured joint isolation. '
+                                 'A current device fault must clear before recovery.')
+    if max(map(abs, velocities)) > cfg.get('stopped_velocity_rad_s', DEFAULTS['stopped_velocity_rad_s']):
+        raise PreparationBlocked(f'Hand is still moving; {kind} recovery requires measured standstill.')
+    limit = cfg.get('max_temperature_c', DEFAULTS['max_temperature_c'])
+    active_limit = state.get('diagnostics_policy', {}).get('max_temperature_c', limit)
+    if not all(type(x) in (int, float) and math.isfinite(x) and 20 <= x <= 90
+               for x in (limit, active_limit)):
+        raise PreparationBlocked(f'{label} requires a valid configured temperature limit.')
+    limit = min(limit, active_limit)
+    hottest = max(range(20), key=lambda i: temperatures[i])
+    if temperatures[hottest] >= limit:
+        raise PreparationBlocked(
+            f'Hand cooling: {JOINT_NAMES[hottest]} is {temperatures[hottest]:.1f} C. '
+            f'The earlier fault is retained. Wait until all joints are below {limit:g} C, '
+            f'then click Prepare again; it will reconnect once before preparing. The {limit:g} C limit is unchanged.')
+
+
+def recover_cooled_thermal(root, *, side=None):
+    return _recover_retained_fault(root, 'thermal', 'reconnect', side=side)
+
+
+def recover_cleared_stall(root, *, side=None):
+    """Clear the software latch only after the device's AutoClear stall has cleared."""
+    return _recover_retained_fault(root, 'stall', 'reconnect-stall', side=side)
+
+
+def recover_disabled_initialization(root, *, side=None):
+    """Operator-only recovery of an Init latch after native disabled confirmation."""
+    return _recover_retained_fault(root, 'initialization', 'reconnect-init', side=side)
+
+
+def recover_retained_faults(root, *, side=None):
+    """One explicit Prepare recovery for any combination of recognized cleared latches."""
+    return _recover_retained_fault(root, 'retained', None, side=side)
+
+
+def _recover_retained_fault(root, kind, expected_action, *, side=None):
+    """One explicit operator reconnect, never an automatic motion retry."""
+    root = Path(root)
+    options = json.loads((root/'operator-input.json').read_text())['backend_options']
+    # A standalone hand session may also use an explicit left/right service
+    # socket. Side selection must not imply that it owns two arm assemblies.
+    cfg = (options['arms'][side] if side and 'arms' in options else options)['end_effector']
+    if side and cfg.get('handedness') != side:
+        raise PreparationBlocked('Recovery side does not match the configured hand.')
+    path = socket_path(root, side) if side else socket_path(root)
+
+    def ready_sample():
+        if arming.read(root)['armed']:
+            raise PreparationBlocked(f'Disarm the session before {kind} reconnection.')
+        state = request(path, 'status')
+        action = preparation_action(state, cfg)
+        if (action not in ('reconnect', 'reconnect-stall', 'reconnect-init')
+                or (expected_action is not None and action != expected_action)):
+            raise PreparationBlocked(f'No recoverable {kind} fault is pending; reconnection was not performed.')
+        return state
+
+    before = ready_sample()
+    deadline = time.monotonic()+2.
+    while time.monotonic() < deadline:
+        time.sleep(.1)
+        ready_sample()
+    evidence = root/'operator'/f'{kind}-recovery-{side + "-" if side else ""}{time.time_ns()}.json'
+    record = {'before': before, 'source': 'explicit_operator_prepare', 'time': time.time()}
+    write_private_json(evidence, record)
+    try:
+        record['immediately_before_reconnect'] = ready_sample()
+        result = operation(root, 'connect', **({'side': side} if side else {}))
+        deadline = time.monotonic()+3.
+        while True:
+            after = request(path, 'status')
+            record['after'] = after
+            initializing = any(str(name).lower() == 'init'
+                               for name in after.get('diagnostics', {}).get('state_names', []))
+            if after.get('fault') or after.get('faults') or after.get('enabled') or after.get('owns_control'):
+                break  # A real post-reconnect fault must fail immediately, not retry.
+            if after.get('fresh') and not initializing:
+                break
+            if time.monotonic() >= deadline:
+                raise PreparationBlocked('Fresh diagnostics with confirmed disabled joints did not return '
+                                         'after reconnection; hand remains disabled.')
+            time.sleep(.05)
+        record.update(after=after, reconnect=result)
+        if (after.get('enabled') or after.get('mode') != 'disabled' or after.get('fault')
+                or after.get('faults') or arming.read(root)['armed']):
+            raise PreparationBlocked(f'{kind.capitalize()} recovery did not establish a fault-free, disarmed state. '
+                                     'Do not retry motion.')
+        _require_disabled_feedback(after, cfg, kind)
+        return {'outcome': f'{kind}_reconnected', 'enabled': False,
+                'max_temperature_c': max(after['diagnostics']['mcu_temp_c_fb']), 'evidence': str(evidence)}
+    except Exception as exc:
+        record['error'] = str(exc)
+        raise
+    finally:
+        write_private_json(evidence, record)
