@@ -220,6 +220,8 @@ def populate_workspace(config, workspace, *, gemini=True):
     (config.root/'stream').mkdir(mode=0o755, exist_ok=True)
     (workspace/'runtime'/'stream').symlink_to(config.root/'stream', target_is_directory=True)
     built = build(recipe_for(), Setup.from_config(config, gemini=gemini), workspace)
+    from services import skill_library
+    built['skill_library'] = skill_library.checkout(workspace)
     (workspace/'TASK.md').write_text(f'# Task: {config.task}\n\n{config.task_description.strip()}\n')
     (workspace/'CLAUDE.md').write_text('@AGENTS.md\n')
     (workspace/'.claude').mkdir(exist_ok=True)

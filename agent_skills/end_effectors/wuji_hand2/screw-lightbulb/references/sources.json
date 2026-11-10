@@ -1,0 +1,13 @@
+{
+  "repository": "git@github.com:XCZhang03/mooncake.git",
+  "sources": {
+    "dex": {
+      "ref": "skill-library/dex/main",
+      "commit": "147044571cfe59b15d91d8d955132b6d6d36d45b"
+    },
+    "dexmate": {
+      "ref": "skill-library/dexmate/main",
+      "commit": "3a918001a193f6ea6c0031aa80912769b1e67c2b"
+    }
+  }
+}

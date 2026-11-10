@@ -41,6 +41,12 @@ not authorize extra episodes or scene rearrangements beyond that scope.
 
 The skill links below are entry points. Read the skill for your current step and follow
 its references when needed rather than reading the entire workspace first.
+{% if robot.has_hand %}
+For a lightbulb installation task, start with
+[screw-lightbulb](.agents/skills/screw-lightbulb/SKILL.md). It provides Mooncake's
+learned Dex/Dexmate procedures and code, their evidence and source status, and
+adaptation guidance for this robot's hands and cameras.
+{% endif %}
 {% if subagent_cap %}
 
 You may delegate analysis to up to {{ subagent_cap }} subagents at once, but only you

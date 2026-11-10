@@ -13,6 +13,33 @@ def artifact_root(tmp_path, monkeypatch):
     return tmp_path
 
 
+@pytest.fixture
+def mooncake_source(tmp_path, monkeypatch):
+    """Local Git source with a pinned revision behind HEAD; no private repo/network."""
+    import json
+    import subprocess
+    from services import skill_library
+    repo = tmp_path / 'mooncake'
+    repo.mkdir()
+    def git(*args):
+        return subprocess.check_output(['git', '-C', str(repo), *args], text=True).strip()
+    original = 'Original source {{ untouched }}\n'
+    git('init', '-q')
+    (repo / 'SKILL.md').write_text(original)
+    git('add', '.')
+    git('-c', 'user.name=Test', '-c', 'user.email=test@example.com', 'commit', '-qm', 'source')
+    commit = git('rev-parse', 'HEAD')
+    (repo / 'SKILL.md').write_text('Newer unpinned version\n')
+    git('add', '.')
+    git('-c', 'user.name=Test', '-c', 'user.email=test@example.com', 'commit', '-qm', 'newer')
+    lock = tmp_path / 'sources.json'
+    lock.write_text(json.dumps({'repository': str(repo), 'sources': {
+        name: {'ref': f'skill-library/{name}/main', 'commit': commit} for name in ('dex', 'dexmate')}}))
+    monkeypatch.setattr(skill_library, 'SOURCES', lock)
+    monkeypatch.setenv('RAX_MOONCAKE_REPO', str(repo))
+    return commit, original
+
+
 def configuration(base, *, provider='anthropic', **overrides):
     """A mock-robot session configuration under `base` (which must be in the artifact root)."""
     from services.controller.config import Configuration

@@ -11,7 +11,7 @@ from wuji_fakes import hand_config
 
 
 @pytest.fixture
-def deployed(tmp_path):
+def deployed(tmp_path, mooncake_source):
     path = Path(__file__).resolve().parents[2]/'scripts/refresh_wuji_tools.py'
     spec = importlib.util.spec_from_file_location('refresh_wuji_tools', path)
     module = importlib.util.module_from_spec(spec)
@@ -47,6 +47,11 @@ def test_refresh_backs_up_old_contract_and_preserves_learning(deployed):
     assert 'wuji_set_effort' in (ws/'.agents/skills/hand-control/SKILL.md').read_text()
     for name in ('memory/PROGRESS.md', 'code/grasp.py', 'reference/offsets.txt', '.agents/skills/custom/SKILL.md'):
         assert (ws/name).read_text() == 'keep this'
+    learned = ws/'skill-library/dex/SKILL.md'
+    assert '{{ untouched }}' in learned.read_text()
+    learned.write_text('session learning')
+    module.refresh(root)
+    assert learned.read_text() == 'session learning'
 
 
 def test_refresh_refuses_running_session(deployed):

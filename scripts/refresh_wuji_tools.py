@@ -17,6 +17,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 from services.controller.config import Configuration  # noqa: E402
 from services.workspace import Setup, build, recipe_for  # noqa: E402
+from services import skill_library  # noqa: E402
 
 CONTRACT_FILES = ('MCP_CONTRACT.json', 'MCP_SESSION.md')
 
@@ -73,7 +74,10 @@ def refresh(root):
                     os.replace(pending, destination)
                 finally:
                     pending.unlink(missing_ok=True)
+            # Supply missing libraries, preserving any existing session edits/commits.
+            libraries = skill_library.checkout(workspace)
             (backup/'refresh-manifest.json').write_text(json.dumps({
+                'skill_library': libraries,
                 'session': str(root), 'updated_files': {
                     relative: hashlib.sha256((workspace/relative).read_bytes()).hexdigest()
                     for relative in files}}, indent=2) + '\n')

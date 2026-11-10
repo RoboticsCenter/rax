@@ -12,6 +12,18 @@ code, recordings and custom skills are preserved. Resume through the official
 launcher, then reread the relevant refreshed skills. See
 [`docs/xarm-wuji.md`](../docs/xarm-wuji.md) for commands and current tool semantics.
 
+Wuji workspaces also receive `screw-lightbulb`, an adaptation guide with a catalog
+of relevant Mooncake procedures. The libraries themselves are separate Git
+checkouts at `skill-library/dex/` and `skill-library/dexmate/` in each deployed
+workspace; they are not vendored in RAX. `services/skill_library.py` loads the
+commits pinned in the skill's `references/sources.json`, using the sibling
+`../mooncake` repository when present, otherwise the configured Git URL. Set
+`RAX_MOONCAKE_REPO` to use another local repository or URL. Private remote access
+requires the operator's Git credentials. Existing session checkouts are preserved
+on refresh; new sessions start on a local `session` branch at the pinned commits.
+No automatic merge or push is performed. Source robot verification labels are not
+xArm/Wuji validation.
+
 ## Layout: by axis
 
 Each workspace takes the layers of its setup, in this order (`SKILL_LAYERS` in
