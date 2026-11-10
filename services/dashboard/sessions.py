@@ -22,6 +22,12 @@ from services.xarm import arming
 from services.controller import operator
 from services.storage_root import PROJECT, artifact_root
 
+# USD per million tokens: input, output, cache hit, 5m write, 1h write.
+# https://platform.claude.com/docs/en/about-claude/pricing (2026-11-10)
+TOKEN_PRICES = {
+    'claude-opus-5-5': (4., 20., .2, 5., 8.),
+    'claude-fable-5-2': (8., 40., .2, 10., 16.),
+}
 SESSION_ID = re.compile(r'[A-Za-z0-9_-]+')
 FRAME_ID = re.compile(r'[A-Za-z0-9]+')
 CAMERA = re.compile(r'[A-Za-z0-9_-]+')
@@ -156,8 +162,9 @@ class Sessions:
                     latest_usage = max(latest_usage or 0, float(row.get('time', 0) or 0))
                     if isinstance(row.get('cost_usd'), (int, float)):
                         estimated_cost += row['cost_usd']
-                    elif row.get('model') == 'claude-opus-5-5':
+                    elif row.get('model') in TOKEN_PRICES:
                         # USD per million tokens; Anthropic standard pricing, Nov 2026.
+                        input_rate, output_rate, read_rate, write_rate, hour_rate = TOKEN_PRICES[row['model']]
                         # Older login logs omit geography; their observed requests used US inference.
                         geo = row.get('inference_geo')
                         multiplier = 1.1 if geo == 'us' else (1. if geo else legacy_geo_multiplier)
@@ -166,10 +173,11 @@ class Sessions:
                         cache = row.get('cache_creation') or {}
                         hour_tokens = cache.get('ephemeral_1h_input_tokens', 0) or 0
                         estimated_cost += multiplier * (
-                            (row.get('input_tokens', 0) or 0)*4 +
-                            (row.get('output_tokens', 0) or 0)*20 +
-                            (row.get('cache_read_input_tokens', 0) or 0)*.2 +
-                            (row.get('cache_creation_input_tokens', 0) or 0)*5 + hour_tokens*3) / 1e6
+                            (row.get('input_tokens', 0) or 0)*input_rate +
+                            (row.get('output_tokens', 0) or 0)*output_rate +
+                            (row.get('cache_read_input_tokens', 0) or 0)*read_rate +
+                            (row.get('cache_creation_input_tokens', 0) or 0)*write_rate +
+                            hour_tokens*(hour_rate-write_rate)) / 1e6
                     else:
                         unpriced_responses += 1
         except OSError:
@@ -188,7 +196,8 @@ class Sessions:
                       if active_seconds > 0 and not unpriced_responses else None,
                       active_hours=round(active_seconds/3600, 3), latest_usage_at=latest_usage,
                       unpriced_responses=unpriced_responses,
-                      cost_basis='API-equivalent estimate; Opus 5.5 standard rates, 5m cache writes; '
+                      cost_basis='API-equivalent estimate; Opus 5.5/Fable 5.2 model-specific rates; '
+                      '5m cache writes unless 1h usage is recorded; '
                       + ('US inference assumed where older login logs omit geography. '
                          if legacy_geo_multiplier == 1.1 else '')
                       + 'Not a verified account charge. Active hours exclude stopped intervals and end at latest usage.')

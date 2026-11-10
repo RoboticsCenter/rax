@@ -1,22 +1,22 @@
 matrix:
-- - 0.02419160003269026
-  - -0.9995441588703047
-  - 0.018062141515130598
-  - -0.31756308345138023
-- - -0.5706423994471529
-  - -0.028641390907608723
-  - -0.8206990451316931
-  - 0.5079819406863824
-- - 0.8208422616075842
-  - 0.009546999273688612
-  - -0.5710751582443541
-  - 0.619939612339949
+- - 0.03297690942061088
+  - -0.99935509783578
+  - 0.014209569828237519
+  - -0.3132269488125697
+- - -0.5679879785760883
+  - -0.03043711672357098
+  - -0.8224738525440217
+  - 0.4936381755478682
+- - 0.8223759357119554
+  - 0.01905178089298867
+  - -0.5686254039406713
+  - 0.6188877468785292
 - - 0.0
   - 0.0
   - 0.0
   - 1.0
 source:
-  result: /home/jerry/rax-runtime/sessions/20261110T074606Z_three_camera_calibration_12827c/operator/collection-lowered/result.json
+  result: /home/jerry/rax-runtime/sessions/20261110T091931Z_screw_lightbulb_fable52/operator/all-camera-improved-lighting-20261110T211032Z/collection/result.json
   board:
     dictionary: DICT_4X4_100
     dimension_source: Operator supplied a new accurately printed 10 x 13 board on

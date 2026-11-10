@@ -54,6 +54,11 @@ class Cameras:
             cv.imwrite(str(rgb), np.full((48, 64, 3), 120, np.uint8))
             result[name] = {'rgb': str(rgb), 'depth': None, 'width': 64, 'height': 48,
                             'K': [[50, 0, 32], [0, 50, 24], [0, 0, 1]], 'timestamp_ns': time.time_ns()}
+            if payload['depth']:
+                depth = folder/f'{name}_depth.png'
+                cv.imwrite(str(depth), np.full((48, 64), 650, np.uint16))
+                result[name].update(depth=str(depth), depth_alignment='color', depth_scale_m=.001,
+                                    depth_scale_factor=1., depth_registration_source='realsense_factory')
         return {'cameras': result}
 
     def close(self):
@@ -282,6 +287,22 @@ def test_raw_observation_has_four_identities_and_no_invented_transforms(rig):
         backend.call('xarm_observe', {'project': [[0, 0, 0]]})
 
 
+def test_rgbd_observations_preserve_depth_and_registration_metadata(rig):
+    backend, _, _, cameras = rig
+    backend.depth = True
+    value, _ = backend.call('xarm_observe', {})
+    folder = backend.workspace/value['directory']
+    meta = json.loads((folder/'meta.json').read_text())
+    assert cameras.calls[-1]['depth'] is True
+    for entry in meta['cameras'].values():
+        depth = cv.imread(str(folder/entry['depth']), cv.IMREAD_UNCHANGED)
+        assert depth.dtype == np.uint16 and depth.shape == (48, 64)
+        assert np.all(depth == 650)
+        assert entry['depth_alignment'] == 'color'
+        assert entry['depth_registration_source'] == 'realsense_factory'
+        assert entry['depth_scale_m'] == .001
+
+
 def test_workspace_contract_matches_actual_tools_for_both_observation_profiles(rig, tmp_path):
     backend, _, _, _ = rig
     for profile in ('rgb-only', 'rgbd'):
@@ -297,6 +318,8 @@ def test_workspace_contract_matches_actual_tools_for_both_observation_profiles(r
         text = (workspace/'.agents/skills/robot-interface/SKILL.md').read_text()
         assert 'arm="left"' in text and 'hand="left"' in text
         assert (workspace/'.agents/skills/object-localization/SKILL.md').exists()
+        perception = (workspace/'.agents/skills/object-localization/SKILL.md').read_text()
+        assert ('Depth from every camera' in perception) == (profile == 'rgbd')
 
 
 @pytest.mark.parametrize('change', ['same_ip', 'same_hand', 'wrong_hand', 'same_camera', 'wrong_wrist', 'old_calibration'])

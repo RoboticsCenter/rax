@@ -175,7 +175,9 @@ def coverage_plan(side, start, options, source, workflow, seed=None):
     roll_lo, roll_hi = (-15, 0) if side == 'left' else (0, 15)
     if not previous.get('frame_wrists_inward', False):
         roll_lo, roll_hi = -15, 15
-    for _ in range(12000):
+    # Cropped home views can leave only a small fully framed region. Search
+    # more candidates without relaxing the image margin or motion envelope.
+    for _ in range(48000):
         dp, angles = rng.uniform(lo, hi), rng.uniform([roll_lo, -15, -20], [roll_hi, 15, 20])
         turn = Rotation.from_euler('xyz', angles, degrees=True)
         if turn.magnitude() > max_turn:

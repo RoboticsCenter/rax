@@ -259,8 +259,14 @@ Status supplies `T_left_base_right_base`. Arm motion targets still use their own
 arm's base. An uncalibrated configuration can omit `calibration_manifest` and
 continues providing raw observations without transforms or projection.
 
-Depth scale/registration remain unqualified and `xarm_pixel_to_position` is not
-exposed. Use `rgb-only` for the first calibrated run. The
+Use `rgbd` to capture aligned depth on all three cameras. Both wrists capture
+640×480 and the front camera captures 1280×720 at 15 FPS; the examples record
+rolling depth at 1 Hz, while each `xarm_observe` saves a fresh depth image from
+every requested camera. Depth PNGs are uint16 millimetres (zero is invalid), aligned
+to the saved RGB grid. Observation metadata includes the depth registration source
+and scale. Factory depth scale/registration remain independently unqualified and
+`xarm_pixel_to_position` is not exposed; see the agent's object-localization skill
+for using depth with the verified RGB transforms. The
 [bimanual extrinsics workflow](xarm-wuji-bimanual-calibration.md)
 collects both wrist sweeps and derives fixed-camera and inter-base transforms
 from one stationary ChArUco board, following the original single-arm script.
@@ -285,7 +291,7 @@ not prepare or move the devices.
 ```bash
 export RAX_BACKEND_OPTIONS="$PWD/examples/xarm-wuji-bimanual.json"
 "$RAX_PYTHON" scripts/configure_session.py --robot xarm_bimanual \
-  --task bimanual --task-file /path/to/task.md --observation-profile rgb-only
+  --task bimanual --task-file /path/to/task.md --observation-profile rgbd
 bash scripts/start_agent.sh --config SESSION/operator-input.json
 ```
 

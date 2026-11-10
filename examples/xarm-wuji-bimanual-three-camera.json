@@ -369,9 +369,10 @@
   "motion_archive_enabled": true,
   "protected_paths": [],
   "stream_archive": false,
-  "stream_depth_hz": 0,
+  "stream_depth_hz": 1.0,
   "stream_fps": 15,
   "stream_window_s": 120,
   "unverified_camera_extrinsics": [],
-  "calibration_manifest": "calibration/xarm-wuji-bimanual-three-camera/manifest.json"
+  "calibration_manifest": "calibration/xarm-wuji-bimanual-three-camera/manifest.json",
+  "camera_depth_mode": "Z16"
 }

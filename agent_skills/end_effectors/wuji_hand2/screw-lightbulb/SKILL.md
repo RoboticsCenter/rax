@@ -44,8 +44,9 @@ xArm/Wuji. The Dexmate `in-hand-localization` method is a scaffold with a missin
   setup the views are `wrist_left`, `wrist_right` and fixed `front`. Use the front
   view for scene context and separated calibrated views for cap/socket geometry.
   A source `head_camera` is not simply an alias for `front`: intrinsics, extrinsics,
-  image dimensions and observation time differ. Current bimanual depth alignment
-  is not qualified; use the installed RGB localization procedure.
+  image dimensions and observation time differ. In RGB-D sessions, all three views
+  also supply aligned depth PNGs; use the installed object-localization guidance
+  for their units, validity checks and factory depth-calibration limitations.
 - Source Sharpa/Dexmate finger targets, palm offsets, joint counts, effort scales,
   FK/IK models and workspace coordinates do not transfer to Wuji. Recompute the
   grasp for the selected hand, actual bulb and current pose. Read each hand's

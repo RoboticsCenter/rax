@@ -12,6 +12,8 @@ def describe(setup) -> str:
                        'xarm_observe arm selects the observation/projection base (default left); project marks '
                        'points in that base. Native image coordinates and preview_scale are reported. '
                        if calibrated else 'Camera-to-arm and inter-arm calibration are pending. ')
+                    + ('RGB and aligned uint16 millimetre depth PNGs are saved for every camera. '
+                       if setup.observation_profile == 'rgbd' else 'Depth capture is disabled. ')
                     + 'Depth metric validation is pending; no depth pixel-to-base tool is exposed. '
                     'Single-arm tools require arm=left|right, single-hand tools require hand=left|right. '
                     'xarm_move_combined accepts any subset of left_arm, right_arm, left_hand and right_hand '

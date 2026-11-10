@@ -495,7 +495,10 @@ class XArmBimanualBackend(XArmBackend):
             meta['cameras'][name] = {**entry, 'rgb': Path(entry['rgb']).name,
                 'depth': Path(entry['depth']).name if entry.get('depth') else None,
                 'serial': spec['serial'], 'mount': spec['mount'], 'arm': spec.get('arm'),
-                'calibration_status': self.calibration.camera_status(name) if self.calibration else 'pending'}
+                'calibration_status': self.calibration.camera_status(name) if self.calibration else 'pending',
+                **{key: entry[key] for key in ('distortion_model', 'distortion_coeffs', 'fps',
+                    'depth_scale_m', 'depth_scale_factor', 'depth_alignment',
+                    'intrinsics_source', 'depth_registration_source') if key in entry}}
             transforms = self.calibration.poses(spec, after['arms']) if self.calibration else None
             if transforms:
                 meta['cameras'][name].update(base_frame=f'{arm}_base', T_base_cam=transforms[arm].tolist(),

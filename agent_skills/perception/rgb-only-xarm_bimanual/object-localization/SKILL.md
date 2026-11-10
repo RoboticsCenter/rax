@@ -1,9 +1,9 @@
 ---
 name: object-localization
-description: Locate objects using configured fixed and wrist RealSense views, with explicit left/right base frames and the session's RGB calibration. Use before choosing bimanual approach, grasp or placement targets.
+description: Locate objects using configured fixed and wrist RealSense views, available RGB-D observations, and explicit left/right base frames. Use before choosing bimanual approach, grasp or placement targets.
 ---
 
-# Bimanual RGB perception
+# Bimanual perception
 
 The views are `{{ robot.cameras | join('`, `') }}`. `xarm_observe` returns images in
 `images_in_order` and saves `runtime/frames/<frame_id>/meta.json`. Each camera entry
@@ -12,6 +12,33 @@ identifies its `arm`. Both arms' capture-adjacent states are recorded separately
 Fixed views: `{{ robot.fixed_cameras | join('`, `') }}`; wrist views:
 `{{ robot.wrist_cameras | join('`, `') }}`. Use only configured view names.
 Image dimensions may differ between cameras; read each image's metadata.
+
+{% if observation_profile == 'rgbd' %}
+## Depth from every camera
+
+`xarm_observe` saves a full-resolution RGB image and aligned depth PNG for each
+requested camera. Read the filename in `meta.json` → `cameras[name].depth` with
+`cv2.imread(path, cv2.IMREAD_UNCHANGED)`. Values are **uint16 millimetres**; divide
+by 1000 for metres. Zero is invalid, not free space. Do not apply `depth_scale_m`
+again: the camera service already converted raw sensor units before saving.
+
+Depth pixels share the saved RGB image's grid, dimensions and `K`, including
+rectification where configured. Use native coordinates, not resized preview
+coordinates. Read `depth_alignment`, `depth_registration_source`, and
+`depth_scale_factor` to identify the alignment/scale actually used. Inspect valid
+depth in a small patch on the object, excluding background, edges and holes;
+reflective metal and translucent bulb surfaces can yield missing or false depth.
+
+For an undistorted pixel `(u,v)` and valid depth `z` metres, camera coordinates are
+`[(u-cx)*z/fx, (v-cy)*z/fy, z]`; otherwise undistort the ray using the saved model
+first. A verified `T_base_cam` maps that point into the selected arm base. The
+depth scale/registration currently uses factory calibration, separately from the
+verified RGB camera-to-arm calibration. Cross-check depth estimates against
+settled multi-view geometry or known surfaces before precise contact motions.
+There is no `xarm_pixel_to_position` convenience tool in this bimanual backend.
+{% else %}
+This session captures RGB only; depth files are not available.
+{% endif %}
 
 {% if robot.rgb_calibrated %}
 RGB extrinsics and matching color models are loaded. Read each view's
@@ -51,8 +78,9 @@ new `calibration.sha256`. Re-localize task objects with the newly supplied camer
 models and base alignment. Previous frame metadata remains valid for its original
 capture; do not mix it with images or targets computed under the new bundle.
 
-Depth scale and RGB-depth alignment have not been qualified. The backend does
-not expose `xarm_pixel_to_position`; use RGB geometry for this session.
+The verification above qualifies RGB geometry. It does not independently qualify
+depth scale or RGB-depth registration; use the observation profile's depth guidance
+above when depth is enabled.
 {% else %}
 Calibration is pending. No `T_base_cam`, inter-arm transform or calibrated table
 plane is supplied. `xarm_pixel_to_position` and the observe `project` parameter are

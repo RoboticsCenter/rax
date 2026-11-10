@@ -66,22 +66,37 @@ def test_ended_session_notice_and_intentional_stop_suppression(dashboard, monkey
     assert sessions.summary(root)['exit_notice'] is None
 
 
-def test_usage_estimate_includes_cache_and_resumes_without_charging_stopped_time(tmp_path):
+@pytest.mark.parametrize('model, expected', [('claude-opus-5-5', 29.2), ('claude-fable-5-2', 58.2)])
+def test_usage_estimate_includes_cache_and_resumes_without_charging_stopped_time(tmp_path, model, expected):
     (tmp_path/'operator-input.json').write_text(json.dumps({'agent_provider': 'claude-login'}))
     (tmp_path/'agent-lifecycle.json').write_text(json.dumps({
         'attempts': [{'started_at': 100, 'finished_at': 1900}], 'started_at': 5500}))
     (tmp_path/'model-usage.jsonl').write_text(json.dumps({
-        'time': 7300, 'model': 'claude-opus-5-5', 'input_tokens': 1000000,
+        'time': 7300, 'model': model, 'input_tokens': 1000000,
         'output_tokens': 1000000, 'cache_creation_input_tokens': 1000000,
         'cache_read_input_tokens': 1000000})+'\n{partial')
     usage = Sessions.usage(tmp_path)
-    assert usage['estimated_cost_usd'] == pytest.approx(29.2*1.1)
+    assert usage['estimated_cost_usd'] == pytest.approx(expected*1.1)
     assert usage['active_hours'] == 1
-    assert usage['estimated_usd_per_hour'] == pytest.approx(32.12)
+    assert usage['estimated_usd_per_hour'] == pytest.approx(expected*1.1)
     assert usage['cost_usd'] == 0  # No provider-reported dollar charge.
     with (tmp_path/'model-usage.jsonl').open('w') as log:
         log.write(json.dumps({'time': 7300, 'model': 'unknown-model', 'input_tokens': 10})+'\n')
     assert Sessions.usage(tmp_path)['estimated_cost_usd'] is None
+
+
+def test_fable_cost_uses_recorded_cache_duration_geo_speed_and_reported_charges(tmp_path):
+    (tmp_path/'operator-input.json').write_text(json.dumps({'agent_provider': 'claude-login'}))
+    rows = [{'model': 'claude-fable-5-2', 'input_tokens': 1000000, 'output_tokens': 1000000,
+             'cache_read_input_tokens': 1000000, 'cache_creation_input_tokens': 2000000,
+             'cache_creation': {'ephemeral_1h_input_tokens': 1000000},
+             'inference_geo': 'global', 'speed': 'fast'},
+            {'model': 'claude-fable-5-2', 'input_tokens': 1000000, 'cost_usd': .75}]
+    (tmp_path/'model-usage.jsonl').write_text(''.join(json.dumps(row)+'\n' for row in rows))
+    usage = Sessions.usage(tmp_path)
+    assert usage['estimated_cost_usd'] == pytest.approx((8+40+.2+10+16)*2+.75)
+    assert usage['cost_usd'] == .75
+    assert usage['unpriced_responses'] == 0
 
 
 class FakeRobot:
