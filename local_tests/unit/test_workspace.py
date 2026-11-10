@@ -63,3 +63,28 @@ def test_every_template_variable_is_a_setup_fact():
         if path.name == 'README.md' and path.parent.name == 'agent_skills':
             continue
         render(path.read_text(), Setup('xarm'))
+
+
+@pytest.mark.parametrize('example', ['xarm-wuji-bimanual.json',
+                                    'xarm-wuji-bimanual-three-camera.json',
+                                    'xarm-wuji-bimanual-five-camera.json'])
+def test_bimanual_workspace_uses_selected_camera_inventory(tmp_path, example):
+    options = json.loads((ROOT/'examples'/example).read_text())
+    setup = Setup('xarm_bimanual', observation_profile='rgb-only', backend_options=options)
+    names = tuple(c['name'] for c in options['cameras'])
+    assert setup.robot_facts['cameras'] == names
+    expected_overview = next(c['name'] for c in options['cameras'] if c['mount'] == 'fixed')
+    assert setup.robot_facts['overview_camera'] == expected_overview
+    ws = tmp_path/'workspace'
+    build(recipe_for(), setup, ws)
+    stream = (ws/'.agents/skills/live-stream/SKILL.md').read_text()
+    perception = (ws/'.agents/skills/object-localization/SKILL.md').read_text()
+    assert f'at most {12 // len(names)} ages' in stream
+    assert f'api.stream changes {expected_overview}' in stream
+    for name in names:
+        assert f'`{name}`' in stream and f'`{name}`' in perception
+    if len(names) == 3:
+        assert expected_overview == 'front'
+        for path in ws.rglob('*.md'):
+            assert 'side_a' not in path.read_text() and 'side_b' not in path.read_text()
+    assert 'xarm_pixel_to_position' not in json.loads((ws/'MCP_CONTRACT.json').read_text())['tools']

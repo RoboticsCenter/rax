@@ -175,9 +175,10 @@ new fault requests. The right profile was unchanged; neither arm received a
 movement target. The session's `operator/harness-fix-20261103/` contains the raw
 responses, configuration backups, camera check and validation summary.
 
-`unverified_camera_extrinsics: ["side_b"]` keeps the replugged Side B image
+In the historical side-camera setup,
+`unverified_camera_extrinsics: ["side_b"]` kept the replugged Side B image
 available while withholding its old base transform and projection marks. The
-other three views retain their calibrated geometry. Status reports
+other three views retained their calibrated geometry. Status reports
 `rgb_extrinsics_partial`, with a separate status for every camera. After verifying
 or recalibrating the moved camera, the operator can remove its name from this
 list and reload the session backend.
@@ -220,43 +221,36 @@ faults; physical qualification remains separate.
 
 ## Cameras and extrinsics collection
 
-| Role | Serial |
-| --- | --- |
-| `side_a` | `263322070113` |
-| `side_b` (replacement D435) | `262422074331` |
-| `wrist_left` (D435i, dashboard Camera 1) | `108322071838` |
-| `wrist_right` (D435, dashboard Camera 4) | `752112070450` |
-| `front` (D435) | `348522070593` |
+| Role | Serial | RGB profile |
+| --- | --- | --- |
+| `wrist_left` | `108322071838` | 640×480 at 15 FPS |
+| `wrist_right` | `752112070450` | 640×480 at 15 FPS |
+| `front` (fixed) | `348522070593` | 1280×720 at 15 FPS |
 
-The operator confirmed wrist ownership on November 2, 2026. Every wrist entry has
-an explicit `arm` field. Update the serial and role together if a camera is replaced.
-One shared camera process owns all configured RealSense streams; both arm controllers
-use it. Stop the standalone camera dashboard before starting a session that opens
-the same cameras. A second process cannot capture cameras already owned by it.
+Both `examples/xarm-wuji-bimanual.json` and the explicit
+`examples/xarm-wuji-bimanual-three-camera.json` select this setup and
+`calibration/xarm-wuji-bimanual-three-camera/manifest.json`. The November 10
+bundle passed 57 fresh camera checks at 5 mm / 1° and mean reprojection below
+1 pixel. See the [verified bundle report](../calibration/xarm-wuji-bimanual-three-camera/README.md).
+These are consistency checks; depth remains unqualified.
 
-Additional fixed cameras are supported without changing the existing bundle. Add
-the new camera's unique `name`, `serial`, `mount: "fixed"`, `width` and `height` to
-`cameras`, and list its name in `unverified_camera_extrinsics` until calibrated.
-For this installation, the fifth view is `front`, D435 serial `348522070593`, at
-1280×720 @ 6 FPS. The operator confirmed this camera after reconnecting it on
-November 3, 2026. On November 4, all three fixed views were recalibrated from
-stereo observations by the retained wrist cameras, and passed fresh verification.
-The saved configs enable geometry for all five views. The wrist transforms and
-lens models remain unchanged, with the operator's accepted 10 mm / 1° per-wrist
-and 20 mm / 1.5° cross-wrist limits recorded in the manifest. See the
-[bundle report](../calibration/xarm-wuji-bimanual/README.md) for measured results
-and the separate raised-board reference diagnostics.
-`xarm_observe` and `xarm_stream`
-accept all configured camera names. An unverified view has no base transform or
-projected marks; adding it does not invalidate the other cameras or block motion.
-Original bundle camera names remain present. A fixed camera's serial can change
-only when it is explicitly unverified; wrist identity changes require calibration.
+Each wrist entry has an explicit owning `arm`. One shared camera process owns
+all configured streams; stop a standalone camera viewer before starting another
+camera owner. Agent skills derive camera names and overview from the session;
+`front` is the overview for this setup. The two wrists can provide stereo
+references when they share visible features with the fixed camera.
 
-The example's `calibration_manifest` selects the updated five-camera bundle.
-The existing xArm camera pipeline rectifies wrist RGB with its
-matching fitted models and checks factory profiles against the connected cameras.
-Startup checks arm serials and TCP offsets. Legacy per-camera calibration files
-are refused; the manifest keeps identities, RGB models and transforms together.
+The old five-camera example is retained as
+`examples/xarm-wuji-bimanual-five-camera.json` for the historical rig, including
+`side_a` and `side_b`. Do not select it for the current three-camera installation.
+Historical calibration reports remain under `calibration/xarm-wuji-bimanual/`.
+
+Additional fixed views can be added with unique names/serials and explicitly
+listed in `unverified_camera_extrinsics` until calibrated. Read per-camera
+status before using geometry. The configured set must include every camera in
+its selected verified bundle; use the three-camera bundle for this installation.
+Startup checks arm serials, TCP offsets and camera profiles. Keep the saved
+image's matching optical model and capture-adjacent pose together.
 
 `xarm_observe(arm="left" | "right", project=[[x,y,z], ...])` saves camera poses in
 both bases and projects points in the selected base (default left). Saved image
@@ -270,10 +264,8 @@ exposed. Use `rgb-only` for the first calibrated run. The
 [bimanual extrinsics workflow](xarm-wuji-bimanual-calibration.md)
 collects both wrist sweeps and derives fixed-camera and inter-base transforms
 from one stationary ChArUco board, following the original single-arm script.
-The [verified 2026-11-02 RGB calibration](../calibration/xarm-wuji-bimanual/README.md)
-contains transforms for all four cameras and between the bases, plus matching
-RGB models and fresh physical verification. The bundle is integrated in the
-backend; depth validation remains pending.
+The current three-camera bundle includes both wrists, front-to-base geometry,
+and inter-base alignment. Depth validation remains pending.
 
 ## Start and prepare
 

@@ -9,6 +9,9 @@ The views are `{{ robot.cameras | join('`, `') }}`. `xarm_observe` returns image
 `images_in_order` and saves `runtime/frames/<frame_id>/meta.json`. Each camera entry
 has its serial, mount, image dimensions and capture timestamp; a wrist entry also
 identifies its `arm`. Both arms' capture-adjacent states are recorded separately.
+Fixed views: `{{ robot.fixed_cameras | join('`, `') }}`; wrist views:
+`{{ robot.wrist_cameras | join('`, `') }}`. Use only configured view names.
+Image dimensions may differ between cameras; read each image's metadata.
 
 {% if robot.rgb_calibrated %}
 RGB extrinsics and matching color models are loaded. Read each view's
@@ -26,7 +29,9 @@ observations for triangulation; `arms_before`, `arms` and
 Arm motion commands always take coordinates in the selected arm's own base.
 
 Triangulate the same visible object point across two views using their saved
-intrinsics and transforms in the same base. Alternatively intersect a camera
+intrinsics and transforms in the same base. With one fixed view, use it with a
+wrist view or use both wrist views when the same feature is visible; do not
+assume a second fixed camera exists. Alternatively intersect a camera
 ray with a known support plane. The supplied `reference_board_planes` describe
 the original calibration board; confirm that the current support surface matches
 before using them. A tilted calibration board does not define the tabletop.
@@ -55,7 +60,7 @@ not exposed. Do not reuse single-arm calibration files or assume an identity or
 mirror transform. Even an rgbd session's depth is in camera coordinates, not either
 robot's base frame. Invalid depth does not imply free space.
 
-Use the side views to inspect both arms and the shared scene, and each wrist view
+Use the configured fixed view(s) to inspect both arms and the shared scene, and each wrist view
 for its own hand's local geometry. Compare fresh views to assess occlusion,
 retention, release and clearance. Do not convert a pixel into a metric arm target
 without a measured transform. A clearer image alone does not establish that
@@ -69,7 +74,7 @@ additional or replacement camera has not yet been calibrated. Its calibration su
 per-camera status and the bundle.
 An `extrinsics_unverified` view remains useful for visual inspection but supplies
 no base transform or projected marks. Use two suitable verified views for metric
-localization; an unverified side view does not require stopping otherwise supported
+localization; an unverified fixed view does not require stopping otherwise supported
 work. Do not recover its old transform from earlier captures after the mount moved.
 A replacement camera also has its own optical model. Matching a view name such
 as `front` is insufficient: compare serial, image profile and calibration identifier

@@ -3,8 +3,9 @@
 **[Project website](https://robot-agent-exploration.com/)** · [Paper](https://robot-agent-exploration.com/rax.pdf) · [All branches](https://github.com/robot-agent-exploration/rax)
 
 This branch supports two xArm 6 arms, each with a Wuji Hand 2, and RealSense
-cameras (at least two fixed views and one wrist camera per arm). Additional fixed
-views, such as a front camera, can be added independently. The existing single-arm
+cameras: `wrist_left`, `wrist_right`, and fixed `front`. The current setup uses
+the verified [three-camera configuration](examples/xarm-wuji-bimanual-three-camera.json).
+Additional fixed views can be configured and calibrated independently. The existing single-arm
 xArm/Wuji and G2 configurations remain supported.
 A Claude Code agent learns a
 manipulation task through MCP tools served by a host-owned robot service. It first
@@ -69,7 +70,7 @@ The simulation branches and the [real-robot adaptation guide](https://github.com
   the Polymetis connections, so no realtime thread runs in this repository's processes.
   The bridges are not part of this repository.
 - **Cameras:** ZED cameras with the ZED SDK and its Python API (`pyzed`), each with an
-  extrinsic calibration. The default skills expect two fixed cameras and a wrist ZED Mini.
+  extrinsic calibration. The Franka skills expect two fixed cameras and a wrist ZED Mini.
 - **Host:** Linux (a PREEMPT_RT kernel if your Franka setup needs one) with:
   - `ffmpeg` (NVENC when available, else libx264) for the session archive;
   - `bubblewrap` and `socat` for Claude Code's sandbox;

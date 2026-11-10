@@ -44,7 +44,9 @@ Older data is deleted as time goes by; copy what you need to keep into `output/`
 
 {% if robot.bimanual %}
 Age-based stream requests allow at most 12 images across cameras and timestamps.
-For five cameras, request at most two ages together, select fewer cameras, or use
+This session configures {{ robot.cameras | length }} cameras: `{{ robot.cameras | join('`, `') }}`.
+Request at most {{ 12 // (robot.cameras | length) }} ages together when using all
+configured cameras. For a subset, keep camera count × age count at most 12, or use
 a contact sheet. A current all-camera check uses `seconds_ago: [0]`.
 {% endif %}
 

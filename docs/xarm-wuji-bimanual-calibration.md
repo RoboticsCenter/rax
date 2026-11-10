@@ -2,7 +2,7 @@
 
 `scripts/xarm-bimanual-charuco-calibrate` adapts `real/xarmwuji`'s original
 18-pose workflow for two xArm bases, two wrist cameras and all configured fixed cameras
-(currently `side_a`, `side_b` and `front`).
+(currently the single fixed `front` view).
 It uses the existing bimanual MCP owner for motion and separate read-only SDK
 connections for precise pose snapshots. It never opens another Wuji owner or
 changes finger targets. Only one arm moves at a time.
@@ -97,8 +97,9 @@ and the final physical row absent. A standard 13-row layout does not match
 the observed IDs. The print must lie flat.
 
 Camera identities come from the session's configuration: `wrist_left` belongs
-to the left arm, `wrist_right` to the right arm, and `side_a`/`side_b`/`front` are fixed.
-All five are captured at 1280×720, 6 FPS, with live factory RGB intrinsics.
+to the left arm, `wrist_right` to the right arm, and `front` is fixed. Legacy
+side cameras are optional. The current profiles are 640×480 for both wrists and
+1280×720 for front, all at 15 FPS, with live factory RGB intrinsics for collection.
 The default procedure fits extrinsics only. The optional
 `--refine-wrist-intrinsics` applies the original script's training-only Brown5
 RGB lens refinement; held-out images do not participate in that fit. It saves
@@ -214,6 +215,10 @@ not install them into the running backend or claim depth/pixel-to-base support;
 those runtime capabilities require an explicit configuration integration step.
 
 ## Calibrating individual fixed cameras
+
+The current setup uses `--target front --reference wrist_left wrist_right`.
+The side-camera commands below apply only to legacy or expanded configurations
+that actually include those views.
 
 When both reference cameras are fixed, `--camera-socket CAMERA_SOCKET` can replace
 `--mcp-socket MCP_SOCKET` to capture directly from an existing camera server.

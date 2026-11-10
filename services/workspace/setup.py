@@ -26,8 +26,8 @@ CLIS = ('claude',)
 
 ROBOT_FACTS['xarm_bimanual'] = {
     **ROBOT_FACTS['xarm'], 'name': 'two UFactory xArm 6 arms with left/right Wuji Hand 2',
-    'pixel': None, 'cameras': ('side_a', 'side_b', 'wrist_left', 'wrist_right'),
-    'overview_camera': 'side_a', 'overview': 'side A camera',
+    'pixel': None, 'cameras': ('wrist_left', 'wrist_right', 'front'),
+    'overview_camera': 'front', 'overview': 'front camera',
     'tools': ('xarm_status', 'xarm_observe', 'xarm_move_pose', 'xarm_move_joints',
               'xarm_move_both', 'xarm_move_joints_both', 'xarm_move_combined', 'xarm_stream', 'xarm_hold',
               'wuji_status', 'wuji_move_joints', 'wuji_pose', 'wuji_home', 'wuji_hold',

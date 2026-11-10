@@ -340,38 +340,23 @@
       "xarm_ip": "192.168.1.241"
     }
   },
-  "calibration_manifest": "calibration/xarm-wuji-bimanual/manifest.json",
   "camera_cpus": "0-15",
   "cameras": [
     {
-      "height": 720,
-      "mount": "fixed",
-      "name": "side_a",
-      "serial": "263322070113",
-      "width": 1280
-    },
-    {
-      "height": 720,
-      "mount": "fixed",
-      "name": "side_b",
-      "serial": "262422074331",
-      "width": 1280
-    },
-    {
       "arm": "left",
-      "height": 720,
+      "height": 480,
       "mount": "tcp",
       "name": "wrist_left",
       "serial": "108322071838",
-      "width": 1280
+      "width": 640
     },
     {
       "arm": "right",
-      "height": 720,
+      "height": 480,
       "mount": "tcp",
       "name": "wrist_right",
       "serial": "752112070450",
-      "width": 1280
+      "width": 640
     },
     {
       "height": 720,
@@ -385,7 +370,8 @@
   "protected_paths": [],
   "stream_archive": false,
   "stream_depth_hz": 0,
-  "stream_fps": 6,
+  "stream_fps": 15,
   "stream_window_s": 120,
-  "unverified_camera_extrinsics": []
+  "unverified_camera_extrinsics": [],
+  "calibration_manifest": "calibration/xarm-wuji-bimanual-three-camera/manifest.json"
 }
