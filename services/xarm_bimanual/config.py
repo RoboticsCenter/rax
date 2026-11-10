@@ -91,8 +91,8 @@ def validate_options(options):
         serials.add(hand['serial'])
         addresses.add(hand['address'])
     cameras = options.get('cameras')
-    if not isinstance(cameras, list) or len(cameras) < 4:
-        raise ValueError('configure at least two fixed views and one wrist camera per arm')
+    if not isinstance(cameras, list) or len(cameras) < 3:
+        raise ValueError('configure at least one fixed view and one wrist camera per arm')
     names, serials, wrists = set(), set(), []
     fixed = 0
     for camera in cameras:
@@ -116,8 +116,8 @@ def validate_options(options):
         for key in ('width', 'height'):
             if type(camera.get(key, 640 if key == 'width' else 480)) is not int or camera.get(key, 1) <= 0:
                 raise ValueError(f'camera {key} must be a positive integer')
-    if fixed < 2 or sorted(wrists) != list(SIDES):
-        raise ValueError('need at least two fixed cameras and exactly one wrist camera per arm')
+    if fixed < 1 or sorted(wrists) != list(SIDES):
+        raise ValueError('need at least one fixed camera and exactly one wrist camera per arm')
     unverified = options.get('unverified_camera_extrinsics', [])
     if (not isinstance(unverified, list) or any(not isinstance(name, str) for name in unverified)
             or len(set(unverified)) != len(unverified) or set(unverified) - names):

@@ -218,7 +218,7 @@ def pose_change(a, b):
                                                    Rotation.from_quat(b['tcp_quaternion'])).magnitude()))}
 
 
-def capture(service, root, specs, drivers):
+def capture(service, root, specs, drivers, *, fps=6):
     before = arm_poses(drivers)
     folder = root/'frames'/str(time.time_ns())
     capture_folder = service.frames_root/folder.name if isinstance(service, CameraConnection) else folder
@@ -239,7 +239,7 @@ def capture(service, root, specs, drivers):
                 ('serial', 'width', 'height', 'fps', 'K', 'distortion_coeffs', 'distortion_model', 'intrinsics_source')):
             raise ValueError(f"{spec['name']}: frozen pixel model changed during collection")
         if (entry['serial'] != spec['serial'] or entry['width'] != spec['width']
-                or entry['height'] != spec['height'] or entry['fps'] != 6
+                or entry['height'] != spec['height'] or entry['fps'] != fps
                 or (not frozen and entry.get('intrinsics_source') != 'realsense_factory')):
             raise ValueError(f"{spec['name']}: calibration capture requires its matching raw factory RGB profile")
         meta['cameras'][spec['name']] = {**entry, 'rgb': Path(entry['rgb']).name,
@@ -258,7 +258,19 @@ def calibration_camera_specs(specs, wrists_only=False):
     wrists = [c for c in selected if c['mount'] == 'tcp']
     if len(wrists) != 2 or {c.get('arm') for c in wrists} != set(SIDES):
         raise ValueError('calibration requires exactly one wrist camera per arm')
+    if not wrists_only and not any(c['mount'] == 'fixed' for c in selected):
+        raise ValueError('full calibration requires at least one fixed camera')
     return selected
+
+
+def calibration_fps(models):
+    rates = {model['fps'] for model in models.values()}
+    if len(rates) != 1:
+        raise ValueError('calibration camera models must share one capture FPS')
+    rate = rates.pop()
+    if type(rate) is not int or rate <= 0:
+        raise ValueError('calibration capture FPS must be a positive integer')
+    return rate
 
 
 def refine_color(samples, name, settings, distortion_only=False, optical_samples=(), brown_distortion=False):
@@ -448,8 +460,9 @@ def main():
                         help='bias left wrist roll to -15..0 degrees and right wrist roll to 0..15 degrees')
     parser.add_argument('--coverage-margin-px', type=int, default=80,
                         help='full-board image margin for subsequent coverage planning; minimum 20 pixels')
-    parser.add_argument('--width', type=int, default=1280)
-    parser.add_argument('--height', type=int, default=720)
+    parser.add_argument('--width', type=int, help='override session camera widths')
+    parser.add_argument('--height', type=int, help='override session camera heights')
+    parser.add_argument('--fps', type=int, help='override session capture FPS')
     optical = parser.add_mutually_exclusive_group()
     optical.add_argument('--refine-wrist-intrinsics', action='store_true',
                         help='reuse the original training-only Brown5 RGB refinement on saved wrist frames')
@@ -464,6 +477,8 @@ def main():
     parser.add_argument('--optical-training-collection', type=Path,
                         help='include non-reserved images from another complete collection in the lens fit only')
     args = parser.parse_args()
+    if any(value is not None and value <= 0 for value in (args.width, args.height, args.fps)):
+        parser.error('width, height and fps must be positive')
     if args.coverage_margin_px < 20:
         parser.error('coverage margin must be at least 20 pixels')
     if args.frozen_pixel_models and (not args.wrists_only or not args.camera_socket or args.refine_wrist_intrinsics
@@ -495,14 +510,17 @@ def main():
     options = deepcopy(config.backend_options)
     specs = calibration_camera_specs(options['cameras'], args.wrists_only)
     options['cameras'] = specs
+    fps = args.fps if args.fps is not None else options.get('stream_fps', 6)
+    calibration_fps({'capture': {'fps': fps}})
     for spec in specs:
-        spec.update(width=args.width, height=args.height, calibration_raw_color=True)
+        spec.update(width=args.width or spec.get('width', 640),
+                    height=args.height or spec.get('height', 480), calibration_raw_color=True)
         if args.frozen_pixel_models:
             spec['frozen_pixel_model'] = json.loads(args.frozen_pixel_models.read_text())[spec['name']]
     settings = json.loads(args.board.read_text())
     board, detector = make_board(settings)
     workflow = original_workflow()
-    camera_options = {**DEFAULTS, **options, 'stream_fps': 6, 'stream_archive': False,
+    camera_options = {**DEFAULTS, **options, 'stream_fps': fps, 'stream_archive': False,
                       'stream_depth_hz': 0, 'stream_window_s': 30}
     service = (CameraConnection(args.camera_socket, config.root/'agent-workspace/runtime/frames') if args.camera_socket else
                CameraService(camera_options, root/'frames', root/'camera-server.log', 'NONE', stream=root/'stream'))
@@ -537,7 +555,7 @@ def main():
             return {c['name']: charuco_pose(folder, c['name'], board, detector,
                     overlay_dir=root/'overlays', settings=settings) for c in specs}
 
-        folder, meta = capture(service, root, specs, drivers)
+        folder, meta = capture(service, root, specs, drivers, fps=fps)
         found = detections(folder)
         preflight = {'ok': all(usable(v) for v in found.values()), 'board': settings, 'camera_specs': specs,
             'wrists_only': args.wrists_only,
@@ -593,7 +611,7 @@ def main():
             for goal in plans[side]:
                 move(side, goal)
                 time.sleep(.8)
-                folder, meta = capture(service, root, specs, drivers)
+                folder, meta = capture(service, root, specs, drivers, fps=fps)
                 if not quality_ok([pose_change(peer_start, meta['arms'][peer])]):
                     raise RuntimeError('the uncommanded arm moved during collection')
                 found = detections(folder)

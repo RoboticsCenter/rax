@@ -7,6 +7,46 @@ It uses the existing bimanual MCP owner for motion and separate read-only SDK
 connections for precise pose snapshots. It never opens another Wuji owner or
 changes finger targets. Only one arm moves at a time.
 
+## Three cameras: two wrists and front
+
+Use `examples/xarm-wuji-bimanual-three-camera.json` for `wrist_left`
+(`108322071838`), `wrist_right` (`752112070450`), and fixed `front`
+(`348522070593`). No side cameras are required. This example preserves the
+arm/hand settings and uses RGB at 15 FPS: 640×480 wrists and 1280×720 front.
+It now selects the verified November 10 three-camera bundle in
+`calibration/xarm-wuji-bimanual-three-camera/manifest.json`. Before a new full
+calibration, use a temporary operator configuration without `calibration_manifest`
+so the camera owner supplies raw factory RGB images.
+
+The board is unchanged: 10×13 physical squares, 20 mm squares, 15 mm markers,
+with the legacy 14-row ID layout and its final row absent. Keep it stationary
+through both sweeps and verification, visible to all three cameras.
+
+Create the session using this backend-options file. Collection now inherits
+the session camera resolutions and `stream_fps`; `--width`, `--height`, and
+`--fps` can explicitly override them. Verification uses the frozen fit's profile,
+including legacy 6 FPS fits. The eventual run must use that same profile.
+
+```bash
+export RAX_BACKEND_OPTIONS="$PWD/examples/xarm-wuji-bimanual-three-camera.json"
+
+# SESSION is a configured bimanual session. Preflight does not run a sweep.
+.venv/bin/python scripts/xarm-bimanual-charuco-calibrate \
+  --preflight --session SESSION --root PREFLIGHT_ARTIFACTS \
+  --sweep-z-direction down
+
+# After checking preflight and preparing the session:
+.venv/bin/python scripts/xarm-bimanual-charuco-calibrate \
+  --collect --yes --session SESSION --mcp-socket MCP_SOCKET \
+  --root COLLECTION_ARTIFACTS --sweep-z-direction down
+```
+
+Release the standalone live viewer before capture so there is only one camera
+owner. Follow the fit and fresh-verification steps below. Full collection fits
+both wrists, front-to-base transforms, and the inter-base alignment. Install
+only a bundle that passes fresh verification, then point `calibration_manifest`
+at it. Selecting this example alone does not validate any geometry.
+
 Use `--wrists-only` for a separate wrist stage when the fixed cameras cannot
 see the wrist calibration board. Keep that board stationary through both arm
 sweeps and fresh verification; the stationary peer wrist monitors board motion.

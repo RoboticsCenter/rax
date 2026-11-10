@@ -52,3 +52,24 @@ def test_frozen_model_mismatch_aborts(tmp_path, change):
 def test_corrected_pixels_still_rejected_by_default(tmp_path):
     with pytest.raises(ValueError, match='raw factory RGB'):
         capture(tmp_path, MODEL, False)
+
+
+def test_capture_uses_requested_fps_and_rejects_mismatch(tmp_path):
+    spec = {'name': 'wrist_left', 'mount': 'tcp', 'arm': 'left',
+            'serial': 'test', 'width': 640, 'height': 480}
+    model = {**MODEL, 'width': 640, 'height': 480, 'fps': 15,
+             'intrinsics_source': 'realsense_factory'}
+    drivers = {'left': Driver(), 'right': Driver()}
+    _, meta = workflow['capture'](Camera(model), tmp_path, [spec], drivers, fps=15)
+    assert meta['cameras']['wrist_left']['fps'] == 15
+    with pytest.raises(ValueError, match='matching raw factory RGB profile'):
+        workflow['capture'](Camera(model), tmp_path, [spec], drivers, fps=6)
+
+
+@pytest.mark.parametrize('fps', [6, 15])
+def test_verification_fps_from_frozen_camera_models(fps):
+    models = {name: {'fps': fps} for name in ('wrist_left', 'wrist_right', 'front')}
+    assert workflow['calibration_fps'](models) == fps
+    models['front']['fps'] = 30
+    with pytest.raises(ValueError, match='share one capture FPS'):
+        workflow['calibration_fps'](models)

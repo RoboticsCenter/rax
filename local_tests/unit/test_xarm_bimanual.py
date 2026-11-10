@@ -324,3 +324,13 @@ def test_hand_ipc_and_snapshots_are_namespaced_without_splitting_arming(tmp_path
         client.hold()
         client.stop()
     assert calls == [(tmp_path, op, side) for side in SIDES for op in ('move', 'hold', 'emergency')]
+
+
+def test_three_camera_configuration():
+    cfg = options()
+    cfg['cameras'] = cfg['cameras'][1:]
+    cfg['cameras'][0]['name'] = 'front'
+    validate_options(cfg)
+    cfg['cameras'] = cfg['cameras'][1:]
+    with pytest.raises(ValueError, match='fixed'):
+        validate_options(cfg)

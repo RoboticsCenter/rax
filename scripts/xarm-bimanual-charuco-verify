@@ -74,7 +74,8 @@ def main():
     live = {x['name']: (x['serial'], x['mount'], x.get('arm')) for x in live_specs}
     if live != expected:
         raise ValueError('session camera identity/mount differs from fit')
-    options.update(cameras=specs, stream_fps=6, stream_archive=False, stream_depth_hz=0, stream_window_s=30)
+    fps = c.calibration_fps(fit['camera_models'])
+    options.update(cameras=specs, stream_fps=fps, stream_archive=False, stream_depth_hz=0, stream_window_s=30)
     service = (c.CameraConnection(args.camera_socket, config.root/'agent-workspace/runtime/frames') if args.camera_socket else
                c.CameraService({**c.DEFAULTS, **options}, root/'frames', root/'camera-server.log', 'NONE', stream=root/'stream'))
     board, detector = c.make_board(fit['board'])
@@ -112,7 +113,7 @@ def main():
                                  'arm_identity': identity, 'planning_collection': str(args.planning_collection.resolve())})
 
         def check(side, index):
-            folder, meta = c.capture(service, root, specs, drivers)
+            folder, meta = c.capture(service, root, specs, drivers, fps=fps)
             checks = {}
             for camera in specs:
                 name = camera['name']
