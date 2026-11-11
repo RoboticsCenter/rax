@@ -1,6 +1,6 @@
 {
   "serial": "WH2JA01260811007",
-  "profile_revision": "left-hand2-partial-v15-hosttiming-20261103",
+  "profile_revision": "left-hand2-partial-v16-0p8a-20261110",
   "allow_encoder_warning": true,
   "allow_init_current_calib_failed": {},
   "disabled_joints": ["thumb_S3", "middle_S1"],
@@ -8,7 +8,7 @@
     "thumb_S3": {"code": 8456, "firmware": "2.13.1"},
     "middle_S1": {"code": 12808, "firmware": "2.13.1"}
   },
-  "current_limit_a": 1.5,
+  "current_limit_a": 0.8,
   "command_hz": 200,
   "max_scheduler_gap_s": 0.25,
   "kp": 8.0,

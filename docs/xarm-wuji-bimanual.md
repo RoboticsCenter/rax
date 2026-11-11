@@ -44,8 +44,13 @@ Both hands need distinct serials, addresses and matching handedness.
 The example preserves the right hand's existing control profile and encoder-warning
 allowance. Its left profile now includes the physically tested partial-hand patch:
 18 controlled joints, `thumb_S3` and `middle_S1` isolated, 200 Hz commands, and the
-left hand's own saved home. Both normalized profiles match the ones used for the
-successful physical movement and calibration sessions.
+left hand's own saved home. On November 10, the operator reduced the current
+ceiling to 0.8 A on both hands after recurring thermal stops. The two excluded
+left joints retain zero current and gains. Temperature cutoffs, stiffness,
+damping and motion limits are unchanged. Earlier physical movement and
+calibration evidence below used a 1.5 A ceiling; it does not validate grasping
+performance with the reduced limit. Restart the stopped session to load the
+updated profile, then use the existing operator preparation controls.
 
 The earlier diagnostic configuration used
 `allow_init_current_calib_failed: {"middle_S1": "2.13.1"}`. That optional policy permits the exact
