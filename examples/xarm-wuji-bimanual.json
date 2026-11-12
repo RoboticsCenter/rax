@@ -114,10 +114,10 @@
         ]
       },
       "home_joints": [
-        -0.122173,
+        -0.174533,
         -0.174533,
         -2.094395,
-        0.0,
+        -0.174533,
         2.094395,
         0.0
       ],
@@ -323,7 +323,7 @@
         0.174533,
         -0.174533,
         -2.094395,
-        0.0,
+        0.174533,
         2.094395,
         0.0
       ],
@@ -343,6 +343,20 @@
   "camera_cpus": "0-15",
   "cameras": [
     {
+      "height": 480,
+      "mount": "fixed",
+      "name": "front",
+      "serial": "348522070593",
+      "width": 640
+    },
+    {
+      "name": "side_right",
+      "serial": "263222071915",
+      "mount": "fixed",
+      "width": 640,
+      "height": 480
+    },
+    {
       "arm": "left",
       "height": 480,
       "mount": "tcp",
@@ -357,13 +371,6 @@
       "name": "wrist_right",
       "serial": "752112070450",
       "width": 640
-    },
-    {
-      "height": 720,
-      "mount": "fixed",
-      "name": "front",
-      "serial": "348522070593",
-      "width": 1280
     }
   ],
   "motion_archive_enabled": true,
@@ -373,6 +380,6 @@
   "stream_fps": 15,
   "stream_window_s": 120,
   "unverified_camera_extrinsics": [],
-  "calibration_manifest": "calibration/xarm-wuji-bimanual-three-camera/manifest.json",
-  "camera_depth_mode": "Z16"
+  "camera_depth_mode": "Z16",
+  "calibration_manifest": "calibration/xarm-wuji-bimanual-four-camera/manifest.json"
 }

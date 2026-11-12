@@ -1,0 +1,81 @@
+{
+  "K": [
+    [
+      606.5839891575536,
+      0.0,
+      319.5628844787459
+    ],
+    [
+      0.0,
+      611.307077421871,
+      230.15004350205638
+    ],
+    [
+      0.0,
+      0.0,
+      1.0
+    ]
+  ],
+  "distortion_coeffs": [
+    0.12303304784250874,
+    -0.26693633644529496,
+    -0.00038092678810782365,
+    -0.005761792755292976,
+    -0.06232669324238298
+  ],
+  "distortion_model": "brown_conrady",
+  "factory_profile": {
+    "K": [
+      [
+        603.6570434570312,
+        0.0,
+        316.0461120605469
+      ],
+      [
+        0.0,
+        603.5117797851562,
+        236.53041076660156
+      ],
+      [
+        0.0,
+        0.0,
+        1.0
+      ]
+    ],
+    "distortion_coeffs": [
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0
+    ],
+    "distortion_model": "inverse_brown_conrady",
+    "fps": 15,
+    "height": 480,
+    "serial": "108322071838",
+    "width": 640
+  },
+  "fps": 15,
+  "height": 480,
+  "method": "Original training-only Brown5 color refinement; depth calibration pending",
+  "serial": "108322071838",
+  "training_frames": [
+    "/home/jerry/rax-runtime/sessions/20261110T091931Z_screw_lightbulb_fable52/operator/four-camera-calibration-20261111T233507Z/wrist-collection-20261112T011719Z/frames/1794446250553146496",
+    "/home/jerry/rax-runtime/sessions/20261110T091931Z_screw_lightbulb_fable52/operator/four-camera-calibration-20261111T233507Z/wrist-collection-20261112T011719Z/frames/1794446253992766439",
+    "/home/jerry/rax-runtime/sessions/20261110T091931Z_screw_lightbulb_fable52/operator/four-camera-calibration-20261111T233507Z/wrist-collection-20261112T011719Z/frames/1794446260991904613",
+    "/home/jerry/rax-runtime/sessions/20261110T091931Z_screw_lightbulb_fable52/operator/four-camera-calibration-20261111T233507Z/wrist-collection-20261112T011719Z/frames/1794446268528274505",
+    "/home/jerry/rax-runtime/sessions/20261110T091931Z_screw_lightbulb_fable52/operator/four-camera-calibration-20261111T233507Z/wrist-collection-20261112T011719Z/frames/1794446280972644187",
+    "/home/jerry/rax-runtime/sessions/20261110T091931Z_screw_lightbulb_fable52/operator/four-camera-calibration-20261111T233507Z/wrist-collection-20261112T011719Z/frames/1794446291544604654",
+    "/home/jerry/rax-runtime/sessions/20261110T091931Z_screw_lightbulb_fable52/operator/four-camera-calibration-20261111T233507Z/wrist-collection-20261112T011719Z/frames/1794446307664026155",
+    "/home/jerry/rax-runtime/sessions/20261110T091931Z_screw_lightbulb_fable52/operator/four-camera-calibration-20261111T233507Z/wrist-collection-20261112T011719Z/frames/1794446320663653843",
+    "/home/jerry/rax-runtime/sessions/20261110T091931Z_screw_lightbulb_fable52/operator/four-camera-calibration-20261111T233507Z/wrist-collection-20261112T011719Z/frames/1794446333112676978",
+    "/home/jerry/rax-runtime/sessions/20261110T091931Z_screw_lightbulb_fable52/operator/four-camera-calibration-20261111T233507Z/wrist-collection-20261112T011719Z/frames/1794446343264115862",
+    "/home/jerry/rax-runtime/sessions/20261110T091931Z_screw_lightbulb_fable52/operator/four-camera-calibration-20261111T233507Z/wrist-collection-20261112T011719Z/frames/1794446355673120503",
+    "/home/jerry/rax-runtime/sessions/20261110T091931Z_screw_lightbulb_fable52/operator/four-camera-calibration-20261111T233507Z/wrist-collection-20261112T011719Z/frames/1794446360769680045",
+    "/home/jerry/rax-runtime/sessions/20261110T091931Z_screw_lightbulb_fable52/operator/four-camera-calibration-20261111T233507Z/wrist-collection-20261112T011719Z/frames/1794446378469546047",
+    "/home/jerry/rax-runtime/sessions/20261110T091931Z_screw_lightbulb_fable52/operator/four-camera-calibration-20261111T233507Z/wrist-collection-20261112T011719Z/frames/1794446390516281910",
+    "/home/jerry/rax-runtime/sessions/20261110T091931Z_screw_lightbulb_fable52/operator/four-camera-calibration-20261111T233507Z/wrist-collection-20261112T011719Z/frames/1794446401113549649"
+  ],
+  "training_rms_px": 0.22088102824550127,
+  "width": 640
+}

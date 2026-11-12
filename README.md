@@ -3,8 +3,10 @@
 **[Project website](https://robot-agent-exploration.com/)** · [Paper](https://robot-agent-exploration.com/rax.pdf) · [All branches](https://github.com/robot-agent-exploration/rax)
 
 This branch supports two xArm 6 arms, each with a Wuji Hand 2, and RealSense
-cameras: `wrist_left`, `wrist_right`, and fixed `front`. The current setup uses
-the verified [three-camera configuration](examples/xarm-wuji-bimanual-three-camera.json).
+cameras: `wrist_left`, `wrist_right`, and two fixed side views, `front` and
+`side_right`. The current setup uses the
+[four-camera configuration](examples/xarm-wuji-bimanual-four-camera.json).
+All four cameras have verified RGB geometry in the matching calibration bundle.
 Additional fixed views can be configured and calibrated independently. The existing single-arm
 xArm/Wuji and G2 configurations remain supported.
 A Claude Code agent learns a
@@ -94,7 +96,7 @@ ln -s /large-disk/rax-franka-runtime runtime   # or: export RAX_ARTIFACT_ROOT=/l
 
 Sessions, logs and camera recordings go under the *artifact root*: `$RAX_ARTIFACT_ROOT`,
 else the repository's `runtime/` directory. A session records every camera, so use a
-disk with room (about 0.6 GB per hour for three cameras, plus a 10-minute raw window).
+disk with room (usage scales with camera count and image content, plus a 10-minute raw window).
 For Claude Code sessions, the resolved artifact directory must be outside this
 repository and the other protected directories. The agent is denied access to
 the source checkout, including any workspace nested beneath it. A `runtime`

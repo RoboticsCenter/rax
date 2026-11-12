@@ -56,9 +56,13 @@ observations for triangulation; `arms_before`, `arms` and
 Arm motion commands always take coordinates in the selected arm's own base.
 
 Triangulate the same visible object point across two views using their saved
-intrinsics and transforms in the same base. With one fixed view, use it with a
+intrinsics and transforms in the same base. {% if robot.fixed_cameras | length >= 2 %}
+The configured fixed views `{{ robot.fixed_cameras | join('`, `') }}` can form a
+stationary stereo pair when both have verified geometry and see the same feature.
+Use wrist views for closer inspection and additional viewing angles.
+{% else %}With one fixed view, use it with a
 wrist view or use both wrist views when the same feature is visible; do not
-assume a second fixed camera exists. Alternatively intersect a camera
+assume a second fixed camera exists.{% endif %} Alternatively intersect a camera
 ray with a known support plane. The supplied `reference_board_planes` describe
 the original calibration board; confirm that the current support surface matches
 before using them. A tilted calibration board does not define the tabletop.

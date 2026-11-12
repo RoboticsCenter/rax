@@ -2,25 +2,36 @@
 
 `scripts/xarm-bimanual-charuco-calibrate` adapts `real/xarmwuji`'s original
 18-pose workflow for two xArm bases, two wrist cameras and all configured fixed cameras
-(currently the single fixed `front` view).
+(currently fixed side views `front` and `side_right`).
 It uses the existing bimanual MCP owner for motion and separate read-only SDK
 connections for precise pose snapshots. It never opens another Wuji owner or
 changes finger targets. Only one arm moves at a time.
 
-## Three cameras: two wrists and front
+## Four cameras: two wrists and two fixed side views
 
-Use `examples/xarm-wuji-bimanual-three-camera.json` for `wrist_left`
-(`108322071838`), `wrist_right` (`752112070450`), and fixed `front`
-(`348522070593`). No side cameras are required. This example preserves the
-arm/hand settings and uses RGB at 15 FPS: 640×480 wrists and 1280×720 front.
-It now selects the verified November 10 three-camera bundle in
-`calibration/xarm-wuji-bimanual-three-camera/manifest.json`. Before a new full
-calibration, use a temporary operator configuration without `calibration_manifest`
-so the camera owner supplies raw factory RGB images.
+Use `examples/xarm-wuji-bimanual-four-camera.json` for `wrist_left`
+(`108322071838`), `wrist_right` (`752112070450`), fixed `front`
+(`348522070593`) and fixed `side_right` (`263222071915`). `front` keeps its
+existing ID even when used as a side view. All four capture RGB and depth at
+640×480 and 15 FPS. The example preserves the commissioned arm/hand settings.
+
+The four-camera configuration selects
+`calibration/xarm-wuji-bimanual-four-camera/manifest.json`. Both wrist cameras
+passed fitting and 19 fresh checks each. Both fixed cameras passed stereo transfer
+against the wrists and eight fresh checks each. For `side_right`, the operator
+moved the board closer after the first three cameras were verified; the calibrated
+camera mounts stayed fixed, so the wrist sweeps did not need repeating.
+All four RGB extrinsics are verified; independent metric depth validation remains
+pending. Fixed-camera transfer can use a new board placement without changing the
+verified wrist or inter-base transforms.
+The historical three-camera bundle is not selected. Install new geometry only
+after both fitting and fresh verification pass. For collection, use raw factory
+RGB images; the existing RGB-D preview owner can be borrowed with
+`--camera-socket SOCKET` without stopping its viewer.
 
 The board is unchanged: 10×13 physical squares, 20 mm squares, 15 mm markers,
 with the legacy 14-row ID layout and its final row absent. Keep it stationary
-through both sweeps and verification, visible to all three cameras.
+through both sweeps and verification, visible to all four cameras.
 
 Create the session using this backend-options file. Collection now inherits
 the session camera resolutions and `stream_fps`; `--width`, `--height`, and
@@ -28,7 +39,7 @@ the session camera resolutions and `stream_fps`; `--width`, `--height`, and
 including legacy 6 FPS fits. The eventual run must use that same profile.
 
 ```bash
-export RAX_BACKEND_OPTIONS="$PWD/examples/xarm-wuji-bimanual-three-camera.json"
+export RAX_BACKEND_OPTIONS="$PWD/examples/xarm-wuji-bimanual-four-camera.json"
 
 # SESSION is a configured bimanual session. Preflight does not run a sweep.
 .venv/bin/python scripts/xarm-bimanual-charuco-calibrate \
@@ -41,9 +52,9 @@ export RAX_BACKEND_OPTIONS="$PWD/examples/xarm-wuji-bimanual-three-camera.json"
   --root COLLECTION_ARTIFACTS --sweep-z-direction down
 ```
 
-Release the standalone live viewer before capture so there is only one camera
-owner. Follow the fit and fresh-verification steps below. Full collection fits
-both wrists, front-to-base transforms, and the inter-base alignment. Install
+Borrow the existing raw camera owner with `--camera-socket`, or release it before
+starting a new capture owner. Follow the fit and fresh-verification steps below. Full collection fits
+both wrists, both fixed cameras to both bases, and the inter-base alignment. Install
 only a bundle that passes fresh verification, then point `calibration_manifest`
 at it. Selecting this example alone does not validate any geometry.
 
@@ -55,8 +66,18 @@ the two-camera scope from the fit. Fixed views remain unverified when installing
 this partial bundle and can be calibrated later against the verified wrists
 using the fixed-camera workflow below, with the board at a different height.
 
-Start from the operator's current per-arm saved homes, reported as
-`arms.<side>.home_joints` by `xarm_status`; the left and right homes can differ.
+Before collection, return both arms to the operator-selected calibration poses
+and verify their measured positions and orientations. These poses may differ from
+the saved homes reported as `arms.<side>.home_joints` by `xarm_status`. Record
+both calibration starting poses and reuse them after an interrupted sweep;
+do not silently start the next sweep from the interrupted position. Leave hand
+postures unchanged unless the operator requests otherwise.
+For the current four-camera installation, the operator selected the saved arm
+homes as the starting poses for future calibrations: left joint 4 is −10°.
+The completed calibration used −20° at that joint; its capture records remain
+historical evidence. Changing the future starting pose does not change the fitted
+rigid camera extrinsics. The session's `operator/calibration-start-poses.json`
+records the new starting poses; read live `home_joints` before future motion.
 The sweep is relative to each arm's measured starting TCP pose and returns to
 that same pose. Updating a home does not change the rigid wrist-to-TCP transform,
 but it changes board visibility and the sweep's reachability, so run preflight
@@ -97,9 +118,9 @@ and the final physical row absent. A standard 13-row layout does not match
 the observed IDs. The print must lie flat.
 
 Camera identities come from the session's configuration: `wrist_left` belongs
-to the left arm, `wrist_right` to the right arm, and `front` is fixed. Legacy
-side cameras are optional. The current profiles are 640×480 for both wrists and
-1280×720 for front, all at 15 FPS, with live factory RGB intrinsics for collection.
+to the left arm, `wrist_right` to the right arm, and both `front` and `side_right`
+are fixed. All four current profiles are 640×480 at 15 FPS, with live factory RGB
+intrinsics for collection.
 The default procedure fits extrinsics only. The optional
 `--refine-wrist-intrinsics` applies the original script's training-only Brown5
 RGB lens refinement; held-out images do not participate in that fit. It saves
@@ -216,9 +237,9 @@ those runtime capabilities require an explicit configuration integration step.
 
 ## Calibrating individual fixed cameras
 
-The current setup uses `--target front --reference wrist_left wrist_right`.
-The side-camera commands below apply only to legacy or expanded configurations
-that actually include those views.
+For either fixed side view, use `--target front` or `--target side_right` with
+`--reference wrist_left wrist_right` after both wrist references are verified.
+The same command can target both fixed views when both need recalibration.
 
 When both reference cameras are fixed, `--camera-socket CAMERA_SOCKET` can replace
 `--mcp-socket MCP_SOCKET` to capture directly from an existing camera server.

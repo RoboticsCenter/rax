@@ -67,6 +67,7 @@ def test_every_template_variable_is_a_setup_fact():
 
 @pytest.mark.parametrize('example', ['xarm-wuji-bimanual.json',
                                     'xarm-wuji-bimanual-three-camera.json',
+                                    'xarm-wuji-bimanual-four-camera.json',
                                     'xarm-wuji-bimanual-five-camera.json'])
 def test_bimanual_workspace_uses_selected_camera_inventory(tmp_path, example):
     options = json.loads((ROOT/'examples'/example).read_text())

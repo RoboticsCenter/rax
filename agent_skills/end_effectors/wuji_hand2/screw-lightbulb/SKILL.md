@@ -40,12 +40,15 @@ xArm/Wuji. The Dexmate `in-hand-localization` method is a scaffold with a missin
 
 ## Translate before executing
 
-- Use the live camera inventory and calibrated geometry. On the current bimanual
-  setup the views are `wrist_left`, `wrist_right` and fixed `front`. Use the front
-  view for scene context and separated calibrated views for cap/socket geometry.
-  A source `head_camera` is not simply an alias for `front`: intrinsics, extrinsics,
-  image dimensions and observation time differ. In RGB-D sessions, all three views
-  also supply aligned depth PNGs; use the installed object-localization guidance
+- Use the live camera inventory and per-camera calibration status. The configured
+  views are `{{ robot.cameras | join('`, `') }}`. On the four-camera bimanual rig,
+  `wrist_left` and `wrist_right` move with their arms; `front` and `side_right`
+  are the two fixed side views (`front` retains its existing camera ID).
+  Use fixed views for scene context and separated, verified views for cap/socket
+  geometry. An unverified view can supply images but not trusted base-frame poses.
+  A source `head_camera` is not simply an alias for a RAX camera: intrinsics,
+  extrinsics, image dimensions and observation time differ. In RGB-D sessions,
+  configured views also supply aligned depth PNGs; follow object-localization
   for their units, validity checks and factory depth-calibration limitations.
 - Source Sharpa/Dexmate finger targets, palm offsets, joint counts, effort scales,
   FK/IK models and workspace coordinates do not transfer to Wuji. Recompute the

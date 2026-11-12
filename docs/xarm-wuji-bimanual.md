@@ -226,36 +226,37 @@ faults; physical qualification remains separate.
 
 ## Cameras and extrinsics collection
 
-| Role | Serial | RGB profile |
+| Role | Serial | RGB/depth capture profile |
 | --- | --- | --- |
-| `wrist_left` | `108322071838` | 640×480 at 15 FPS |
-| `wrist_right` | `752112070450` | 640×480 at 15 FPS |
-| `front` (fixed) | `348522070593` | 1280×720 at 15 FPS |
+| `wrist_left` (left TCP) | `108322071838` | 640×480 at 15 FPS |
+| `wrist_right` (right TCP) | `752112070450` | 640×480 at 15 FPS |
+| `front` (fixed side view; existing ID) | `348522070593` | 640×480 at 15 FPS |
+| `side_right` (fixed side view) | `263222071915` | 640×480 at 15 FPS |
 
 Both `examples/xarm-wuji-bimanual.json` and the explicit
-`examples/xarm-wuji-bimanual-three-camera.json` select this setup and
-`calibration/xarm-wuji-bimanual-three-camera/manifest.json`. The November 10
-bundle passed 57 fresh camera checks at 5 mm / 1° and mean reprojection below
-1 pixel. See the [verified bundle report](../calibration/xarm-wuji-bimanual-three-camera/README.md).
-These are consistency checks; depth remains unqualified.
+`examples/xarm-wuji-bimanual-four-camera.json` select this setup and
+`calibration/xarm-wuji-bimanual-four-camera/manifest.json`. On November 11
+(November 12 UTC), both wrist cameras passed 19 fresh checks each, and both fixed
+cameras passed eight fresh stereo-reference checks each. Maximum translation/rotation errors
+were 1.56 mm / 0.58° for `wrist_left`, 2.03 mm / 0.33° for `wrist_right`, and
+2.24 mm / 0.21° for `front`, and 0.52 mm / 0.17° for `side_right`. The right-side
+camera used a closer board placement while all camera mounts stayed fixed.
+All four RGB extrinsics are verified. The old three-camera bundle is historical
+and is not selected.
 
 Each wrist entry has an explicit owning `arm`. One shared camera process owns
-all configured streams; stop a standalone camera viewer before starting another
-camera owner. Agent skills derive camera names and overview from the session;
-`front` is the overview for this setup. The two wrists can provide stereo
-references when they share visible features with the fixed camera.
+all configured streams. Agent skills derive camera names and overview from the
+session; `front` remains the overview ID. Both fixed cameras must remain still
+through calibration and use. Both wrists can provide stereo references when
+shared features are visible.
 
-The old five-camera example is retained as
-`examples/xarm-wuji-bimanual-five-camera.json` for the historical rig, including
-`side_a` and `side_b`. Do not select it for the current three-camera installation.
-Historical calibration reports remain under `calibration/xarm-wuji-bimanual/`.
-
-Additional fixed views can be added with unique names/serials and explicitly
-listed in `unverified_camera_extrinsics` until calibrated. Read per-camera
-status before using geometry. The configured set must include every camera in
-its selected verified bundle; use the three-camera bundle for this installation.
-Startup checks arm serials, TCP offsets and camera profiles. Keep the saved
-image's matching optical model and capture-adjacent pose together.
+The explicitly named three-camera and five-camera examples and their calibration
+reports are retained for historical rigs. They are not the current installation.
+Additional fixed views need unique names/serials and must remain explicitly
+unverified until calibrated. Read per-camera status before using geometry.
+A selected verified bundle must match camera serials, profiles, owning arms,
+arm serials and TCP offsets. Keep each saved image's matching optical model and
+capture-adjacent pose together.
 
 `xarm_observe(arm="left" | "right", project=[[x,y,z], ...])` saves camera poses in
 both bases and projects points in the selected base (default left). Saved image
@@ -264,8 +265,8 @@ Status supplies `T_left_base_right_base`. Arm motion targets still use their own
 arm's base. An uncalibrated configuration can omit `calibration_manifest` and
 continues providing raw observations without transforms or projection.
 
-Use `rgbd` to capture aligned depth on all three cameras. Both wrists capture
-640×480 and the front camera captures 1280×720 at 15 FPS; the examples record
+Use `rgbd` to capture aligned depth on all four cameras at 640×480 and 15 FPS;
+the examples record
 rolling depth at 1 Hz, while each `xarm_observe` saves a fresh depth image from
 every requested camera. Depth PNGs are uint16 millimetres (zero is invalid), aligned
 to the saved RGB grid. Observation metadata includes the depth registration source
@@ -275,8 +276,8 @@ for using depth with the verified RGB transforms. The
 [bimanual extrinsics workflow](xarm-wuji-bimanual-calibration.md)
 collects both wrist sweeps and derives fixed-camera and inter-base transforms
 from one stationary ChArUco board, following the original single-arm script.
-The current three-camera bundle includes both wrists, front-to-base geometry,
-and inter-base alignment. Depth validation remains pending.
+A full four-camera bundle must include both wrists, both fixed-view transforms
+to each arm base, and inter-base alignment. Depth validation remains pending.
 
 ## Start and prepare
 
