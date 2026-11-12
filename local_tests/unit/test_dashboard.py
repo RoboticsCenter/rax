@@ -48,8 +48,8 @@ def test_finished_turn_alerts_while_launcher_is_still_running(dashboard, monkeyp
     assert sessions.summary(root)['idle_notice'] is None  # Brief handoff between turns stays quiet.
 
 
-@pytest.mark.parametrize('status', ['exited', 'failed', 'running', 'budget-exhausted'])
-def test_ended_session_notice_and_intentional_stop_suppression(dashboard, monkeypatch, status):
+@pytest.mark.parametrize('status', ['exited', 'failed', 'running', 'budget-exhausted', 'stopped'])
+def test_every_ended_session_alerts_including_intentional_stops(dashboard, monkeypatch, status):
     base, token, sessions = dashboard
     session_id = configure(base)['id']
     root = sessions.root(session_id)
@@ -59,11 +59,48 @@ def test_ended_session_notice_and_intentional_stop_suppression(dashboard, monkey
     assert notice['id'] == 'exit-100' and 'no longer running' in notice['message']
     (root/'operator').mkdir(exist_ok=True)
     (root/'operator/dashboard-stop.json').write_text(json.dumps({'started_at': 100}))
-    assert sessions.summary(root)['exit_notice'] is None
+    assert sessions.summary(root)['exit_notice']['id'] == 'exit-100'
     (root/'agent-lifecycle.json').write_text(json.dumps({'status': status, 'started_at': 200}))
     assert sessions.summary(root)['exit_notice']['id'] == 'exit-200'
     monkeypatch.setattr(sessions, 'process', lambda root: {'pid': 123})
     assert sessions.summary(root)['exit_notice'] is None
+
+
+@pytest.mark.parametrize('reason,api_error', [('stop_sequence', True), ('end_turn', False),
+                                           ('max_tokens', False), ('refusal', False), ('pause_turn', False)])
+def test_terminal_turns_alert_without_process_exit(dashboard, monkeypatch, reason, api_error):
+    base, token, sessions = dashboard
+    root = sessions.root(configure(base)['id'])
+    now = time.time()
+    (root/'agent-lifecycle.json').write_text(json.dumps({'status': 'running', 'started_at': now-60}))
+    monkeypatch.setattr(sessions, 'process', lambda root: {'pid': 123})
+    transcript = root/'claude-home/projects/-ws/error.jsonl'
+    transcript.parent.mkdir(parents=True)
+    event = {'type': 'assistant', 'uuid': 'error-turn', 'isApiErrorMessage': api_error,
+             'timestamp': datetime.fromtimestamp(now-11, timezone.utc).isoformat(),
+             'message': {'stop_reason': reason, 'content': [{'type': 'text',
+                         'text': 'API Error: 402 Relay model-call budget exhausted.'}]}}
+    transcript.write_text(json.dumps(event)+'\n')
+    summary = sessions.summary(root)
+    assert summary['running'] and summary['idle_notice']
+    if api_error:
+        assert summary['idle_notice']['title'] == 'CLAUDE STOPPED: API ERROR'
+        assert '402' in summary['idle_notice']['message']
+    transcript.write_text(json.dumps(event)+'\n'+json.dumps({'type': 'api-request'})+'\n')
+    assert sessions.summary(root)['idle_notice'] is None
+    event.update(type='user', isApiErrorMessage=False,
+                 message={'content': [{'type': 'text', 'text': '[Request interrupted by user]'}]})
+    transcript.write_text(json.dumps(event)+'\n')
+    assert sessions.summary(root)['idle_notice']['title'] == 'CLAUDE TURN INTERRUPTED'
+
+
+def test_usage_wait_alerts_while_launcher_alive(dashboard, monkeypatch):
+    base, token, sessions = dashboard
+    root = sessions.root(configure(base)['id'])
+    (root/'agent-lifecycle.json').write_text(json.dumps({
+        'status': 'usage_wait', 'started_at': 100, 'usage_limited_until': 500}))
+    monkeypatch.setattr(sessions, 'process', lambda root: {'pid': 123})
+    assert sessions.summary(root)['idle_notice']['title'] == 'AGENT PAUSED: PROVIDER USAGE LIMIT'
 
 
 @pytest.mark.parametrize('model, expected', [('claude-opus-5-5', 29.2), ('claude-fable-5-2', 58.2)])
@@ -174,6 +211,51 @@ def test_auth_required(dashboard):
     with pytest.raises(HTTPError) as error:
         urlopen(base + '/', timeout=5)
     assert error.value.code == 401
+
+
+def test_scene_shows_all_cameras_fallback_freshness_and_temperatures(dashboard):
+    base, token, sessions = dashboard
+    root = sessions.root(configure(base)['id'])
+    config = json.loads((root/'operator-input.json').read_text())
+    names = ['front', 'side_right', 'wrist_left', 'wrist_right']
+    config['backend_options']['cameras'] = [{'name': name} for name in names]
+    config['backend_options']['arms'] = {side: {'end_effector': {
+        'type': 'wuji_hand2', 'max_temperature_c': 67}} for side in ('left', 'right')}
+    (root/'operator-input.json').write_text(json.dumps(config))
+    now = time.time()
+    for name in names[:2]:
+        p = root/'stream'/name/'20261112T0700'/'1794466800000.jpg'
+        p.parent.mkdir(parents=True)
+        p.write_bytes(b'live-jpeg')
+    saved = root/'agent-workspace/runtime/frames/oldframe/wrist_left.jpg'
+    saved.parent.mkdir(parents=True)
+    saved.write_bytes(b'old-jpeg')
+    os.utime(saved, (now-60, now-60))
+    for side, age in [('left', 0), ('right', 60)]:
+        p = root/'operator'/f'wuji-{side}-state.json'
+        p.parent.mkdir(exist_ok=True)
+        p.write_text(json.dumps({'recorded_unix': now-age, 'fresh': True,
+            'joint_names': ['pinky_S3'], 'diagnostics': {'mcu_temp_c_fb': [65.2]},
+            'diagnostics_policy': {'max_temperature_c': 67}}))
+    route = f'/api/session/{root.name}/scene'
+    assert call(base, route, token=None)[0] == 401
+    status, scene = call(base, route)
+    assert status == 200
+    assert [c['name'] for c in scene['cameras']] == names
+    assert [c['fresh'] for c in scene['cameras']] == [True, True, False, False]
+    assert scene['cameras'][-1]['url'] is None
+    assert scene['hands']['left']['fresh'] and not scene['hands']['right']['fresh']
+    assert scene['hands']['left']['temperatures'] == [65.2]
+    with urlopen(Request(base+scene['cameras'][0]['url'], headers={'X-Operator-Token': token})) as response:
+        assert response.read() == b'live-jpeg'
+    assert sessions.scene_image(root.name, 'wrist_left') == b'old-jpeg'
+    with pytest.raises((KeyError, ValueError)):
+        sessions.scene_image(root.name, '../operator-input')
+    outside = root.parent/'outside.jpg'
+    outside.write_bytes(b'private')
+    saved.unlink()
+    saved.symlink_to(outside)
+    assert sessions.scene(root.name)['cameras'][2]['url'] is None
 
 
 def test_token_url_sets_cookie(dashboard):

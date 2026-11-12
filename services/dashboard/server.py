@@ -138,6 +138,10 @@ class Handler(BaseHTTPRequestHandler):
                 self._json(HTTPStatus.OK, sessions.activity(parts[2]))
             elif len(parts) == 4 and parts[:2] == ['api', 'session'] and parts[3] == 'frame':
                 self._json(HTTPStatus.OK, {'frame': sessions.latest_frame(parts[2])})
+            elif len(parts) == 4 and parts[:2] == ['api', 'session'] and parts[3] == 'scene':
+                self._json(HTTPStatus.OK, sessions.scene(parts[2]))
+            elif len(parts) == 5 and parts[:2] == ['api', 'session'] and parts[3] == 'scene' and parts[4].endswith('.jpg'):
+                self._send(HTTPStatus.OK, sessions.scene_image(parts[2], parts[4][:-4]), 'image/jpeg')
             elif len(parts) == 6 and parts[:2] == ['api', 'session'] and parts[3] == 'frame' \
                     and parts[5].endswith('.jpg'):
                 self._send(HTTPStatus.OK, sessions.frame_image(parts[2], parts[4], parts[5][:-4]), 'image/jpeg')

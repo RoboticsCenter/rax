@@ -120,6 +120,38 @@ test('only newly displayed operator requests chime; narration and repeated polls
   now += 60000;
   context.renderRequests({ sessions: [{ id: 'session-a', task: 'bottle', running: true, requests: [] }] });
   assert.equal(chimes, 18, 'a resumed model turn cancels the idle reminders');
+  context.renderRequests({ sessions: [{ id: 'unselected-session', task: 'bottle', running: true, requests: [],
+    idle_notice: { id: 'api-error-1', created: 1, title: 'CLAUDE STOPPED: API ERROR', message: 'API Error: 402' } }] });
+  assert.equal(chimes, 19, 'API errors alert even for a session never selected in this browser');
+  const textOf = node => node instanceof Element ? (node.textContent ?? node.children.map(textOf).join(' ')) : String(node);
+  const panel = new Element();
+  context.renderScene(panel, { cameras: ['front', 'side_right', 'wrist_left', 'wrist_right'].map((name, i) => ({
+    name, fresh: i < 2, captured_at: 1, url: i === 3 ? null : '/image.jpg',
+  })) });
+  assert.equal(panel.children.length, 4, 'every configured camera has a visible tile');
+  assert.match(textOf(panel), /STALE/);
+  assert.match(textOf(panel), /No image available/);
+  const previousFigure = panel.children[0];
+  const previousImage = panel.cameraViews.get('front').image;
+  context.renderScene(panel, { cameras: ['front', 'side_right', 'wrist_left', 'wrist_right'].map(name => ({
+    name, fresh: true, captured_at: 2, url: '/next-image.jpg',
+  })) });
+  assert.equal(panel.children[0], previousFigure, 'camera figures survive polling');
+  assert.equal(panel.cameraViews.get('front').image, previousImage, 'images are reused while loading newer frames');
+  assert.equal(context.scenePanel('same-message', 'session-a'), context.scenePanel('same-message', 'session-a'),
+    'message refreshes reuse the whole camera panel');
+  const names = ['thumb', 'index', 'middle', 'ring', 'pinky'].flatMap(f => [1, 2, 3, 4].map(j => `${f}_S${j}`));
+  context.renderTemperatures({
+    left: { fresh: true, recorded_at: 1, joint_names: names, temperatures: names.map(() => 65.2),
+      disabled_joints: ['thumb_S3'], limit_c: 67, configured_limit_c: 67 },
+    right: { fresh: false, recorded_at: 1, joint_names: names, temperatures: names.map(() => 62.1),
+      disabled_joints: [], limit_c: 67, configured_limit_c: 67 },
+  });
+  const temperatureText = textOf(elements.get('hand-temperatures'));
+  for (const name of names) assert.ok(temperatureText.includes(name));
+  assert.match(temperatureText, /65.2 †/);
+  assert.match(temperatureText, /62.1 \(stale\)/);
+  assert.equal(elements.get('hand-temperatures').hidden, false);
 
   const muted = vm.createContext({ ...context,
     localStorage: { getItem: key => key === 'dashboardSound' ? 'muted' : null },

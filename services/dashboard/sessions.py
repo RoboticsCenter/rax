@@ -212,9 +212,7 @@ class Sessions:
             status = f'{status} (launcher gone)'
         exit_notice = None
         started = lifecycle.get('started_at')
-        intentional_stop = read_json(root/'operator/dashboard-stop.json', {}) or {}
-        if (started and not process and lifecycle.get('status') not in ('stopped', 'prepared-only')
-                and intentional_stop.get('started_at') != started):
+        if started and not process and lifecycle.get('status') != 'prepared-only':
             exit_notice = {'id': f'exit-{started}', 'created': lifecycle.get('finished_at') or started,
                            'message': f"Agent session ended: {status}. "
                            + (f"Return code: {lifecycle['returncode']}. " if 'returncode' in lifecycle else '')
@@ -222,6 +220,12 @@ class Sessions:
                            + 'Autoresearch is no longer running. Review the session logs before resuming.'}
         requests = operator.pending(root)
         idle_notice = self.idle_notice(root, started) if process and status == 'running' and not requests else None
+        if process and status == 'usage_wait':
+            idle_notice = {'id': f'usage-wait-{started}-{lifecycle.get("usage_limited_until")}',
+                           'created': lifecycle.get('usage_limited_until') or started,
+                           'title': 'AGENT PAUSED: PROVIDER USAGE LIMIT',
+                           'message': 'The launcher is waiting for the provider usage limit to reset. '
+                                      'Autoresearch is paused and will resume automatically after the reset.'}
         return {
             'id': root.name, 'task': config.get('task'), 'robot': config.get('robot'),
             'created': (root/'operator-input.json').stat().st_mtime,
@@ -556,6 +560,68 @@ class Sessions:
     def frames_dir(self, root):
         return root/WORKSPACE_NAME/'runtime'/'frames'
 
+    def scene_images(self, root):
+        """Read existing recordings only; never open cameras or move the robot."""
+        config = read_json(root/'operator-input.json', {}) or {}
+        names = [c['name'] for c in config.get('backend_options', {}).get('cameras', [])
+                 if isinstance(c, dict) and CAMERA.fullmatch(c.get('name', ''))]
+        frames = None
+        result = {}
+        for name in names:
+            candidates = []
+            stream = root/'stream'/name
+            for minute in sorted(stream.glob('*'), reverse=True):
+                if minute.is_dir():
+                    candidates = sorted(minute.glob('*.jpg'), reverse=True)
+                    if candidates:
+                        break
+            if candidates and time.time()-candidates[0].stat().st_mtime < 5 and candidates[0].resolve().is_relative_to(root.resolve()):
+                result[name] = candidates[0]
+                continue
+            if frames is None:
+                directory = self.frames_dir(root)
+                frames = sorted((p for p in directory.glob('*') if p.is_dir() and
+                                 FRAME_ID.fullmatch(p.name)), reverse=True)
+            saved = next((p/f'{name}.jpg' for p in frames if (p/f'{name}.jpg').is_file()), None)
+            if saved:
+                candidates.append(saved)
+            candidates = [p for p in candidates if p.is_file() and p.resolve().is_relative_to(root.resolve())]
+            result[name] = max(candidates, key=lambda p: p.stat().st_mtime) if candidates else None
+        return result
+
+    def scene(self, session_id):
+        from services.wuji.client import recorded_status
+        root = self.root(session_id)
+        now = time.time()
+        cameras = []
+        for name, path in self.scene_images(root).items():
+            stamp = path.stat().st_mtime if path else None
+            age = max(0, now-stamp) if stamp is not None else None
+            cameras.append({'name': name, 'captured_at': stamp, 'age_s': age,
+                            'fresh': age is not None and age < 5,
+                            'url': f'/api/session/{session_id}/scene/{name}.jpg?t={stamp}' if path else None})
+        config = read_json(root/'operator-input.json', {}) or {}
+        hands = {}
+        for side, arm in config.get('backend_options', {}).get('arms', {}).items():
+            if side not in ('left', 'right') or arm.get('end_effector', {}).get('type') != 'wuji_hand2':
+                continue
+            state = recorded_status(root, side=side)
+            hands[side] = {'fresh': state.get('fresh', False), 'recorded_at': state.get('recorded_unix'),
+                           'joint_names': state.get('joint_names', []),
+                           'temperatures': state.get('diagnostics', {}).get('mcu_temp_c_fb', []),
+                           'disabled_joints': state.get('disabled_joints', []),
+                           'limit_c': state.get('diagnostics_policy', {}).get('max_temperature_c'),
+                           'configured_limit_c': arm['end_effector'].get('max_temperature_c')}
+        return {'cameras': cameras, 'hands': hands}
+
+    def scene_image(self, session_id, camera):
+        if not CAMERA.fullmatch(camera or ''):
+            raise ValueError('invalid camera')
+        path = self.scene_images(self.root(session_id)).get(camera)
+        if path is None:
+            raise KeyError('no image available for this camera')
+        return path.read_bytes()
+
     def latest_frame(self, session_id):
         root = self.root(session_id)
         directory = self.frames_dir(root)
@@ -596,7 +662,16 @@ class Sessions:
             kind = entry.get('type')
             if kind in ('user', 'api-request'):
                 finished = None
-            elif kind == 'assistant' and (entry.get('message') or {}).get('stop_reason') == 'end_turn':
+                content = (entry.get('message') or {}).get('content', [])
+                if isinstance(content, str):
+                    content = [{'type': 'text', 'text': content}]
+                if kind == 'user' and any(isinstance(block, dict) and
+                        block.get('type') == 'text' and
+                        block.get('text', '').startswith('[Request interrupted by user') for block in content):
+                    finished = {**entry, 'operator_interrupted': True}
+            elif kind == 'assistant' and (entry.get('isApiErrorMessage') or
+                    (entry.get('message') or {}).get('stop_reason') in
+                    ('end_turn', 'stop_sequence', 'max_tokens', 'refusal', 'pause_turn')):
                 finished = entry
             elif kind == 'assistant' and (entry.get('message') or {}).get('stop_reason') == 'tool_use':
                 finished = None
@@ -608,10 +683,20 @@ class Sessions:
             return None
         if stamp < (started_at or 0) or time.time()-stamp < 10:
             return None
+        api_error = finished.get('isApiErrorMessage')
+        message = finished.get('message') or {}
+        error_text = '\n'.join(block.get('text', '') for block in message.get('content', [])
+                               if isinstance(block, dict) and block.get('type') == 'text')
         return {'id': f"idle-{path.stem}-{finished.get('uuid') or finished['timestamp']}",
                 'created': stamp, 'title': 'CLAUDE TURN FINISHED',
                 'message': 'Claude finished its turn and is waiting for input. The CLI is still open, '
-                'but autoresearch is not continuing. Review the transcript and send an instruction to continue.'}
+                'but autoresearch is not continuing. Review the transcript and send an instruction to continue.',
+                **({'title': 'CLAUDE STOPPED: API ERROR',
+                    'message': truncate(error_text, 2000) + '\nClaude is blocked even though its CLI is still open. '
+                               'Resolve the error before continuing.'} if api_error else {}),
+                **({'title': 'CLAUDE TURN INTERRUPTED',
+                    'message': 'The Claude turn was interrupted. The CLI may still be open, '
+                               'but autoresearch is not continuing.'} if finished.get('operator_interrupted') else {})}
 
     @staticmethod
     def transcript_events(lines, limit=80):

@@ -44,9 +44,11 @@ Both hands need distinct serials, addresses and matching handedness.
 The example preserves the right hand's existing control profile and encoder-warning
 allowance. Its left profile now includes the physically tested partial-hand patch:
 18 controlled joints, `thumb_S3` and `middle_S1` isolated, 200 Hz commands, and the
-left hand's own saved home. On November 10, the operator reduced the current
-ceiling to 0.8 A on both hands after recurring thermal stops. The two excluded
-left joints retain zero current and gains. Temperature cutoffs, stiffness,
+left hand's own saved home. On November 12, the operator reduced the current
+ceiling from 0.8 A to 0.6 A on both hands after recurring heating. The operator
+subsequently restored the right hand to 0.8 A; the left remains at 0.6 A. The two excluded
+left joints retain zero current and gains. Both temperature cutoffs are now 67°C
+(left unchanged, right raised from 65°C at the operator’s request). Stiffness,
 damping and motion limits are unchanged. Earlier physical movement and
 calibration evidence below used a 1.5 A ceiling; it does not validate grasping
 performance with the reduced limit. Restart the stopped session to load the
@@ -241,6 +243,12 @@ the mounts were moved. All four passed 19 fresh checks each against the frozen f
 Maximum translation/rotation errors were 1.85 mm / 0.30° for `wrist_left`,
 1.62 mm / 0.37° for `wrist_right`, 1.68 mm / 0.38° for `front`, and
 3.01 mm / 0.41° for `side_right`. This supersedes the earlier staged calibration.
+A later bump prompted a fixed-camera-only recalibration on November 12 UTC.
+Using both unchanged wrists as stereo references, `front` and `side_right`
+passed 12 training and 8 fresh verification captures each. Current fixed-view
+maxima are 1.68 mm / 0.30° (`front`) and 1.69 mm / 0.28° (`side_right`), with
+mean reprojection error at most 0.200 px and 0.347 px respectively. Wrist and
+inter-base calibrations remain unchanged.
 All four RGB extrinsics are verified. The old three-camera bundle is historical
 and is not selected.
 

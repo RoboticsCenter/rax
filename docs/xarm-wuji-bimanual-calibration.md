@@ -20,6 +20,12 @@ The four-camera configuration selects
 were moved, all four cameras were fitted together from one shared 36-pose collection
 on November 12 UTC. The frozen fit passed 19 fresh checks per camera (76 total).
 This joint calibration supersedes the earlier staged wrist/fixed-view calibration.
+After a later reported bump on November 12 UTC, only `front` and `side_right`
+were refitted using stereo board transfer from the unchanged calibrated wrists.
+The update passed 12 training and 8 fresh verification captures per fixed camera:
+front maximum 1.68 mm / 0.30°, side_right 1.69 mm / 0.28°. Wrist extrinsics,
+inter-base alignment and optical models were preserved. The manifest’s
+`fixed_camera_updates` and per-camera recalibration reports record this update.
 All four RGB extrinsics are verified; independent metric depth validation remains
 pending. Fixed-camera transfer can use a new board placement without changing the
 verified wrist or inter-base transforms.

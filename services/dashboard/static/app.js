@@ -356,6 +356,90 @@ function beep(test = false) {
 const submittingRequests = new Set();
 const requestDrafts = new Map();
 const watchedSessions = new Set();
+const requestScenes = new Map();
+
+function scenePanel(key, session) {
+  if (requestScenes.has(key)) return requestScenes.get(key).panel;
+  const panel = el('div', { class: 'cams' }, 'Loading camera views…');
+  requestScenes.set(key, { session, panel });
+  return panel;
+}
+
+function renderScene(panel, scene) {
+  const signature = scene.cameras.map(camera => camera.name).join('|');
+  if (panel.cameraSignature !== signature) {
+    panel.cameraSignature = signature;
+    panel.cameraViews = new Map(scene.cameras.map(camera => {
+      const caption = el('figcaption');
+      const missing = el('p', {}, 'No image available');
+      const image = el('img', { alt: camera.name });
+      image.hidden = true;
+      image.addEventListener('load', () => { image.hidden = false; missing.hidden = true; });
+      image.addEventListener('error', () => { image.hidden = true; missing.hidden = false;
+        missing.textContent = 'Image unavailable; waiting for next refresh.'; });
+      return [camera.name, { image, caption, missing, figure: el('figure', {}, image, missing, caption) }];
+    }));
+    panel.replaceChildren(...[...panel.cameraViews.values()].map(view => view.figure));
+    if (!scene.cameras.length) panel.replaceChildren('No cameras configured.');
+  }
+  for (const camera of scene.cameras) {
+    const view = panel.cameraViews.get(camera.name);
+    view.caption.textContent = `${camera.name} · ${camera.fresh ? 'Live' : 'STALE / last saved image'} · ${when(camera.captured_at)}`;
+    // Updating src on the same image keeps its previous decoded frame visible
+    // while the next one loads. Rebuilding the element caused flashing on SSH.
+    if (camera.url && view.url !== camera.url) {
+      view.url = camera.url;
+      view.image.setAttribute('src', camera.url);
+    } else if (!camera.url) {
+      view.url = null;
+      view.image.hidden = true;
+      view.missing.hidden = false;
+    }
+  }
+}
+
+function renderTemperatures(hands) {
+  const box = $('hand-temperatures');
+  box.hidden = !Object.keys(hands).length;
+  const names = ['thumb', 'index', 'middle', 'ring', 'pinky'].flatMap(finger =>
+    [1, 2, 3, 4].map(joint => `${finger}_S${joint}`));
+  const sides = ['left', 'right'].filter(side => hands[side]);
+  const cell = (side, name) => {
+    const hand = hands[side], index = hand.joint_names.indexOf(name);
+    const temperature = index >= 0 ? hand.temperatures[index] : null;
+    const valid = typeof temperature === 'number' && Number.isFinite(temperature);
+    const limit = hand.limit_c;
+    const color = hand.fresh && valid && typeof limit === 'number' ?
+      (temperature >= limit ? 'var(--bad)' : temperature >= limit - 3 ? 'var(--warn)' : null) : null;
+    return el('td', { style: color ? `color:${color}` : null },
+      valid ? `${temperature.toFixed(1)}${hand.fresh ? '' : ' (stale)'}${hand.disabled_joints.includes(name) ? ' †' : ''}` : 'Unavailable');
+  };
+  box.replaceChildren(el('h2', {}, 'Hand joint temperatures (°C)'),
+    el('p', { class: 'muted' }, 'Refreshes every 2.5 seconds. † Disabled joint; temperature is still reported.'),
+    ...sides.map(side => el('div', { class: 'muted' },
+      `${side}: ${hands[side].fresh ? 'fresh' : 'STALE / controller unavailable'} · last reading ${when(hands[side].recorded_at)} · ` +
+      `configured cutoff ${hands[side].configured_limit_c ?? 'unknown'}°C`)),
+    el('table', { class: 'kv' }, el('thead', {}, el('tr', {}, el('th', {}, 'Joint'), ...sides.map(side => el('th', {}, side)))),
+      el('tbody', {}, ...names.map(name => el('tr', {}, el('td', {}, name), ...sides.map(side => cell(side, name)))))));
+}
+
+async function refreshScenes() {
+  const selected = state.selected;
+  if (!selected) $('hand-temperatures').hidden = true;
+  const sessions = new Set([...requestScenes.values()].map(item => item.session));
+  if (selected) sessions.add(selected);
+  await Promise.all([...sessions].map(async session => {
+    try {
+      const scene = await api(`/api/session/${session}/scene`);
+      for (const item of requestScenes.values()) if (item.session === session) renderScene(item.panel, scene);
+      if (session === state.selected) renderTemperatures(scene.hands);
+    } catch {
+      for (const item of requestScenes.values()) if (item.session === session)
+        item.panel.replaceChildren('Camera views unavailable; connection to dashboard failed.');
+      if (session === state.selected) $('hand-temperatures').replaceChildren('Temperature update unavailable; connection to dashboard failed.');
+    }
+  }));
+}
 
 function remindRequests(open, allowNew) {
   const keys = new Set(open.map((r) => `${r.session}/${r.id}`));
@@ -387,7 +471,7 @@ function renderRequests(value) {
   for (const s of value.sessions) {
     if (s.running) watchedSessions.add(s.id);
     const notice = s.exit_notice || s.idle_notice;
-    if (notice && (s.id === state.selected || watchedSessions.has(s.id)) &&
+    if (notice &&
         localStorage.getItem(`exitAck:${s.id}`) !== notice.id) {
       open.push({ ...notice, kind: 'exit', session: s.id, task: s.task });
     }
@@ -398,13 +482,15 @@ function renderRequests(value) {
     remindRequests(open, false);
     return;
   }
+  const openKeys = new Set(open.map(r => `${r.session}/${r.id}`));
+  for (const key of requestScenes.keys()) if (!openKeys.has(key)) requestScenes.delete(key);
   box.replaceChildren(el('h2', {}, `Agent needs attention${open.length > 1 ? ' (' + open.length + ')' : ''}`),
     ...open.map((r) => {
       const key = `${r.session}/${r.id}`;
       if (r.kind === 'exit') {
         return el('div', { class: 'request' },
           el('div', {}, el('b', {}, r.title || 'AGENT STOPPED'), ` · ${r.task} · ${when(r.created)}`),
-          el('pre', {}, r.message), el('button', { onclick: () => {
+          el('pre', {}, r.message), scenePanel(key, r.session), el('button', { onclick: () => {
             localStorage.setItem(`exitAck:${r.session}`, r.id);
             requestReminderDue.delete(key);
             renderRequests({ sessions: state.sessions });
@@ -445,7 +531,7 @@ function renderRequests(value) {
       }, r.prepare ? 'Ready & send reply' : 'Send reply'));
       return el('div', { class: 'request' },
         el('div', {}, el('b', {}, r.kind === 'reset' ? 'SCENE RESET' : 'HELP'), ` · ${r.task} · ${when(r.created)}`),
-        el('pre', {}, r.message), input,
+        el('pre', {}, r.message), scenePanel(key, r.session), input,
         el('div', { class: 'row', style: 'margin-top:6px' }, ...buttons));
     }));
   // Only announce requests that are now visible. Editing a reply can defer
@@ -457,6 +543,7 @@ async function refresh() {
   try {
     const value = await api('/api/sessions');
     renderSessions(value); renderRequests(value);
+    await refreshScenes();
   } catch (error) { toast(`sessions: ${error.message}`, true); }
   try { await refreshFrame(); await refreshActivity(); } catch (error) { /* a deleted session; ignore */ }
 }
