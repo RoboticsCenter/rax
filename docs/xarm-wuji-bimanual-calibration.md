@@ -16,11 +16,10 @@ existing ID even when used as a side view. All four capture RGB and depth at
 640×480 and 15 FPS. The example preserves the commissioned arm/hand settings.
 
 The four-camera configuration selects
-`calibration/xarm-wuji-bimanual-four-camera/manifest.json`. Both wrist cameras
-passed fitting and 19 fresh checks each. Both fixed cameras passed stereo transfer
-against the wrists and eight fresh checks each. For `side_right`, the operator
-moved the board closer after the first three cameras were verified; the calibrated
-camera mounts stayed fixed, so the wrist sweeps did not need repeating.
+`calibration/xarm-wuji-bimanual-four-camera/manifest.json`. After the camera mounts
+were moved, all four cameras were fitted together from one shared 36-pose collection
+on November 12 UTC. The frozen fit passed 19 fresh checks per camera (76 total).
+This joint calibration supersedes the earlier staged wrist/fixed-view calibration.
 All four RGB extrinsics are verified; independent metric depth validation remains
 pending. Fixed-camera transfer can use a new board placement without changing the
 verified wrist or inter-base transforms.
@@ -74,8 +73,9 @@ do not silently start the next sweep from the interrupted position. Leave hand
 postures unchanged unless the operator requests otherwise.
 For the current four-camera installation, the operator selected the saved arm
 homes as the starting poses for future calibrations: left joint 4 is −10°.
-The completed calibration used −20° at that joint; its capture records remain
-historical evidence. Changing the future starting pose does not change the fitted
+An earlier calibration used −20° at that joint; its capture records remain
+historical evidence. The current joint calibration starts at −10°.
+Changing the future starting pose does not change the fitted
 rigid camera extrinsics. The session's `operator/calibration-start-poses.json`
 records the new starting poses; read live `home_joints` before future motion.
 The sweep is relative to each arm's measured starting TCP pose and returns to

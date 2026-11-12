@@ -1,22 +1,22 @@
 matrix:
-- - -0.026281644712009
-  - 0.9996335714819126
-  - 0.006480580031693057
-  - 0.028823840822214918
-- - -0.9994574495313698
-  - -0.026404648002163245
-  - 0.019687588479304543
-  - -0.06649015076719991
-- - 0.019851491820020065
-  - -0.005959641784310545
-  - 0.9997851773967855
-  - 0.15954533102298946
+- - -0.03168218668545614
+  - 0.9994813968204643
+  - 0.00575990074929494
+  - 0.03130705579825851
+- - -0.9993210906887733
+  - -0.031784472182062984
+  - 0.01863075502250539
+  - -0.06552450046884119
+- - 0.018804168458850974
+  - -0.005165727240330483
+  - 0.9998098411751357
+  - 0.14175844850444727
 - - 0.0
   - 0.0
   - 0.0
   - 1.0
 source:
-  result: /home/jerry/rax-runtime/sessions/20261110T091931Z_screw_lightbulb_fable52/operator/four-camera-calibration-20261111T233507Z/wrist-optical-fit-20261112T012426Z/result.json
+  result: /home/jerry/rax-runtime/sessions/20261110T091931Z_screw_lightbulb_fable52/operator/joint-four-camera-20261112T050236Z/collection/result.json
   board:
     dictionary: DICT_4X4_100
     dimension_source: Operator supplied a new accurately printed 10 x 13 board on
@@ -36,6 +36,18 @@ source:
     squares_x: 10
     squares_y: 13
   camera_specs:
+  - calibration_raw_color: true
+    height: 480
+    mount: fixed
+    name: front
+    serial: '348522070593'
+    width: 640
+  - calibration_raw_color: true
+    height: 480
+    mount: fixed
+    name: side_right
+    serial: '263222071915'
+    width: 640
   - arm: left
     calibration_raw_color: true
     height: 480

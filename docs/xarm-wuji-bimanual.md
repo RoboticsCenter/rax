@@ -236,11 +236,11 @@ faults; physical qualification remains separate.
 Both `examples/xarm-wuji-bimanual.json` and the explicit
 `examples/xarm-wuji-bimanual-four-camera.json` select this setup and
 `calibration/xarm-wuji-bimanual-four-camera/manifest.json`. On November 11
-(November 12 UTC), both wrist cameras passed 19 fresh checks each, and both fixed
-cameras passed eight fresh stereo-reference checks each. Maximum translation/rotation errors
-were 1.56 mm / 0.58° for `wrist_left`, 2.03 mm / 0.33° for `wrist_right`, and
-2.24 mm / 0.21° for `front`, and 0.52 mm / 0.17° for `side_right`. The right-side
-camera used a closer board placement while all camera mounts stayed fixed.
+(November 12 UTC), a joint 36-pose collection recalibrated all four cameras after
+the mounts were moved. All four passed 19 fresh checks each against the frozen fit.
+Maximum translation/rotation errors were 1.85 mm / 0.30° for `wrist_left`,
+1.62 mm / 0.37° for `wrist_right`, 1.68 mm / 0.38° for `front`, and
+3.01 mm / 0.41° for `side_right`. This supersedes the earlier staged calibration.
 All four RGB extrinsics are verified. The old three-camera bundle is historical
 and is not selected.
 

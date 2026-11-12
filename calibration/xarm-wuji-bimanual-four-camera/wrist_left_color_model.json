@@ -1,14 +1,14 @@
 {
   "K": [
     [
-      606.5839891575536,
+      583.4002933239196,
       0.0,
-      319.5628844787459
+      320.37684195057966
     ],
     [
       0.0,
-      611.307077421871,
-      230.15004350205638
+      585.9009563940425,
+      230.5525388742361
     ],
     [
       0.0,
@@ -17,11 +17,11 @@
     ]
   ],
   "distortion_coeffs": [
-    0.12303304784250874,
-    -0.26693633644529496,
-    -0.00038092678810782365,
-    -0.005761792755292976,
-    -0.06232669324238298
+    0.17403627649975123,
+    -0.51841125564131,
+    -0.0031211076338409642,
+    0.0037116335112050733,
+    0.4292989829150071
   ],
   "distortion_model": "brown_conrady",
   "factory_profile": {
@@ -60,22 +60,22 @@
   "method": "Original training-only Brown5 color refinement; depth calibration pending",
   "serial": "108322071838",
   "training_frames": [
-    "/home/jerry/rax-runtime/sessions/20261110T091931Z_screw_lightbulb_fable52/operator/four-camera-calibration-20261111T233507Z/wrist-collection-20261112T011719Z/frames/1794446250553146496",
-    "/home/jerry/rax-runtime/sessions/20261110T091931Z_screw_lightbulb_fable52/operator/four-camera-calibration-20261111T233507Z/wrist-collection-20261112T011719Z/frames/1794446253992766439",
-    "/home/jerry/rax-runtime/sessions/20261110T091931Z_screw_lightbulb_fable52/operator/four-camera-calibration-20261111T233507Z/wrist-collection-20261112T011719Z/frames/1794446260991904613",
-    "/home/jerry/rax-runtime/sessions/20261110T091931Z_screw_lightbulb_fable52/operator/four-camera-calibration-20261111T233507Z/wrist-collection-20261112T011719Z/frames/1794446268528274505",
-    "/home/jerry/rax-runtime/sessions/20261110T091931Z_screw_lightbulb_fable52/operator/four-camera-calibration-20261111T233507Z/wrist-collection-20261112T011719Z/frames/1794446280972644187",
-    "/home/jerry/rax-runtime/sessions/20261110T091931Z_screw_lightbulb_fable52/operator/four-camera-calibration-20261111T233507Z/wrist-collection-20261112T011719Z/frames/1794446291544604654",
-    "/home/jerry/rax-runtime/sessions/20261110T091931Z_screw_lightbulb_fable52/operator/four-camera-calibration-20261111T233507Z/wrist-collection-20261112T011719Z/frames/1794446307664026155",
-    "/home/jerry/rax-runtime/sessions/20261110T091931Z_screw_lightbulb_fable52/operator/four-camera-calibration-20261111T233507Z/wrist-collection-20261112T011719Z/frames/1794446320663653843",
-    "/home/jerry/rax-runtime/sessions/20261110T091931Z_screw_lightbulb_fable52/operator/four-camera-calibration-20261111T233507Z/wrist-collection-20261112T011719Z/frames/1794446333112676978",
-    "/home/jerry/rax-runtime/sessions/20261110T091931Z_screw_lightbulb_fable52/operator/four-camera-calibration-20261111T233507Z/wrist-collection-20261112T011719Z/frames/1794446343264115862",
-    "/home/jerry/rax-runtime/sessions/20261110T091931Z_screw_lightbulb_fable52/operator/four-camera-calibration-20261111T233507Z/wrist-collection-20261112T011719Z/frames/1794446355673120503",
-    "/home/jerry/rax-runtime/sessions/20261110T091931Z_screw_lightbulb_fable52/operator/four-camera-calibration-20261111T233507Z/wrist-collection-20261112T011719Z/frames/1794446360769680045",
-    "/home/jerry/rax-runtime/sessions/20261110T091931Z_screw_lightbulb_fable52/operator/four-camera-calibration-20261111T233507Z/wrist-collection-20261112T011719Z/frames/1794446378469546047",
-    "/home/jerry/rax-runtime/sessions/20261110T091931Z_screw_lightbulb_fable52/operator/four-camera-calibration-20261111T233507Z/wrist-collection-20261112T011719Z/frames/1794446390516281910",
-    "/home/jerry/rax-runtime/sessions/20261110T091931Z_screw_lightbulb_fable52/operator/four-camera-calibration-20261111T233507Z/wrist-collection-20261112T011719Z/frames/1794446401113549649"
+    "/home/jerry/rax-runtime/sessions/20261110T091931Z_screw_lightbulb_fable52/operator/joint-four-camera-20261112T050236Z/collection/frames/1794459836831433255",
+    "/home/jerry/rax-runtime/sessions/20261110T091931Z_screw_lightbulb_fable52/operator/joint-four-camera-20261112T050236Z/collection/frames/1794459840839066808",
+    "/home/jerry/rax-runtime/sessions/20261110T091931Z_screw_lightbulb_fable52/operator/joint-four-camera-20261112T050236Z/collection/frames/1794459848276414630",
+    "/home/jerry/rax-runtime/sessions/20261110T091931Z_screw_lightbulb_fable52/operator/joint-four-camera-20261112T050236Z/collection/frames/1794459856403748223",
+    "/home/jerry/rax-runtime/sessions/20261110T091931Z_screw_lightbulb_fable52/operator/joint-four-camera-20261112T050236Z/collection/frames/1794459870436871887",
+    "/home/jerry/rax-runtime/sessions/20261110T091931Z_screw_lightbulb_fable52/operator/joint-four-camera-20261112T050236Z/collection/frames/1794459882804745645",
+    "/home/jerry/rax-runtime/sessions/20261110T091931Z_screw_lightbulb_fable52/operator/joint-four-camera-20261112T050236Z/collection/frames/1794459900582930710",
+    "/home/jerry/rax-runtime/sessions/20261110T091931Z_screw_lightbulb_fable52/operator/joint-four-camera-20261112T050236Z/collection/frames/1794459915133627591",
+    "/home/jerry/rax-runtime/sessions/20261110T091931Z_screw_lightbulb_fable52/operator/joint-four-camera-20261112T050236Z/collection/frames/1794459929141277881",
+    "/home/jerry/rax-runtime/sessions/20261110T091931Z_screw_lightbulb_fable52/operator/joint-four-camera-20261112T050236Z/collection/frames/1794459940000279368",
+    "/home/jerry/rax-runtime/sessions/20261110T091931Z_screw_lightbulb_fable52/operator/joint-four-camera-20261112T050236Z/collection/frames/1794459952962985835",
+    "/home/jerry/rax-runtime/sessions/20261110T091931Z_screw_lightbulb_fable52/operator/joint-four-camera-20261112T050236Z/collection/frames/1794459959602551587",
+    "/home/jerry/rax-runtime/sessions/20261110T091931Z_screw_lightbulb_fable52/operator/joint-four-camera-20261112T050236Z/collection/frames/1794459978245125942",
+    "/home/jerry/rax-runtime/sessions/20261110T091931Z_screw_lightbulb_fable52/operator/joint-four-camera-20261112T050236Z/collection/frames/1794459990920517513",
+    "/home/jerry/rax-runtime/sessions/20261110T091931Z_screw_lightbulb_fable52/operator/joint-four-camera-20261112T050236Z/collection/frames/1794460005666699448"
   ],
-  "training_rms_px": 0.22088102824550127,
+  "training_rms_px": 0.19382025453873228,
   "width": 640
 }
