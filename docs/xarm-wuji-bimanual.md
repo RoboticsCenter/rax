@@ -46,7 +46,7 @@ allowance. Its left profile now includes the physically tested partial-hand patc
 18 controlled joints, `thumb_S3` and `middle_S1` isolated, 200 Hz commands, and the
 left hand's own saved home. On November 12, the operator reduced the current
 ceiling from 0.8 A to 0.6 A on both hands after recurring heating. The operator
-subsequently restored the right hand to 0.8 A; the left remains at 0.6 A. The two excluded
+subsequently restored both hands to 0.8 A. The two excluded
 left joints retain zero current and gains. Both temperature cutoffs are now 67°C
 (left unchanged, right raised from 65°C at the operator’s request). Stiffness,
 damping and motion limits are unchanged. Earlier physical movement and
@@ -397,3 +397,21 @@ paired admission and concurrency, partial failure, four-device stop confirmation
 shared arming with distinct hand owners, uncalibrated observations, and generated
 workspace/MCP agreement. These tests do not qualify physical bimanual motion or
 clear the left hand's previously reported fault.
+
+### High-resolution camera-only preview
+
+`scripts/xarm-camera-viewer --backend-options OPTIONS.json` defaults to
+1280×720 color on all configured cameras, 6 fps, and JPEG quality 95 for
+live viewing and corner scans. Depth remains enabled by default: native
+640×480 depth is aligned to the 1280×720 color image; this does not create
+additional depth detail. `--width`, `--height`, and `--fps` override the preview
+profile. `--configured-resolution` uses the saved robot camera profile instead.
+The four-camera USB setup was verified at 6 fps on 2026-11-12; at 15 fps one
+of the two fixed cameras failed to deliver frames. Use the live status to verify
+all four feeds after any USB or profile change.
+
+These camera-only defaults do not overwrite the robot session's calibrated
+640×480 profile. The saved calibration explicitly checks resolution and frame
+rate; validate/install compatible calibration before migrating robot observations
+to a new profile. A camera-only resolution override uses live factory intrinsics,
+not the old profile's intrinsics or robot projection geometry.

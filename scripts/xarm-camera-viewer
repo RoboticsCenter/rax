@@ -118,6 +118,11 @@ def main():
     source.add_argument("--backend-options", type=Path, help="start cameras only from this configuration")
     parser.add_argument("--root", type=Path, help="new artifact directory for a camera-only stream")
     parser.add_argument("--rgb-only", action="store_true", help="capture/display color without depth")
+    parser.add_argument("--width", type=int, default=1280, help="camera-only capture width (default: 1280)")
+    parser.add_argument("--height", type=int, default=720, help="camera-only capture height (default: 720)")
+    parser.add_argument("--fps", type=int, help="camera-only capture rate (default: 6 at high resolution)")
+    parser.add_argument("--configured-resolution", action="store_true",
+                        help="use the calibrated configuration's resolution and intrinsics instead")
     parser.add_argument("--host", default="127.0.0.1")
     parser.add_argument("--port", type=int, default=8765)
     parser.add_argument("--cameras", default="left,right,wrist")
@@ -127,6 +132,20 @@ def main():
         from services.storage_root import artifact_root
         from services.xarm.camera_server import Cameras
         options = json.loads(args.backend_options.read_text())
+        capture_fps = args.fps if args.fps is not None else (
+            int(options.get('stream_fps', 6)) if args.configured_resolution else 6)
+        if capture_fps <= 0:
+            parser.error("capture fps must be positive")
+        if not args.configured_resolution:
+            if args.width <= 0 or args.height <= 0:
+                parser.error("capture dimensions must be positive")
+            for spec in options['cameras']:
+                if (spec.get('width'), spec.get('height')) != (args.width, args.height):
+                    # This viewer provides images, not calibrated robot geometry.
+                    # A different sensor profile must use its live factory intrinsics.
+                    spec.pop('intrinsics', None)
+                spec.update(width=args.width, height=args.height,
+                            depth_width=640, depth_height=480)
         root = (args.root or artifact_root()/f'camera-live-{time.time_ns()}').resolve()
         if not root.is_relative_to(artifact_root()):
             raise SystemExit('--root must be inside RAX_ARTIFACT_ROOT')
@@ -135,8 +154,8 @@ def main():
         stream.mkdir()
         cameras = [spec['name'] for spec in options['cameras']]
         camera_owner = Cameras(options['cameras'], depth_mode='NONE' if args.rgb_only else 'Z16',
-                               fps=int(options.get('stream_fps', 6)), frames_root=root/'frames',
-                               stream=stream, window_s=30, stream_quality=85,
+                               fps=capture_fps, frames_root=root/'frames',
+                               stream=stream, window_s=30, stream_quality=95,
                                depth_hz=0 if args.rgb_only else 1)
     else:
         stream = Path(args.stream).resolve()

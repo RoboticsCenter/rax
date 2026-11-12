@@ -6,7 +6,7 @@
         "allow_encoder_warning": true,
         "allow_init_current_calib_failed": {},
         "command_hz": 200,
-        "current_limit_a": 0.6,
+        "current_limit_a": 0.8,
         "disabled_joints": [
           "thumb_S3",
           "middle_S1"
@@ -83,7 +83,7 @@
             0.794166088104248
           ]
         },
-        "profile_revision": "left-hand2-partial-v17-0p6a-20261112",
+        "profile_revision": "left-hand2-partial-v18-0p8a-20261112",
         "serial": "WH2JA01260811007",
         "settle_position_range_rad": 0.004,
         "settle_s": 0.4,

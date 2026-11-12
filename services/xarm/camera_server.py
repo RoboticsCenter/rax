@@ -54,8 +54,8 @@ class CameraWorker:
         config.enable_stream(rs.stream.color, int(spec.get('width', 1280)), int(spec.get('height', 720)),
                              rs.format.bgr8, fps)
         if self.depth_enabled or self.calibration_native:
-            config.enable_stream(rs.stream.depth, 640 if self.calibration_native else int(spec.get('width', 1280)),
-                                 480 if self.calibration_native else int(spec.get('height', 720)),
+            config.enable_stream(rs.stream.depth, 640 if self.calibration_native else int(spec.get('depth_width', spec.get('width', 1280))),
+                                 480 if self.calibration_native else int(spec.get('depth_height', spec.get('height', 720))),
                                  rs.format.z16, fps)
         if self.calibration_native:
             config.enable_stream(rs.stream.infrared, 1, 640, 480, rs.format.y8, fps)
