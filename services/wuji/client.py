@@ -98,6 +98,40 @@ def recorded_status(root, max_age_s=.5, *, side=None):
         return {'fresh': False, 'connected': False, 'enabled': False, 'mode': 'unavailable', 'fault': str(exc)}
 
 
+def expected_disarmed_stop(value, cfg):
+    """Classify notifications only; never relax preparation/motion admission."""
+    if not value.get('fresh') or value.get('fault') or value.get('mode') not in ('disabled', 'stopping'):
+        return False
+    faults = value.get('faults') or []
+    if not faults:
+        return True
+    excluded = set(cfg.get('disabled_joints', []))
+    if not all(f.get('joint') in excluded and f.get('native_state') == 'Init'
+               and f.get('reason') == 'excluded joint is not disabled'
+               and f.get('code') is None for f in faults):
+        return False
+    # Passive Init diagnostics can appear before the requested disable finishes.
+    # Let the owner finish its bounded stop/confirmation procedure. This does not
+    # confirm a stop or change admission: an expired/failed stop must still alert.
+    if value['mode'] == 'stopping':
+        stop = value.get('stop') or {}
+        since, deadline = stop.get('since'), stop.get('deadline')
+        return (stop.get('op') in ('emergency', 'disable')
+                and stop.get('behavior') in ('emergency', 'disable')
+                and isinstance(since, (int, float)) and isinstance(deadline, (int, float))
+                and since <= time.monotonic() < deadline
+                and 0 < deadline-since <= cfg.get('stop_timeout_s', 0)+.5)
+    # Confirmed disable relinquishes ownership. Keep passive Init diagnostics
+    # visible and preparation blocked, without reporting another loss of control.
+    if value.get('owns_control') is not False:
+        return False
+    from .config import JOINT_NAMES
+    names = value.get('diagnostics', {}).get('state_names', [])
+    return len(names) == 20 and all(
+        name.lower() in ('ready', 'stopped', 'disabled') or (joint in excluded and name == 'Init')
+        for joint, name in zip(JOINT_NAMES, names))
+
+
 class WujiClient:
     def __init__(self, session, on_fault=None, *, side=None):
         self.cfg = validate_config(session.backend_options['end_effector'])
@@ -137,9 +171,8 @@ class WujiClient:
             try:
                 value = request(self.path, 'heartbeat')
                 previously_owned = previously_owned or value.get('owns_control', False)
-                expected_stop = (not arming.read(self.root)['armed'] and value.get('fresh')
-                                 and not value.get('fault') and not value.get('faults')
-                                 and value.get('mode') in ('disabled', 'stopping'))
+                expected_stop = (not arming.read(self.root)['armed']
+                                 and expected_disarmed_stop(value, self.cfg))
                 bad = previously_owned and not expected_stop and (value.get('mode') in ('faulted', 'uncertain', 'disconnected', 'disabled', 'stopping')
                                              or not value.get('fresh'))
                 if expected_stop and value.get('mode') == 'disabled' and not value.get('owns_control'):

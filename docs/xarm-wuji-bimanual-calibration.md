@@ -17,13 +17,13 @@ existing ID even when used as a side view. All four capture 1280×720 RGB at
 the commissioned arm/hand settings.
 
 The four-camera configuration selects
-`calibration/xarm-wuji-bimanual-four-camera-20261116/manifest.json`. On November 16,
+`calibration/xarm-wuji-bimanual-four-camera-20261117/manifest.json`. On November 17,
 a shared 36-pose collection recalibrated all four cameras. Wrist optics use
 training-only radial distortion refinement with factory focal lengths and principal
 points fixed. The frozen fit passed 19 fresh checks per camera (76 total): maximum
-translation/rotation errors were 2.54 mm / 0.48° for front, 0.70 mm / 0.32° for
-side_right, 2.31 mm / 0.77° for wrist_left, and 3.75 mm / 0.42° for wrist_right.
-The previous November 12 bundle is retained as history. Both wrist transforms and
+translation/rotation errors were 1.82 mm / 0.60° for front, 1.26 mm / 0.24° for
+side_right, 2.75 mm / 0.81° for wrist_left, and 1.98 mm / 0.20° for wrist_right.
+The previous November 16 bundle is retained as history. Both wrist transforms and
 the inter-base alignment were refitted; reacquire scene geometry before motion.
 All four RGB extrinsics are verified; independent metric depth validation remains
 pending. Fixed-camera transfer can use a new board placement without changing the

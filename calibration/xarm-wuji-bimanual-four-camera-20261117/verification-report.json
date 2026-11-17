@@ -1,0 +1,736 @@
+{
+  "checks": [
+    {
+      "cameras": {
+        "front": {
+          "corners": 20,
+          "ok": true,
+          "reprojection_mean_px": 0.6093615293502808,
+          "rotation_error_deg": 0.20562041797568714,
+          "translation_error_m": 0.0006277676424486892
+        },
+        "side_right": {
+          "corners": 29,
+          "ok": true,
+          "reprojection_mean_px": 0.3998658061027527,
+          "rotation_error_deg": 0.09077676773741358,
+          "translation_error_m": 0.00016154594840499465
+        },
+        "wrist_left": {
+          "corners": 108,
+          "ok": true,
+          "reprojection_mean_px": 0.4098179340362549,
+          "rotation_error_deg": 0.5775014982357976,
+          "translation_error_m": 0.0022227233536123215
+        },
+        "wrist_right": {
+          "corners": 108,
+          "ok": true,
+          "reprojection_mean_px": 0.32584336400032043,
+          "rotation_error_deg": 0.18868920055509136,
+          "translation_error_m": 0.001357216782293999
+        }
+      },
+      "frame_dir": "/home/jerry/rax-runtime/sessions/20261110T091931Z_screw_lightbulb_fable52/operator/all-four-calibration-20261117-box-014417/verification/frames/1794909356921990474",
+      "index": "home",
+      "moving_arm": null
+    },
+    {
+      "cameras": {
+        "front": {
+          "corners": 15,
+          "ok": true,
+          "reprojection_mean_px": 0.5159947276115417,
+          "rotation_error_deg": 0.17419676823010158,
+          "translation_error_m": 0.0007137682532519489
+        },
+        "side_right": {
+          "corners": 33,
+          "ok": true,
+          "reprojection_mean_px": 0.3928973972797394,
+          "rotation_error_deg": 0.09205150561154984,
+          "translation_error_m": 0.00023029484650750152
+        },
+        "wrist_left": {
+          "corners": 108,
+          "ok": true,
+          "reprojection_mean_px": 0.5529270172119141,
+          "rotation_error_deg": 0.8001623008973267,
+          "translation_error_m": 0.002746838739332554
+        },
+        "wrist_right": {
+          "corners": 108,
+          "ok": true,
+          "reprojection_mean_px": 0.32327187061309814,
+          "rotation_error_deg": 0.20217339235235546,
+          "translation_error_m": 0.0014063292360283045
+        }
+      },
+      "frame_dir": "/home/jerry/rax-runtime/sessions/20261110T091931Z_screw_lightbulb_fable52/operator/all-four-calibration-20261117-box-014417/verification/frames/1794909366469248974",
+      "index": 15,
+      "moving_arm": "left"
+    },
+    {
+      "cameras": {
+        "front": {
+          "corners": 21,
+          "ok": true,
+          "reprojection_mean_px": 0.4530397951602936,
+          "rotation_error_deg": 0.3809961383844522,
+          "translation_error_m": 0.0006137257449054936
+        },
+        "side_right": {
+          "corners": 31,
+          "ok": true,
+          "reprojection_mean_px": 0.35861656069755554,
+          "rotation_error_deg": 0.11333502034861266,
+          "translation_error_m": 0.0004979204800347117
+        },
+        "wrist_left": {
+          "corners": 104,
+          "ok": true,
+          "reprojection_mean_px": 0.5492138266563416,
+          "rotation_error_deg": 0.7986511635476936,
+          "translation_error_m": 0.00268795098447423
+        },
+        "wrist_right": {
+          "corners": 108,
+          "ok": true,
+          "reprojection_mean_px": 0.32147181034088135,
+          "rotation_error_deg": 0.202551899620429,
+          "translation_error_m": 0.001407625376238959
+        }
+      },
+      "frame_dir": "/home/jerry/rax-runtime/sessions/20261110T091931Z_screw_lightbulb_fable52/operator/all-four-calibration-20261117-box-014417/verification/frames/1794909367502564926",
+      "index": 15,
+      "moving_arm": "left"
+    },
+    {
+      "cameras": {
+        "front": {
+          "corners": 23,
+          "ok": true,
+          "reprojection_mean_px": 0.5580442547798157,
+          "rotation_error_deg": 0.5534120007556914,
+          "translation_error_m": 0.0011383807556055504
+        },
+        "side_right": {
+          "corners": 28,
+          "ok": true,
+          "reprojection_mean_px": 0.388300359249115,
+          "rotation_error_deg": 0.12288119537706232,
+          "translation_error_m": 0.0005462560514337437
+        },
+        "wrist_left": {
+          "corners": 108,
+          "ok": true,
+          "reprojection_mean_px": 0.558661937713623,
+          "rotation_error_deg": 0.8094178223307874,
+          "translation_error_m": 0.002714745672553319
+        },
+        "wrist_right": {
+          "corners": 104,
+          "ok": true,
+          "reprojection_mean_px": 0.3230786621570587,
+          "rotation_error_deg": 0.17687322831522947,
+          "translation_error_m": 0.0013454749391836568
+        }
+      },
+      "frame_dir": "/home/jerry/rax-runtime/sessions/20261110T091931Z_screw_lightbulb_fable52/operator/all-four-calibration-20261117-box-014417/verification/frames/1794909368641860567",
+      "index": 15,
+      "moving_arm": "left"
+    },
+    {
+      "cameras": {
+        "front": {
+          "corners": 17,
+          "ok": true,
+          "reprojection_mean_px": 0.618769109249115,
+          "rotation_error_deg": 0.1483745499819553,
+          "translation_error_m": 0.0004955371468887936
+        },
+        "side_right": {
+          "corners": 34,
+          "ok": true,
+          "reprojection_mean_px": 0.3681125044822693,
+          "rotation_error_deg": 0.056239804001265395,
+          "translation_error_m": 0.0004419099172381353
+        },
+        "wrist_left": {
+          "corners": 104,
+          "ok": true,
+          "reprojection_mean_px": 0.479026734828949,
+          "rotation_error_deg": 0.16512687762765615,
+          "translation_error_m": 0.000986749488155139
+        },
+        "wrist_right": {
+          "corners": 108,
+          "ok": true,
+          "reprojection_mean_px": 0.32709774374961853,
+          "rotation_error_deg": 0.20151694134391457,
+          "translation_error_m": 0.0014168886753416225
+        }
+      },
+      "frame_dir": "/home/jerry/rax-runtime/sessions/20261110T091931Z_screw_lightbulb_fable52/operator/all-four-calibration-20261117-box-014417/verification/frames/1794909384320461112",
+      "index": 16,
+      "moving_arm": "left"
+    },
+    {
+      "cameras": {
+        "front": {
+          "corners": 23,
+          "ok": true,
+          "reprojection_mean_px": 0.511737048625946,
+          "rotation_error_deg": 0.5604066530958913,
+          "translation_error_m": 0.0007632256508362564
+        },
+        "side_right": {
+          "corners": 31,
+          "ok": true,
+          "reprojection_mean_px": 0.3749831020832062,
+          "rotation_error_deg": 0.08697108851193018,
+          "translation_error_m": 0.0006126279473086771
+        },
+        "wrist_left": {
+          "corners": 98,
+          "ok": true,
+          "reprojection_mean_px": 0.4402162730693817,
+          "rotation_error_deg": 0.17614589459316607,
+          "translation_error_m": 0.0008793818420108585
+        },
+        "wrist_right": {
+          "corners": 108,
+          "ok": true,
+          "reprojection_mean_px": 0.3238290250301361,
+          "rotation_error_deg": 0.19924538936779415,
+          "translation_error_m": 0.0014152778238975222
+        }
+      },
+      "frame_dir": "/home/jerry/rax-runtime/sessions/20261110T091931Z_screw_lightbulb_fable52/operator/all-four-calibration-20261117-box-014417/verification/frames/1794909385472638330",
+      "index": 16,
+      "moving_arm": "left"
+    },
+    {
+      "cameras": {
+        "front": {
+          "corners": 19,
+          "ok": true,
+          "reprojection_mean_px": 0.6748861074447632,
+          "rotation_error_deg": 0.3161524683479908,
+          "translation_error_m": 0.0010695739592044174
+        },
+        "side_right": {
+          "corners": 25,
+          "ok": true,
+          "reprojection_mean_px": 0.3559983968734741,
+          "rotation_error_deg": 0.2221898907397619,
+          "translation_error_m": 0.0007380988794432925
+        },
+        "wrist_left": {
+          "corners": 106,
+          "ok": true,
+          "reprojection_mean_px": 0.4611440598964691,
+          "rotation_error_deg": 0.18531248592843702,
+          "translation_error_m": 0.000908230175031436
+        },
+        "wrist_right": {
+          "corners": 108,
+          "ok": true,
+          "reprojection_mean_px": 0.3215087950229645,
+          "rotation_error_deg": 0.1949308493430503,
+          "translation_error_m": 0.001405406241156166
+        }
+      },
+      "frame_dir": "/home/jerry/rax-runtime/sessions/20261110T091931Z_screw_lightbulb_fable52/operator/all-four-calibration-20261117-box-014417/verification/frames/1794909386575617938",
+      "index": 16,
+      "moving_arm": "left"
+    },
+    {
+      "cameras": {
+        "front": {
+          "corners": 16,
+          "ok": true,
+          "reprojection_mean_px": 0.41580647230148315,
+          "rotation_error_deg": 0.508520101054338,
+          "translation_error_m": 0.0006957906401077216
+        },
+        "side_right": {
+          "corners": 25,
+          "ok": true,
+          "reprojection_mean_px": 0.3393819034099579,
+          "rotation_error_deg": 0.23801828600608976,
+          "translation_error_m": 0.0008402918885109668
+        },
+        "wrist_left": {
+          "corners": 103,
+          "ok": true,
+          "reprojection_mean_px": 0.5093852877616882,
+          "rotation_error_deg": 0.7483706803755589,
+          "translation_error_m": 0.0014468780394993597
+        },
+        "wrist_right": {
+          "corners": 108,
+          "ok": true,
+          "reprojection_mean_px": 0.32642319798469543,
+          "rotation_error_deg": 0.19810878236557092,
+          "translation_error_m": 0.0013856469640221795
+        }
+      },
+      "frame_dir": "/home/jerry/rax-runtime/sessions/20261110T091931Z_screw_lightbulb_fable52/operator/all-four-calibration-20261117-box-014417/verification/frames/1794909397395346547",
+      "index": 17,
+      "moving_arm": "left"
+    },
+    {
+      "cameras": {
+        "front": {
+          "corners": 23,
+          "ok": true,
+          "reprojection_mean_px": 0.6682470440864563,
+          "rotation_error_deg": 0.23234688870973916,
+          "translation_error_m": 0.0006485074513918491
+        },
+        "side_right": {
+          "corners": 28,
+          "ok": true,
+          "reprojection_mean_px": 0.34420159459114075,
+          "rotation_error_deg": 0.19743655828920392,
+          "translation_error_m": 0.000669821942629464
+        },
+        "wrist_left": {
+          "corners": 100,
+          "ok": true,
+          "reprojection_mean_px": 0.5164161920547485,
+          "rotation_error_deg": 0.7384668155950641,
+          "translation_error_m": 0.0015003997438535887
+        },
+        "wrist_right": {
+          "corners": 108,
+          "ok": true,
+          "reprojection_mean_px": 0.32045844197273254,
+          "rotation_error_deg": 0.1972486439965833,
+          "translation_error_m": 0.0013906443264866124
+        }
+      },
+      "frame_dir": "/home/jerry/rax-runtime/sessions/20261110T091931Z_screw_lightbulb_fable52/operator/all-four-calibration-20261117-box-014417/verification/frames/1794909398380331897",
+      "index": 17,
+      "moving_arm": "left"
+    },
+    {
+      "cameras": {
+        "front": {
+          "corners": 22,
+          "ok": true,
+          "reprojection_mean_px": 0.4745400547981262,
+          "rotation_error_deg": 0.3967567200017643,
+          "translation_error_m": 0.0007817673160727646
+        },
+        "side_right": {
+          "corners": 25,
+          "ok": true,
+          "reprojection_mean_px": 0.3238151967525482,
+          "rotation_error_deg": 0.1855987844930193,
+          "translation_error_m": 0.0006747760790273964
+        },
+        "wrist_left": {
+          "corners": 107,
+          "ok": true,
+          "reprojection_mean_px": 0.5174520015716553,
+          "rotation_error_deg": 0.7416385027155924,
+          "translation_error_m": 0.0013379536505135376
+        },
+        "wrist_right": {
+          "corners": 108,
+          "ok": true,
+          "reprojection_mean_px": 0.3249689042568207,
+          "rotation_error_deg": 0.19748149728569905,
+          "translation_error_m": 0.0013998878384607022
+        }
+      },
+      "frame_dir": "/home/jerry/rax-runtime/sessions/20261110T091931Z_screw_lightbulb_fable52/operator/all-four-calibration-20261117-box-014417/verification/frames/1794909399440525616",
+      "index": 17,
+      "moving_arm": "left"
+    },
+    {
+      "cameras": {
+        "front": {
+          "corners": 21,
+          "ok": true,
+          "reprojection_mean_px": 0.629988431930542,
+          "rotation_error_deg": 0.4563762987252001,
+          "translation_error_m": 0.001816122533735951
+        },
+        "side_right": {
+          "corners": 26,
+          "ok": true,
+          "reprojection_mean_px": 0.33416059613227844,
+          "rotation_error_deg": 0.22492227104079213,
+          "translation_error_m": 0.0006230025805339536
+        },
+        "wrist_left": {
+          "corners": 107,
+          "ok": true,
+          "reprojection_mean_px": 0.4010533094406128,
+          "rotation_error_deg": 0.605286616992112,
+          "translation_error_m": 0.0022321007807603603
+        },
+        "wrist_right": {
+          "corners": 108,
+          "ok": true,
+          "reprojection_mean_px": 0.5265132784843445,
+          "rotation_error_deg": 0.053453349681114745,
+          "translation_error_m": 0.001969998983166579
+        }
+      },
+      "frame_dir": "/home/jerry/rax-runtime/sessions/20261110T091931Z_screw_lightbulb_fable52/operator/all-four-calibration-20261117-box-014417/verification/frames/1794909416795954342",
+      "index": 15,
+      "moving_arm": "right"
+    },
+    {
+      "cameras": {
+        "front": {
+          "corners": 14,
+          "ok": true,
+          "reprojection_mean_px": 0.5698508024215698,
+          "rotation_error_deg": 0.340627172370482,
+          "translation_error_m": 0.0009218015201061527
+        },
+        "side_right": {
+          "corners": 22,
+          "ok": true,
+          "reprojection_mean_px": 0.37335968017578125,
+          "rotation_error_deg": 0.2345507319294548,
+          "translation_error_m": 0.0005490706635299156
+        },
+        "wrist_left": {
+          "corners": 105,
+          "ok": true,
+          "reprojection_mean_px": 0.3942597806453705,
+          "rotation_error_deg": 0.5746928584300384,
+          "translation_error_m": 0.0022683470763489263
+        },
+        "wrist_right": {
+          "corners": 107,
+          "ok": true,
+          "reprojection_mean_px": 0.5286704897880554,
+          "rotation_error_deg": 0.06239309581054641,
+          "translation_error_m": 0.0019726676813012875
+        }
+      },
+      "frame_dir": "/home/jerry/rax-runtime/sessions/20261110T091931Z_screw_lightbulb_fable52/operator/all-four-calibration-20261117-box-014417/verification/frames/1794909417961013543",
+      "index": 15,
+      "moving_arm": "right"
+    },
+    {
+      "cameras": {
+        "front": {
+          "corners": 19,
+          "ok": true,
+          "reprojection_mean_px": 0.6060782074928284,
+          "rotation_error_deg": 0.45490853505552875,
+          "translation_error_m": 0.0008744287087571656
+        },
+        "side_right": {
+          "corners": 26,
+          "ok": true,
+          "reprojection_mean_px": 0.3608425259590149,
+          "rotation_error_deg": 0.1448212449269172,
+          "translation_error_m": 0.0007197589097271832
+        },
+        "wrist_left": {
+          "corners": 107,
+          "ok": true,
+          "reprojection_mean_px": 0.4018927216529846,
+          "rotation_error_deg": 0.5992447125756495,
+          "translation_error_m": 0.0022534242444924215
+        },
+        "wrist_right": {
+          "corners": 104,
+          "ok": true,
+          "reprojection_mean_px": 0.5236210823059082,
+          "rotation_error_deg": 0.05766446644241713,
+          "translation_error_m": 0.001981341212327351
+        }
+      },
+      "frame_dir": "/home/jerry/rax-runtime/sessions/20261110T091931Z_screw_lightbulb_fable52/operator/all-four-calibration-20261117-box-014417/verification/frames/1794909419120441711",
+      "index": 15,
+      "moving_arm": "right"
+    },
+    {
+      "cameras": {
+        "front": {
+          "corners": 24,
+          "ok": true,
+          "reprojection_mean_px": 0.5462627410888672,
+          "rotation_error_deg": 0.08337409030174411,
+          "translation_error_m": 0.0006337520075570405
+        },
+        "side_right": {
+          "corners": 27,
+          "ok": true,
+          "reprojection_mean_px": 0.4214058220386505,
+          "rotation_error_deg": 0.1390407298992134,
+          "translation_error_m": 0.0003656556611680591
+        },
+        "wrist_left": {
+          "corners": 107,
+          "ok": true,
+          "reprojection_mean_px": 0.40167802572250366,
+          "rotation_error_deg": 0.607831902859584,
+          "translation_error_m": 0.0022388237654703967
+        },
+        "wrist_right": {
+          "corners": 104,
+          "ok": true,
+          "reprojection_mean_px": 0.44035905599594116,
+          "rotation_error_deg": 0.15366658248724088,
+          "translation_error_m": 0.0015682587619325885
+        }
+      },
+      "frame_dir": "/home/jerry/rax-runtime/sessions/20261110T091931Z_screw_lightbulb_fable52/operator/all-four-calibration-20261117-box-014417/verification/frames/1794909427421729209",
+      "index": 16,
+      "moving_arm": "right"
+    },
+    {
+      "cameras": {
+        "front": {
+          "corners": 14,
+          "ok": true,
+          "reprojection_mean_px": 0.39828866720199585,
+          "rotation_error_deg": 0.3210267605362683,
+          "translation_error_m": 0.0012720565893248052
+        },
+        "side_right": {
+          "corners": 20,
+          "ok": true,
+          "reprojection_mean_px": 0.3018805682659149,
+          "rotation_error_deg": 0.12287055057615563,
+          "translation_error_m": 0.00046033840040508606
+        },
+        "wrist_left": {
+          "corners": 105,
+          "ok": true,
+          "reprojection_mean_px": 0.3995521068572998,
+          "rotation_error_deg": 0.5828074905987543,
+          "translation_error_m": 0.0022747591957211835
+        },
+        "wrist_right": {
+          "corners": 108,
+          "ok": true,
+          "reprojection_mean_px": 0.43723610043525696,
+          "rotation_error_deg": 0.1583354211454361,
+          "translation_error_m": 0.00155293322138864
+        }
+      },
+      "frame_dir": "/home/jerry/rax-runtime/sessions/20261110T091931Z_screw_lightbulb_fable52/operator/all-four-calibration-20261117-box-014417/verification/frames/1794909428495155973",
+      "index": 16,
+      "moving_arm": "right"
+    },
+    {
+      "cameras": {
+        "front": {
+          "corners": 21,
+          "ok": true,
+          "reprojection_mean_px": 0.6334921717643738,
+          "rotation_error_deg": 0.08804879704116991,
+          "translation_error_m": 0.0007762456930470093
+        },
+        "side_right": {
+          "corners": 26,
+          "ok": true,
+          "reprojection_mean_px": 0.34993427991867065,
+          "rotation_error_deg": 0.21444421630134058,
+          "translation_error_m": 0.000663530975187891
+        },
+        "wrist_left": {
+          "corners": 107,
+          "ok": true,
+          "reprojection_mean_px": 0.4049217104911804,
+          "rotation_error_deg": 0.6052308619054033,
+          "translation_error_m": 0.0022162574751598734
+        },
+        "wrist_right": {
+          "corners": 108,
+          "ok": true,
+          "reprojection_mean_px": 0.4413948655128479,
+          "rotation_error_deg": 0.1529376533989749,
+          "translation_error_m": 0.0015597786925024355
+        }
+      },
+      "frame_dir": "/home/jerry/rax-runtime/sessions/20261110T091931Z_screw_lightbulb_fable52/operator/all-four-calibration-20261117-box-014417/verification/frames/1794909429658414448",
+      "index": 16,
+      "moving_arm": "right"
+    },
+    {
+      "cameras": {
+        "front": {
+          "corners": 16,
+          "ok": true,
+          "reprojection_mean_px": 0.45689526200294495,
+          "rotation_error_deg": 0.27865662926357054,
+          "translation_error_m": 0.0006164474504886265
+        },
+        "side_right": {
+          "corners": 24,
+          "ok": true,
+          "reprojection_mean_px": 0.4263841211795807,
+          "rotation_error_deg": 0.17773724016894218,
+          "translation_error_m": 0.0012573419609095422
+        },
+        "wrist_left": {
+          "corners": 105,
+          "ok": true,
+          "reprojection_mean_px": 0.4010887145996094,
+          "rotation_error_deg": 0.6118889750898111,
+          "translation_error_m": 0.00222087238441494
+        },
+        "wrist_right": {
+          "corners": 108,
+          "ok": true,
+          "reprojection_mean_px": 0.39897939562797546,
+          "rotation_error_deg": 0.18587077558083342,
+          "translation_error_m": 0.0008369560589188899
+        }
+      },
+      "frame_dir": "/home/jerry/rax-runtime/sessions/20261110T091931Z_screw_lightbulb_fable52/operator/all-four-calibration-20261117-box-014417/verification/frames/1794909442708513346",
+      "index": 17,
+      "moving_arm": "right"
+    },
+    {
+      "cameras": {
+        "front": {
+          "corners": 22,
+          "ok": true,
+          "reprojection_mean_px": 0.46967408061027527,
+          "rotation_error_deg": 0.5954255759734465,
+          "translation_error_m": 0.000792285322310964
+        },
+        "side_right": {
+          "corners": 28,
+          "ok": true,
+          "reprojection_mean_px": 0.3861119747161865,
+          "rotation_error_deg": 0.09152546874381204,
+          "translation_error_m": 0.00044078693660862814
+        },
+        "wrist_left": {
+          "corners": 105,
+          "ok": true,
+          "reprojection_mean_px": 0.39621031284332275,
+          "rotation_error_deg": 0.6109134357439823,
+          "translation_error_m": 0.002213314466650082
+        },
+        "wrist_right": {
+          "corners": 108,
+          "ok": true,
+          "reprojection_mean_px": 0.4000363051891327,
+          "rotation_error_deg": 0.1881719390856947,
+          "translation_error_m": 0.0008317184569686678
+        }
+      },
+      "frame_dir": "/home/jerry/rax-runtime/sessions/20261110T091931Z_screw_lightbulb_fable52/operator/all-four-calibration-20261117-box-014417/verification/frames/1794909443752271968",
+      "index": 17,
+      "moving_arm": "right"
+    },
+    {
+      "cameras": {
+        "front": {
+          "corners": 22,
+          "ok": true,
+          "reprojection_mean_px": 0.3587270975112915,
+          "rotation_error_deg": 0.47406234226260724,
+          "translation_error_m": 0.0009846795910202297
+        },
+        "side_right": {
+          "corners": 26,
+          "ok": true,
+          "reprojection_mean_px": 0.3825110197067261,
+          "rotation_error_deg": 0.12979197295525122,
+          "translation_error_m": 0.00047461941291558645
+        },
+        "wrist_left": {
+          "corners": 107,
+          "ok": true,
+          "reprojection_mean_px": 0.4061887562274933,
+          "rotation_error_deg": 0.5993250371086603,
+          "translation_error_m": 0.002217334165373241
+        },
+        "wrist_right": {
+          "corners": 107,
+          "ok": true,
+          "reprojection_mean_px": 0.39292070269584656,
+          "rotation_error_deg": 0.19206447831781023,
+          "translation_error_m": 0.0006923980879835347
+        }
+      },
+      "frame_dir": "/home/jerry/rax-runtime/sessions/20261110T091931Z_screw_lightbulb_fable52/operator/all-four-calibration-20261117-box-014417/verification/frames/1794909444944533247",
+      "index": 17,
+      "moving_arm": "right"
+    }
+  ],
+  "complete": true,
+  "fit": "/home/jerry/rax-runtime/sessions/20261110T091931Z_screw_lightbulb_fable52/operator/all-four-calibration-20261117-box-014417/collection/result.json",
+  "fit_sha256": "541d7b7d8296774a410ddb25816dd8a8c7a1a71da8f3ef0d9fa1c8e9baccbd7a",
+  "method": "Frozen fit; six newly seeded poses; three fresh frames per pose; all 4 cameras checked",
+  "ok": true,
+  "return_poses": {
+    "left": {
+      "error_code": 0,
+      "joints": [
+        -0.174529,
+        -0.17453,
+        -2.094398,
+        -0.174538,
+        2.094398,
+        3e-06
+      ],
+      "mode": 0,
+      "state": 2,
+      "tcp_position": [
+        0.31933761600000005,
+        -0.105083618,
+        0.586661194
+      ],
+      "tcp_quaternion": [
+        0.983811743620493,
+        -0.1358088926437425,
+        0.0795789228209136,
+        0.08565975038458186
+      ],
+      "tcp_rpy_rad": [
+        2.991665,
+        -0.180832,
+        -0.260735
+      ],
+      "warn_code": 0
+    },
+    "right": {
+      "error_code": 0,
+      "joints": [
+        0.174529,
+        -0.174536,
+        -2.094389,
+        0.174537,
+        2.094388,
+        -2e-06
+      ],
+      "mode": 0,
+      "state": 2,
+      "tcp_position": [
+        0.320570953,
+        0.10280735799999999,
+        0.585832764
+      ],
+      "tcp_quaternion": [
+        -0.9850514670638114,
+        -0.13707239502973845,
+        -0.08182256848554946,
+        0.06472891967792987
+      ],
+      "tcp_rpy_rad": [
+        -3.034573,
+        -0.179913,
+        0.266867
+      ],
+      "warn_code": 0
+    }
+  }
+}

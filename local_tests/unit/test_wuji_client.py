@@ -34,8 +34,10 @@ def client():
     return value
 
 
-def supervise(monkeypatch, snapshots):
+def supervise(monkeypatch, snapshots, *, config=None):
     value = client()
+    if config is not None:
+        value.cfg = config
     arm_stops, hand_stops = [], []
     value.on_fault = lambda: arm_stops.append(True)
     states = iter(snapshots)
@@ -53,6 +55,90 @@ def supervise(monkeypatch, snapshots):
     monkeypatch.setattr('services.wuji.client.request', request)
     value._monitor()
     return value, arm_stops, hand_stops
+
+
+def passive_init_after_stop():
+    names = ['Ready'] * 20
+    names[2] = 'Init'
+    return {'mode': 'disabled', 'fresh': True, 'owns_control': False, 'fault': None,
+            'diagnostics': {'state_names': names},
+            'faults': [{'joint': 'thumb_S3', 'native_state': 'Init',
+                        'reason': 'excluded joint is not disabled'}]}
+
+
+def test_confirmed_disarmed_stop_does_not_alert_for_passive_init(monkeypatch):
+    monkeypatch.setattr('services.wuji.client.arming.read', lambda root: {'armed': False})
+    healthy = {'mode': 'holding', 'fresh': True, 'owns_control': True}
+    value, arm, hand = supervise(monkeypatch, [healthy, passive_init_after_stop()],
+                                config={'disabled_joints': ['thumb_S3']})
+    assert not arm and not hand
+    assert value.cached['faults']  # Still visible and still blocks preparation.
+
+
+def pending_passive_stop():
+    return {**passive_init_after_stop(), 'mode': 'stopping', 'owns_control': True,
+            'diagnostics': {'state_names': ['Init'] * 20},
+            'stop': {'op': 'emergency', 'behavior': 'emergency', 'since': 99., 'deadline': 101.}}
+
+
+def test_disarmed_passive_init_during_bounded_stop_does_not_alert(monkeypatch):
+    monkeypatch.setattr('services.wuji.client.arming.read', lambda root: {'armed': False})
+    monkeypatch.setattr('services.wuji.client.time.monotonic', lambda: 100.)
+    _, arm, hand = supervise(monkeypatch, [
+        {'mode': 'holding', 'fresh': True, 'owns_control': True},
+        pending_passive_stop(), passive_init_after_stop()],
+        config={'disabled_joints': ['thumb_S3'], 'stop_timeout_s': 2.})
+    assert not arm and not hand
+
+
+def test_passive_pending_stop_still_alerts_while_armed(monkeypatch):
+    monkeypatch.setattr('services.wuji.client.arming.read', lambda root: {'armed': True})
+    monkeypatch.setattr('services.wuji.client.time.monotonic', lambda: 100.)
+    _, arm, _ = supervise(monkeypatch, [
+        {'mode': 'holding', 'fresh': True, 'owns_control': True}, pending_passive_stop()],
+        config={'disabled_joints': ['thumb_S3'], 'stop_timeout_s': 2.})
+    assert len(arm) == 1
+
+
+@pytest.mark.parametrize('change', [
+    {'fresh': False}, {'fault': 'stop delivery failed'}, {'mode': 'uncertain'},
+    {'faults': [{'joint': 'thumb_S3', 'reason': 'temperature limit exceeded'}]},
+    {'stop': None},
+    {'stop': {'op': 'emergency', 'behavior': 'emergency', 'since': 97., 'deadline': 99.}},
+    {'stop': {'op': 'emergency', 'behavior': 'emergency', 'since': 99., 'deadline': 110.}},
+])
+def test_pending_stop_failures_still_alert(monkeypatch, change):
+    monkeypatch.setattr('services.wuji.client.arming.read', lambda root: {'armed': False})
+    monkeypatch.setattr('services.wuji.client.time.monotonic', lambda: 100.)
+    _, arm, _ = supervise(monkeypatch, [
+        {'mode': 'holding', 'fresh': True, 'owns_control': True},
+        {**pending_passive_stop(), **change}],
+        config={'disabled_joints': ['thumb_S3'], 'stop_timeout_s': 2.})
+    assert len(arm) == 1
+
+
+@pytest.mark.parametrize('change', [
+    {'fresh': False}, {'owns_control': True}, {'mode': 'stopping'},
+    {'fault': 'tracking error'},
+    {'faults': [{'joint': 'thumb_S3', 'reason': 'temperature limit exceeded'}]},
+    {'faults': [{'joint': 'index_S1', 'native_state': 'Init',
+                'reason': 'excluded joint is not disabled'}]},
+    {'diagnostics': {'state_names': ['Enabled'] * 20}},
+])
+def test_real_or_unconfirmed_stop_fault_still_alerts(monkeypatch, change):
+    monkeypatch.setattr('services.wuji.client.arming.read', lambda root: {'armed': False})
+    healthy = {'mode': 'holding', 'fresh': True, 'owns_control': True}
+    _, arm, _ = supervise(monkeypatch, [healthy, {**passive_init_after_stop(), **change}],
+                          config={'disabled_joints': ['thumb_S3']})
+    assert len(arm) == 1
+
+
+def test_passive_init_is_not_expected_stop_while_armed(monkeypatch):
+    monkeypatch.setattr('services.wuji.client.arming.read', lambda root: {'armed': True})
+    _, arm, _ = supervise(monkeypatch, [
+        {'mode': 'holding', 'fresh': True, 'owns_control': True}, passive_init_after_stop()],
+        config={'disabled_joints': ['thumb_S3']})
+    assert len(arm) == 1
 
 
 def test_missing_hand_during_initial_connection_does_not_stop_arm(monkeypatch):

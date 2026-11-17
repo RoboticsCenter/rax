@@ -1,0 +1,81 @@
+{
+  "K": [
+    [
+      925.86962890625,
+      0.0,
+      646.4573974609375
+    ],
+    [
+      0.0,
+      925.8562622070312,
+      350.99139404296875
+    ],
+    [
+      0.0,
+      0.0,
+      1.0
+    ]
+  ],
+  "distortion_coeffs": [
+    0.15539088717272426,
+    -0.24059424919303465,
+    0.0,
+    0.0,
+    0.0
+  ],
+  "distortion_model": "brown_conrady",
+  "factory_profile": {
+    "K": [
+      [
+        925.86962890625,
+        0.0,
+        646.4573974609375
+      ],
+      [
+        0.0,
+        925.8562622070312,
+        350.99139404296875
+      ],
+      [
+        0.0,
+        0.0,
+        1.0
+      ]
+    ],
+    "distortion_coeffs": [
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0
+    ],
+    "distortion_model": "inverse_brown_conrady",
+    "fps": 6,
+    "height": 720,
+    "serial": "752112070450",
+    "width": 1280
+  },
+  "fps": 6,
+  "height": 720,
+  "method": "Training-only radial k1/k2 refinement with factory focal lengths/principal point fixed; depth calibration pending",
+  "serial": "752112070450",
+  "training_frames": [
+    "/home/jerry/rax-runtime/sessions/20261110T091931Z_screw_lightbulb_fable52/operator/all-four-calibration-20261117-box-014417/collection/frames/1794909017974392358",
+    "/home/jerry/rax-runtime/sessions/20261110T091931Z_screw_lightbulb_fable52/operator/all-four-calibration-20261117-box-014417/collection/frames/1794909027880412635",
+    "/home/jerry/rax-runtime/sessions/20261110T091931Z_screw_lightbulb_fable52/operator/all-four-calibration-20261117-box-014417/collection/frames/1794909044056243214",
+    "/home/jerry/rax-runtime/sessions/20261110T091931Z_screw_lightbulb_fable52/operator/all-four-calibration-20261117-box-014417/collection/frames/1794909060914509460",
+    "/home/jerry/rax-runtime/sessions/20261110T091931Z_screw_lightbulb_fable52/operator/all-four-calibration-20261117-box-014417/collection/frames/1794909078404371659",
+    "/home/jerry/rax-runtime/sessions/20261110T091931Z_screw_lightbulb_fable52/operator/all-four-calibration-20261117-box-014417/collection/frames/1794909087370251616",
+    "/home/jerry/rax-runtime/sessions/20261110T091931Z_screw_lightbulb_fable52/operator/all-four-calibration-20261117-box-014417/collection/frames/1794909095485250339",
+    "/home/jerry/rax-runtime/sessions/20261110T091931Z_screw_lightbulb_fable52/operator/all-four-calibration-20261117-box-014417/collection/frames/1794909110689498541",
+    "/home/jerry/rax-runtime/sessions/20261110T091931Z_screw_lightbulb_fable52/operator/all-four-calibration-20261117-box-014417/collection/frames/1794909117313015632",
+    "/home/jerry/rax-runtime/sessions/20261110T091931Z_screw_lightbulb_fable52/operator/all-four-calibration-20261117-box-014417/collection/frames/1794909125852936482",
+    "/home/jerry/rax-runtime/sessions/20261110T091931Z_screw_lightbulb_fable52/operator/all-four-calibration-20261117-box-014417/collection/frames/1794909132762045861",
+    "/home/jerry/rax-runtime/sessions/20261110T091931Z_screw_lightbulb_fable52/operator/all-four-calibration-20261117-box-014417/collection/frames/1794909141931753809",
+    "/home/jerry/rax-runtime/sessions/20261110T091931Z_screw_lightbulb_fable52/operator/all-four-calibration-20261117-box-014417/collection/frames/1794909157388706318",
+    "/home/jerry/rax-runtime/sessions/20261110T091931Z_screw_lightbulb_fable52/operator/all-four-calibration-20261117-box-014417/collection/frames/1794909164023769426",
+    "/home/jerry/rax-runtime/sessions/20261110T091931Z_screw_lightbulb_fable52/operator/all-four-calibration-20261117-box-014417/collection/frames/1794909170938671600"
+  ],
+  "training_rms_px": 0.48674692245362605,
+  "width": 1280
+}

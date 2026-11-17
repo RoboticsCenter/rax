@@ -340,7 +340,7 @@
       "xarm_ip": "192.168.1.241"
     }
   },
-  "calibration_manifest": "calibration/xarm-wuji-bimanual-four-camera-20261116/manifest.json",
+  "calibration_manifest": "calibration/xarm-wuji-bimanual-four-camera-20261117/manifest.json",
   "camera_cpus": "0-15",
   "camera_depth_mode": "Z16",
   "cameras": [

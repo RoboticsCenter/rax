@@ -16,6 +16,7 @@ import shutil
 import time
 import uuid
 from services.operator_audit import record
+from services.controller.snapshot_storage import SnapshotCopier
 
 KINDS = ('help', 'reset')
 REQUEST_ID = re.compile(r'[0-9a-f]{12}')
@@ -54,6 +55,8 @@ def snapshot_learning(session_root, label='manual', *, request=None, reply=None)
     safe = ''.join(c if c.isalnum() or c in '-_.' else '_' for c in str(label))[:80] or 'snapshot'
     folder = root/'learning-snapshots'
     folder.mkdir(mode=0o700, exist_ok=True)
+    previous = sorted(p for p in folder.iterdir()
+                      if not p.is_symlink() and (p/'manifest.json').is_file())
     stamp = time.strftime('%Y%m%dT%H%M%S', time.localtime())
     dest = folder/f'{stamp}_{safe}'
     suffix = 1
@@ -61,22 +64,23 @@ def snapshot_learning(session_root, label='manual', *, request=None, reply=None)
         suffix += 1
         dest = folder/f'{stamp}_{safe}_{suffix}'
     dest.mkdir(mode=0o700)
+    copy = SnapshotCopier(dest, previous[-1] if previous else None)
 
     ignore = shutil.ignore_patterns('__pycache__', '*.pyc', 'runtime', 'tmp')
     copied = []
     for name in ('memory', 'code', 'output'):
         source = workspace/name
         if source.exists():
-            shutil.copytree(source, dest/name, ignore=ignore)
+            shutil.copytree(source, dest/name, ignore=ignore, copy_function=copy)
             copied.append(name)
     skills = workspace/'.agents'/'skills'
     if skills.exists():
-        shutil.copytree(skills, dest/'skills', ignore=ignore)
+        shutil.copytree(skills, dest/'skills', ignore=ignore, copy_function=copy)
         copied.append('skills')
     for name in ('TASK.md', 'AGENTS.md', 'MCP_SESSION.md', 'MCP_CONTRACT.json', 'START_PROMPT.md'):
         source = workspace/name
         if source.is_file():
-            shutil.copy2(source, dest/name)
+            copy(source, dest/name)
             copied.append(name)
     manifest = {
         'time': time.time(),

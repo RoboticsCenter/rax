@@ -237,11 +237,11 @@ faults; physical qualification remains separate.
 
 Both `examples/xarm-wuji-bimanual.json` and the explicit
 `examples/xarm-wuji-bimanual-four-camera.json` select this setup and
-`calibration/xarm-wuji-bimanual-four-camera-20261116/manifest.json`. On November 16,
+`calibration/xarm-wuji-bimanual-four-camera-20261117/manifest.json`. On November 17,
 a joint 36-pose collection recalibrated all four cameras. The frozen fit passed
-19 fresh checks each. Maximum translation/rotation errors were 2.31 mm / 0.77°
-for `wrist_left`, 3.75 mm / 0.42° for `wrist_right`, 2.54 mm / 0.48° for `front`,
-and 0.70 mm / 0.32° for `side_right`. Both wrists use radial distortion refinement
+19 fresh checks each. Maximum translation/rotation errors were 2.75 mm / 0.81°
+for `wrist_left`, 1.98 mm / 0.20° for `wrist_right`, 1.82 mm / 0.60° for `front`,
+and 1.26 mm / 0.24° for `side_right`. Both wrists use radial distortion refinement
 with factory focal lengths/principal points fixed. Wrist transforms and inter-base
 alignment changed; reacquire scene geometry before reusing motion targets.
 The older bundles and reports remain historical.
