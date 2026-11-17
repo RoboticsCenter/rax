@@ -230,25 +230,21 @@ faults; physical qualification remains separate.
 
 | Role | Serial | RGB/depth capture profile |
 | --- | --- | --- |
-| `wrist_left` (left TCP) | `108322071838` | 640×480 at 15 FPS |
-| `wrist_right` (right TCP) | `752112070450` | 640×480 at 15 FPS |
-| `front` (fixed side view; existing ID) | `348522070593` | 640×480 at 15 FPS |
-| `side_right` (fixed side view) | `263222071915` | 640×480 at 15 FPS |
+| `wrist_left` (left TCP) | `108322071838` | RGB 1280×720, depth 640×480, 6 FPS |
+| `wrist_right` (right TCP) | `752112070450` | RGB 1280×720, depth 640×480, 6 FPS |
+| `front` (fixed side view; existing ID) | `348522070593` | RGB 1280×720, depth 640×480, 6 FPS |
+| `side_right` (fixed side view) | `263222071915` | RGB 1280×720, depth 640×480, 6 FPS |
 
 Both `examples/xarm-wuji-bimanual.json` and the explicit
 `examples/xarm-wuji-bimanual-four-camera.json` select this setup and
-`calibration/xarm-wuji-bimanual-four-camera/manifest.json`. On November 11
-(November 12 UTC), a joint 36-pose collection recalibrated all four cameras after
-the mounts were moved. All four passed 19 fresh checks each against the frozen fit.
-Maximum translation/rotation errors were 1.85 mm / 0.30° for `wrist_left`,
-1.62 mm / 0.37° for `wrist_right`, 1.68 mm / 0.38° for `front`, and
-3.01 mm / 0.41° for `side_right`. This supersedes the earlier staged calibration.
-A later bump prompted a fixed-camera-only recalibration on November 12 UTC.
-Using both unchanged wrists as stereo references, `front` and `side_right`
-passed 12 training and 8 fresh verification captures each. Current fixed-view
-maxima are 1.68 mm / 0.30° (`front`) and 1.69 mm / 0.28° (`side_right`), with
-mean reprojection error at most 0.200 px and 0.347 px respectively. Wrist and
-inter-base calibrations remain unchanged.
+`calibration/xarm-wuji-bimanual-four-camera-20261116/manifest.json`. On November 16,
+a joint 36-pose collection recalibrated all four cameras. The frozen fit passed
+19 fresh checks each. Maximum translation/rotation errors were 2.31 mm / 0.77°
+for `wrist_left`, 3.75 mm / 0.42° for `wrist_right`, 2.54 mm / 0.48° for `front`,
+and 0.70 mm / 0.32° for `side_right`. Both wrists use radial distortion refinement
+with factory focal lengths/principal points fixed. Wrist transforms and inter-base
+alignment changed; reacquire scene geometry before reusing motion targets.
+The older bundles and reports remain historical.
 All four RGB extrinsics are verified. The old three-camera bundle is historical
 and is not selected.
 
@@ -273,7 +269,8 @@ Status supplies `T_left_base_right_base`. Arm motion targets still use their own
 arm's base. An uncalibrated configuration can omit `calibration_manifest` and
 continues providing raw observations without transforms or projection.
 
-Use `rgbd` to capture aligned depth on all four cameras at 640×480 and 15 FPS;
+Use `rgbd` to capture 1280×720 RGB and native 640×480 depth on all four cameras
+at 6 FPS; depth is aligned to the 1280×720 RGB grid, and
 the examples record
 rolling depth at 1 Hz, while each `xarm_observe` saves a fresh depth image from
 every requested camera. Depth PNGs are uint16 millimetres (zero is invalid), aligned
@@ -410,8 +407,8 @@ The four-camera USB setup was verified at 6 fps on 2026-11-12; at 15 fps one
 of the two fixed cameras failed to deliver frames. Use the live status to verify
 all four feeds after any USB or profile change.
 
-These camera-only defaults do not overwrite the robot session's calibrated
-640×480 profile. The saved calibration explicitly checks resolution and frame
+The current robot session also uses a verified 1280×720 RGB / 6 FPS profile.
+Camera-only overrides do not overwrite that profile. The saved calibration explicitly checks resolution and frame
 rate; validate/install compatible calibration before migrating robot observations
 to a new profile. A camera-only resolution override uses live factory intrinsics,
 not the old profile's intrinsics or robot projection geometry.

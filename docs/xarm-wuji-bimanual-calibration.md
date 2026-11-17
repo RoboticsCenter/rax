@@ -12,20 +12,19 @@ changes finger targets. Only one arm moves at a time.
 Use `examples/xarm-wuji-bimanual-four-camera.json` for `wrist_left`
 (`108322071838`), `wrist_right` (`752112070450`), fixed `front`
 (`348522070593`) and fixed `side_right` (`263222071915`). `front` keeps its
-existing ID even when used as a side view. All four capture RGB and depth at
-640×480 and 15 FPS. The example preserves the commissioned arm/hand settings.
+existing ID even when used as a side view. All four capture 1280×720 RGB at
+6 FPS, with native 640×480 depth aligned to the RGB grid. The example preserves
+the commissioned arm/hand settings.
 
 The four-camera configuration selects
-`calibration/xarm-wuji-bimanual-four-camera/manifest.json`. After the camera mounts
-were moved, all four cameras were fitted together from one shared 36-pose collection
-on November 12 UTC. The frozen fit passed 19 fresh checks per camera (76 total).
-This joint calibration supersedes the earlier staged wrist/fixed-view calibration.
-After a later reported bump on November 12 UTC, only `front` and `side_right`
-were refitted using stereo board transfer from the unchanged calibrated wrists.
-The update passed 12 training and 8 fresh verification captures per fixed camera:
-front maximum 1.68 mm / 0.30°, side_right 1.69 mm / 0.28°. Wrist extrinsics,
-inter-base alignment and optical models were preserved. The manifest’s
-`fixed_camera_updates` and per-camera recalibration reports record this update.
+`calibration/xarm-wuji-bimanual-four-camera-20261116/manifest.json`. On November 16,
+a shared 36-pose collection recalibrated all four cameras. Wrist optics use
+training-only radial distortion refinement with factory focal lengths and principal
+points fixed. The frozen fit passed 19 fresh checks per camera (76 total): maximum
+translation/rotation errors were 2.54 mm / 0.48° for front, 0.70 mm / 0.32° for
+side_right, 2.31 mm / 0.77° for wrist_left, and 3.75 mm / 0.42° for wrist_right.
+The previous November 12 bundle is retained as history. Both wrist transforms and
+the inter-base alignment were refitted; reacquire scene geometry before motion.
 All four RGB extrinsics are verified; independent metric depth validation remains
 pending. Fixed-camera transfer can use a new board placement without changing the
 verified wrist or inter-base transforms.
@@ -125,7 +124,7 @@ the observed IDs. The print must lie flat.
 
 Camera identities come from the session's configuration: `wrist_left` belongs
 to the left arm, `wrist_right` to the right arm, and both `front` and `side_right`
-are fixed. All four current profiles are 640×480 at 15 FPS, with live factory RGB
+are fixed. All four current RGB profiles are 1280×720 at 6 FPS, with live factory RGB
 intrinsics for collection.
 The default procedure fits extrinsics only. The optional
 `--refine-wrist-intrinsics` applies the original script's training-only Brown5

@@ -1,0 +1,1678 @@
+{
+  "T_left_base_right_base": [
+    [
+      0.9999153691354508,
+      -0.0052685371857155786,
+      -0.01189525462681181,
+      -0.00018249340881887344
+    ],
+    [
+      0.005203097204738513,
+      0.9999711972746106,
+      -0.005525613147777855,
+      -0.6261635606454001
+    ],
+    [
+      0.011924023909402311,
+      0.005463253344261579,
+      0.9999139815587654,
+      0.006499069079702269
+    ],
+    [
+      0.0,
+      0.0,
+      0.0,
+      1.0
+    ]
+  ],
+  "arm_identity": {
+    "left": {
+      "ip": "192.168.2.205",
+      "serial": "XI130510J56A06",
+      "tcp_load": [
+        0.82,
+        [
+          0.0,
+          0.0,
+          48.0
+        ]
+      ],
+      "tcp_offset_mm_rad": [
+        0.0,
+        0.0,
+        172.0,
+        0.0,
+        0.0,
+        0.0
+      ]
+    },
+    "right": {
+      "ip": "192.168.1.241",
+      "serial": "XI130505F56A0A",
+      "tcp_load": [
+        0.82,
+        [
+          0.0,
+          0.0,
+          48.0
+        ]
+      ],
+      "tcp_offset_mm_rad": [
+        0.0,
+        0.0,
+        172.0,
+        0.0,
+        0.0,
+        0.0
+      ]
+    }
+  },
+  "board": {
+    "dictionary": "DICT_4X4_100",
+    "dimension_source": "Operator supplied a new accurately printed 10 x 13 board on 2026-10-27, confirming the intended 20 mm squares and 15 mm markers.",
+    "layout_note": "Physical board has 13 rows. Live marker positions match the legacy 14-row layout with the final row absent; preserve its ID coordinates and exclude missing-row corners.",
+    "layout_source": ".local-runtime/camera-new-board-20261027/layout-check.json",
+    "layout_squares_y": 14,
+    "legacy_pattern": true,
+    "marker_dimension_source": "New print at intended dimensions; operator confirmation, replacing the prior undersized print.",
+    "marker_m": 0.015,
+    "nominal_design_marker_m": 0.015,
+    "nominal_design_square_m": 0.02,
+    "square_m": 0.02,
+    "squares_x": 10,
+    "squares_y": 13
+  },
+  "camera_models": {
+    "front": {
+      "K": [
+        [
+          912.2591552734375,
+          0.0,
+          655.4686889648438
+        ],
+        [
+          0.0,
+          911.7289428710938,
+          378.68194580078125
+        ],
+        [
+          0.0,
+          0.0,
+          1.0
+        ]
+      ],
+      "distortion_coeffs": [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "distortion_model": "inverse_brown_conrady",
+      "fps": 6,
+      "height": 720,
+      "serial": "348522070593",
+      "width": 1280
+    },
+    "side_right": {
+      "K": [
+        [
+          907.921142578125,
+          0.0,
+          643.341552734375
+        ],
+        [
+          0.0,
+          907.8648681640625,
+          379.07806396484375
+        ],
+        [
+          0.0,
+          0.0,
+          1.0
+        ]
+      ],
+      "distortion_coeffs": [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "distortion_model": "inverse_brown_conrady",
+      "fps": 6,
+      "height": 720,
+      "serial": "263222071915",
+      "width": 1280
+    },
+    "wrist_left": {
+      "K": [
+        [
+          905.4855346679688,
+          0.0,
+          634.0691528320312
+        ],
+        [
+          0.0,
+          905.2677001953125,
+          354.7956237792969
+        ],
+        [
+          0.0,
+          0.0,
+          1.0
+        ]
+      ],
+      "distortion_coeffs": [
+        0.13848894133322123,
+        -0.2007282583701408,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "distortion_model": "brown_conrady",
+      "factory_profile": {
+        "K": [
+          [
+            905.4855346679688,
+            0.0,
+            634.0691528320312
+          ],
+          [
+            0.0,
+            905.2677001953125,
+            354.7956237792969
+          ],
+          [
+            0.0,
+            0.0,
+            1.0
+          ]
+        ],
+        "distortion_coeffs": [
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0
+        ],
+        "distortion_model": "inverse_brown_conrady",
+        "fps": 6,
+        "height": 720,
+        "serial": "108322071838",
+        "width": 1280
+      },
+      "fps": 6,
+      "height": 720,
+      "method": "Training-only radial k1/k2 refinement with factory focal lengths/principal point fixed; depth calibration pending",
+      "serial": "108322071838",
+      "training_frames": [
+        "/home/jerry/rax-runtime/sessions/20261110T091931Z_screw_lightbulb_fable52/operator/all-four-calibration-20261116/collection-wires-secured/frames/1794874154353429064",
+        "/home/jerry/rax-runtime/sessions/20261110T091931Z_screw_lightbulb_fable52/operator/all-four-calibration-20261116/collection-wires-secured/frames/1794874162364079303",
+        "/home/jerry/rax-runtime/sessions/20261110T091931Z_screw_lightbulb_fable52/operator/all-four-calibration-20261116/collection-wires-secured/frames/1794874175989414252",
+        "/home/jerry/rax-runtime/sessions/20261110T091931Z_screw_lightbulb_fable52/operator/all-four-calibration-20261116/collection-wires-secured/frames/1794874192096315209",
+        "/home/jerry/rax-runtime/sessions/20261110T091931Z_screw_lightbulb_fable52/operator/all-four-calibration-20261116/collection-wires-secured/frames/1794874209080616536",
+        "/home/jerry/rax-runtime/sessions/20261110T091931Z_screw_lightbulb_fable52/operator/all-four-calibration-20261116/collection-wires-secured/frames/1794874222731182285",
+        "/home/jerry/rax-runtime/sessions/20261110T091931Z_screw_lightbulb_fable52/operator/all-four-calibration-20261116/collection-wires-secured/frames/1794874228619246894",
+        "/home/jerry/rax-runtime/sessions/20261110T091931Z_screw_lightbulb_fable52/operator/all-four-calibration-20261116/collection-wires-secured/frames/1794874238125980005",
+        "/home/jerry/rax-runtime/sessions/20261110T091931Z_screw_lightbulb_fable52/operator/all-four-calibration-20261116/collection-wires-secured/frames/1794874248487823851",
+        "/home/jerry/rax-runtime/sessions/20261110T091931Z_screw_lightbulb_fable52/operator/all-four-calibration-20261116/collection-wires-secured/frames/1794874256585100332",
+        "/home/jerry/rax-runtime/sessions/20261110T091931Z_screw_lightbulb_fable52/operator/all-four-calibration-20261116/collection-wires-secured/frames/1794874269528993884",
+        "/home/jerry/rax-runtime/sessions/20261110T091931Z_screw_lightbulb_fable52/operator/all-four-calibration-20261116/collection-wires-secured/frames/1794874284124562673",
+        "/home/jerry/rax-runtime/sessions/20261110T091931Z_screw_lightbulb_fable52/operator/all-four-calibration-20261116/collection-wires-secured/frames/1794874290582346989",
+        "/home/jerry/rax-runtime/sessions/20261110T091931Z_screw_lightbulb_fable52/operator/all-four-calibration-20261116/collection-wires-secured/frames/1794874301681940664",
+        "/home/jerry/rax-runtime/sessions/20261110T091931Z_screw_lightbulb_fable52/operator/all-four-calibration-20261116/collection-wires-secured/frames/1794874309176260307"
+      ],
+      "training_rms_px": 0.5093750373927178,
+      "width": 1280
+    },
+    "wrist_right": {
+      "K": [
+        [
+          925.86962890625,
+          0.0,
+          646.4573974609375
+        ],
+        [
+          0.0,
+          925.8562622070312,
+          350.99139404296875
+        ],
+        [
+          0.0,
+          0.0,
+          1.0
+        ]
+      ],
+      "distortion_coeffs": [
+        0.14345138701528232,
+        -0.10202685615223077,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "distortion_model": "brown_conrady",
+      "factory_profile": {
+        "K": [
+          [
+            925.86962890625,
+            0.0,
+            646.4573974609375
+          ],
+          [
+            0.0,
+            925.8562622070312,
+            350.99139404296875
+          ],
+          [
+            0.0,
+            0.0,
+            1.0
+          ]
+        ],
+        "distortion_coeffs": [
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0
+        ],
+        "distortion_model": "inverse_brown_conrady",
+        "fps": 6,
+        "height": 720,
+        "serial": "752112070450",
+        "width": 1280
+      },
+      "fps": 6,
+      "height": 720,
+      "method": "Training-only radial k1/k2 refinement with factory focal lengths/principal point fixed; depth calibration pending",
+      "serial": "752112070450",
+      "training_frames": [
+        "/home/jerry/rax-runtime/sessions/20261110T091931Z_screw_lightbulb_fable52/operator/all-four-calibration-20261116/collection-wires-secured/frames/1794874360124662777",
+        "/home/jerry/rax-runtime/sessions/20261110T091931Z_screw_lightbulb_fable52/operator/all-four-calibration-20261116/collection-wires-secured/frames/1794874369494085177",
+        "/home/jerry/rax-runtime/sessions/20261110T091931Z_screw_lightbulb_fable52/operator/all-four-calibration-20261116/collection-wires-secured/frames/1794874385246519844",
+        "/home/jerry/rax-runtime/sessions/20261110T091931Z_screw_lightbulb_fable52/operator/all-four-calibration-20261116/collection-wires-secured/frames/1794874401950882775",
+        "/home/jerry/rax-runtime/sessions/20261110T091931Z_screw_lightbulb_fable52/operator/all-four-calibration-20261116/collection-wires-secured/frames/1794874419318241395",
+        "/home/jerry/rax-runtime/sessions/20261110T091931Z_screw_lightbulb_fable52/operator/all-four-calibration-20261116/collection-wires-secured/frames/1794874430315547728",
+        "/home/jerry/rax-runtime/sessions/20261110T091931Z_screw_lightbulb_fable52/operator/all-four-calibration-20261116/collection-wires-secured/frames/1794874437636528440",
+        "/home/jerry/rax-runtime/sessions/20261110T091931Z_screw_lightbulb_fable52/operator/all-four-calibration-20261116/collection-wires-secured/frames/1794874443912940064",
+        "/home/jerry/rax-runtime/sessions/20261110T091931Z_screw_lightbulb_fable52/operator/all-four-calibration-20261116/collection-wires-secured/frames/1794874455130552828",
+        "/home/jerry/rax-runtime/sessions/20261110T091931Z_screw_lightbulb_fable52/operator/all-four-calibration-20261116/collection-wires-secured/frames/1794874463389898809",
+        "/home/jerry/rax-runtime/sessions/20261110T091931Z_screw_lightbulb_fable52/operator/all-four-calibration-20261116/collection-wires-secured/frames/1794874470259392858",
+        "/home/jerry/rax-runtime/sessions/20261110T091931Z_screw_lightbulb_fable52/operator/all-four-calibration-20261116/collection-wires-secured/frames/1794874480345044847",
+        "/home/jerry/rax-runtime/sessions/20261110T091931Z_screw_lightbulb_fable52/operator/all-four-calibration-20261116/collection-wires-secured/frames/1794874488257359394",
+        "/home/jerry/rax-runtime/sessions/20261110T091931Z_screw_lightbulb_fable52/operator/all-four-calibration-20261116/collection-wires-secured/frames/1794874494178644128",
+        "/home/jerry/rax-runtime/sessions/20261110T091931Z_screw_lightbulb_fable52/operator/all-four-calibration-20261116/collection-wires-secured/frames/1794874510965016057"
+      ],
+      "training_rms_px": 0.42705786940815516,
+      "width": 1280
+    }
+  },
+  "camera_specs": [
+    {
+      "calibration_raw_color": true,
+      "height": 720,
+      "mount": "fixed",
+      "name": "front",
+      "serial": "348522070593",
+      "width": 1280
+    },
+    {
+      "calibration_raw_color": true,
+      "height": 720,
+      "mount": "fixed",
+      "name": "side_right",
+      "serial": "263222071915",
+      "width": 1280
+    },
+    {
+      "arm": "left",
+      "calibration_raw_color": true,
+      "height": 720,
+      "mount": "tcp",
+      "name": "wrist_left",
+      "serial": "108322071838",
+      "width": 1280
+    },
+    {
+      "arm": "right",
+      "calibration_raw_color": true,
+      "height": 720,
+      "mount": "tcp",
+      "name": "wrist_right",
+      "serial": "752112070450",
+      "width": 1280
+    }
+  ],
+  "collection": "/home/jerry/rax-runtime/sessions/20261110T091931Z_screw_lightbulb_fable52/operator/all-four-calibration-20261116/collection-wires-secured",
+  "convention": "T_A_B maps column-vector points from B into A; translations in metres",
+  "coverage_source": "/home/jerry/rax-runtime/sessions/20261110T091931Z_screw_lightbulb_fable52/operator/all-four-calibration-20261116/coverage-planning-factory",
+  "fixed": {
+    "front": {
+      "T_cam_base": [
+        [
+          -0.08655978714249599,
+          -0.9934244417608983,
+          0.07493518373829997,
+          -0.28921752456050626
+        ],
+        [
+          -0.5026499553744808,
+          -0.02139227568637879,
+          -0.8642253137365219,
+          0.4607782643715297
+        ],
+        [
+          0.860145583963481,
+          -0.11247332596222528,
+          -0.4974930404891275,
+          0.6128779743079535
+        ],
+        [
+          0.0,
+          0.0,
+          0.0,
+          1.0
+        ]
+      ],
+      "T_cam_board": [
+        [
+          0.06914442043044783,
+          -0.9946136641034224,
+          -0.07721857485153205,
+          0.17379291137681802
+        ],
+        [
+          0.5152298730872804,
+          -0.030677895979076164,
+          0.856502798931073,
+          0.07557973905866136
+        ],
+        [
+          -0.8542582905666192,
+          -0.09900770614988103,
+          0.5103334665893825,
+          0.9081180693137827
+        ],
+        [
+          0.0,
+          0.0,
+          0.0,
+          1.0
+        ]
+      ],
+      "T_cam_left_base": [
+        [
+          -0.08655978714249599,
+          -0.9934244417608983,
+          0.07493518373829997,
+          -0.28921752456050626
+        ],
+        [
+          -0.5026499553744808,
+          -0.02139227568637879,
+          -0.8642253137365219,
+          0.4607782643715297
+        ],
+        [
+          0.860145583963481,
+          -0.11247332596222528,
+          -0.4974930404891275,
+          0.6128779743079535
+        ],
+        [
+          0.0,
+          0.0,
+          0.0,
+          1.0
+        ]
+      ],
+      "T_cam_right_base": [
+        [
+          -0.09082781652636909,
+          -0.9925303950789985,
+          0.08144766779582176,
+          0.3333314666509045
+        ],
+        [
+          -0.513023765068124,
+          -0.023464911384714585,
+          -0.8580536197750309,
+          0.4686483981750188
+        ],
+        [
+          0.8535554605415973,
+          -0.11971972593534375,
+          -0.5070604135619222,
+          0.6799144600335831
+        ],
+        [
+          0.0,
+          0.0,
+          0.0,
+          1.0
+        ]
+      ],
+      "held_out_count": 6,
+      "held_out_residuals": [
+        {
+          "rotation_error_deg": 0.24530238677274654,
+          "translation_error_m": 0.0018593378624347152
+        },
+        {
+          "rotation_error_deg": 0.40932726669311525,
+          "translation_error_m": 0.0003909544695489575
+        },
+        {
+          "rotation_error_deg": 0.3073638921098454,
+          "translation_error_m": 0.0011268956014408565
+        },
+        {
+          "rotation_error_deg": 0.3531088719402926,
+          "translation_error_m": 0.0016521297459208906
+        },
+        {
+          "rotation_error_deg": 0.2950227450004912,
+          "translation_error_m": 0.0025082256595243212
+        },
+        {
+          "rotation_error_deg": 0.16984005291498988,
+          "translation_error_m": 0.0013541178119179677
+        }
+      ],
+      "ok": true,
+      "stationary_board_residuals": [
+        {
+          "rotation_error_deg": 0.3667696805612307,
+          "translation_error_m": 0.00057263498201131
+        },
+        {
+          "rotation_error_deg": 0.12967452507762206,
+          "translation_error_m": 0.0006071773053689112
+        },
+        {
+          "rotation_error_deg": 0.22817051148254897,
+          "translation_error_m": 0.0008465891204664202
+        },
+        {
+          "rotation_error_deg": 0.3136884435276739,
+          "translation_error_m": 0.0008415446652644822
+        },
+        {
+          "rotation_error_deg": 0.43104976669592776,
+          "translation_error_m": 0.001040336776025156
+        },
+        {
+          "rotation_error_deg": 0.3834752373743589,
+          "translation_error_m": 0.00017803458021763455
+        },
+        {
+          "rotation_error_deg": 0.3107291432919781,
+          "translation_error_m": 0.0007102490099958305
+        },
+        {
+          "rotation_error_deg": 0.11601006847657112,
+          "translation_error_m": 0.0004457281865513225
+        },
+        {
+          "rotation_error_deg": 0.11155387209439037,
+          "translation_error_m": 0.0006910765841885766
+        },
+        {
+          "rotation_error_deg": 0.18147767627652175,
+          "translation_error_m": 0.0006661205689703148
+        },
+        {
+          "rotation_error_deg": 0.24781446002912186,
+          "translation_error_m": 0.0003461935620660944
+        },
+        {
+          "rotation_error_deg": 0.18359589882787777,
+          "translation_error_m": 0.0005105425947147748
+        },
+        {
+          "rotation_error_deg": 0.45515464545305667,
+          "translation_error_m": 0.0006485522398293178
+        },
+        {
+          "rotation_error_deg": 0.20385624612187747,
+          "translation_error_m": 0.0008540765490882713
+        },
+        {
+          "rotation_error_deg": 0.348704172586614,
+          "translation_error_m": 0.0017695615148095169
+        },
+        {
+          "rotation_error_deg": 0.4881560897065605,
+          "translation_error_m": 0.00043471561050596817
+        },
+        {
+          "rotation_error_deg": 0.19047552017338898,
+          "translation_error_m": 0.0018824373844043125
+        },
+        {
+          "rotation_error_deg": 0.29359718751833863,
+          "translation_error_m": 0.0007549092052406014
+        },
+        {
+          "rotation_error_deg": 0.15335557584823564,
+          "translation_error_m": 0.0011490799878120857
+        },
+        {
+          "rotation_error_deg": 0.2069367762667704,
+          "translation_error_m": 0.001255864574163798
+        },
+        {
+          "rotation_error_deg": 0.21346060421126029,
+          "translation_error_m": 0.0003104913194320679
+        },
+        {
+          "rotation_error_deg": 0.16563883997124096,
+          "translation_error_m": 0.0015052025926452395
+        },
+        {
+          "rotation_error_deg": 0.265926922479244,
+          "translation_error_m": 0.0018750676126726065
+        },
+        {
+          "rotation_error_deg": 0.1063345438250947,
+          "translation_error_m": 0.000971415712770276
+        },
+        {
+          "rotation_error_deg": 0.05491136160196353,
+          "translation_error_m": 0.0005294341260361162
+        },
+        {
+          "rotation_error_deg": 0.05045938431377419,
+          "translation_error_m": 0.0007412664973298601
+        },
+        {
+          "rotation_error_deg": 0.1762590974549435,
+          "translation_error_m": 0.0006516699183095915
+        },
+        {
+          "rotation_error_deg": 0.07409522869365719,
+          "translation_error_m": 0.0001788971879202273
+        },
+        {
+          "rotation_error_deg": 0.10861940025978707,
+          "translation_error_m": 0.0002853884835560826
+        },
+        {
+          "rotation_error_deg": 0.1199289913364781,
+          "translation_error_m": 0.0013578156613600807
+        }
+      ],
+      "training_count": 30
+    },
+    "side_right": {
+      "T_cam_base": [
+        [
+          0.9736814413440734,
+          -0.22769184995596425,
+          0.010043517598759022,
+          -0.33507263262621867
+        ],
+        [
+          -0.06960584107784427,
+          -0.3390401428591997,
+          -0.9381933747463034,
+          0.24776700094594006
+        ],
+        [
+          0.21702414075390739,
+          0.9128023898926004,
+          -0.34596577769540154,
+          0.9930939375060661
+        ],
+        [
+          0.0,
+          0.0,
+          0.0,
+          1.0
+        ]
+      ],
+      "T_cam_board": [
+        [
+          -0.9773188003238688,
+          -0.21172644103907762,
+          0.004458329108397177,
+          0.17432604891225187
+        ],
+        [
+          0.0782107850346408,
+          -0.34129306063040044,
+          0.9366974537543049,
+          0.17674212096821867
+        ],
+        [
+          -0.1968020214270626,
+          0.9158007211890908,
+          0.3501114157404214,
+          0.5625225368532265
+        ],
+        [
+          0.0,
+          0.0,
+          0.0,
+          1.0
+        ]
+      ],
+      "T_cam_left_base": [
+        [
+          0.9736814413440734,
+          -0.22769184995596425,
+          0.010043517598759022,
+          -0.33507263262621867
+        ],
+        [
+          -0.06960584107784427,
+          -0.3390401428591997,
+          -0.9381933747463034,
+          0.24776700094594006
+        ],
+        [
+          0.21702414075390739,
+          0.9128023898926004,
+          -0.34596577769540154,
+          0.9930939375060661
+        ],
+        [
+          0.0,
+          0.0,
+          0.0,
+          1.0
+        ]
+      ],
+      "T_cam_right_base": [
+        [
+          0.9725340941578321,
+          -0.23276029840978948,
+          -0.0002813979193996791,
+          -0.19261271005851113
+        ],
+        [
+          -0.08255104932705884,
+          -0.34378924470915423,
+          -0.9354112889404902,
+          0.45397690305499866
+        ],
+        [
+          0.21762986917150137,
+          0.9097426002482755,
+          -0.35356136855983034,
+          0.4192422819215872
+        ],
+        [
+          0.0,
+          0.0,
+          0.0,
+          1.0
+        ]
+      ],
+      "held_out_count": 6,
+      "held_out_residuals": [
+        {
+          "rotation_error_deg": 0.058878552202707594,
+          "translation_error_m": 0.00016346717854239835
+        },
+        {
+          "rotation_error_deg": 0.09211308653808499,
+          "translation_error_m": 0.00011214309882996056
+        },
+        {
+          "rotation_error_deg": 0.08699026812630481,
+          "translation_error_m": 0.00035444363867478544
+        },
+        {
+          "rotation_error_deg": 0.1420856780295543,
+          "translation_error_m": 0.00029506176193445466
+        },
+        {
+          "rotation_error_deg": 0.07532817020284494,
+          "translation_error_m": 0.00023953847116137548
+        },
+        {
+          "rotation_error_deg": 0.0667211677654415,
+          "translation_error_m": 0.00048010019291612834
+        }
+      ],
+      "ok": true,
+      "stationary_board_residuals": [
+        {
+          "rotation_error_deg": 0.3058622709968923,
+          "translation_error_m": 0.0003626830102303189
+        },
+        {
+          "rotation_error_deg": 0.12292421062354998,
+          "translation_error_m": 0.0006026446316140841
+        },
+        {
+          "rotation_error_deg": 0.13258205778798024,
+          "translation_error_m": 0.00035909399292030213
+        },
+        {
+          "rotation_error_deg": 0.10538482197290859,
+          "translation_error_m": 0.0004804945730059903
+        },
+        {
+          "rotation_error_deg": 0.0718718899321056,
+          "translation_error_m": 5.4400274644671196e-05
+        },
+        {
+          "rotation_error_deg": 0.22736043384157584,
+          "translation_error_m": 0.000195212937272787
+        },
+        {
+          "rotation_error_deg": 0.22772365017339594,
+          "translation_error_m": 0.0007969095100561493
+        },
+        {
+          "rotation_error_deg": 0.07640514923321542,
+          "translation_error_m": 0.0004674127798565199
+        },
+        {
+          "rotation_error_deg": 0.06814875821292107,
+          "translation_error_m": 0.000707123851953653
+        },
+        {
+          "rotation_error_deg": 0.17677121023390882,
+          "translation_error_m": 0.0002645228932450177
+        },
+        {
+          "rotation_error_deg": 0.21234946146844474,
+          "translation_error_m": 0.0004032047656981295
+        },
+        {
+          "rotation_error_deg": 0.19732430602227782,
+          "translation_error_m": 0.0005173934590222192
+        },
+        {
+          "rotation_error_deg": 0.07764448847980585,
+          "translation_error_m": 0.0005792179969634595
+        },
+        {
+          "rotation_error_deg": 0.1195741699314496,
+          "translation_error_m": 0.0001864179559082991
+        },
+        {
+          "rotation_error_deg": 0.14889465942144545,
+          "translation_error_m": 0.0006110045720323495
+        },
+        {
+          "rotation_error_deg": 0.15049663000007799,
+          "translation_error_m": 0.0004346112178189247
+        },
+        {
+          "rotation_error_deg": 0.11294464066510257,
+          "translation_error_m": 0.0004303837832803737
+        },
+        {
+          "rotation_error_deg": 0.06970591726512793,
+          "translation_error_m": 0.00032373967963942723
+        },
+        {
+          "rotation_error_deg": 0.05616238676687221,
+          "translation_error_m": 0.0003432831297703359
+        },
+        {
+          "rotation_error_deg": 0.04508662506910766,
+          "translation_error_m": 0.00016516753738584315
+        },
+        {
+          "rotation_error_deg": 0.23811728552880707,
+          "translation_error_m": 0.00019219720689617615
+        },
+        {
+          "rotation_error_deg": 0.15111427332074753,
+          "translation_error_m": 7.228825187736899e-05
+        },
+        {
+          "rotation_error_deg": 0.09305605976154578,
+          "translation_error_m": 0.0006193165521357533
+        },
+        {
+          "rotation_error_deg": 0.06628647325151155,
+          "translation_error_m": 0.00020252606535569023
+        },
+        {
+          "rotation_error_deg": 0.1596606843809504,
+          "translation_error_m": 0.0002713969573263856
+        },
+        {
+          "rotation_error_deg": 0.1360848007591207,
+          "translation_error_m": 0.0001407144520956878
+        },
+        {
+          "rotation_error_deg": 0.25033914692902404,
+          "translation_error_m": 0.00010261474611198393
+        },
+        {
+          "rotation_error_deg": 0.22890579887583043,
+          "translation_error_m": 0.00117550489748711
+        },
+        {
+          "rotation_error_deg": 0.4130235647074163,
+          "translation_error_m": 0.00045001941630585336
+        },
+        {
+          "rotation_error_deg": 0.08794122517994407,
+          "translation_error_m": 0.0004123844582437606
+        }
+      ],
+      "training_count": 30
+    }
+  },
+  "frame_wrists_inward": true,
+  "installed": false,
+  "method": "Coverage-guided 18-pose sweep inside original envelope; original hand-eye fit; three reserved views per arm; stationary shared board; downward translation offsets from measured homes; inward-biased wrist roll within the original axis limits; training-only radial distortion refinement with factory K fixed",
+  "ok": true,
+  "sweep_z_direction": "down",
+  "wrists": {
+    "left": {
+      "T_base_board": [
+        [
+          -0.9997518952245413,
+          0.016352748875501772,
+          0.015124007377405865,
+          0.40749140070756273
+        ],
+        [
+          0.01636957441689312,
+          0.9998655200445344,
+          0.0009893732774268402,
+          -0.48493224624573633
+        ],
+        [
+          -0.015105794528817402,
+          0.0012367013734380858,
+          -0.9998851361738333,
+          0.22071419594032426
+        ],
+        [
+          0.0,
+          0.0,
+          0.0,
+          1.0
+        ]
+      ],
+      "T_cam_flange": [
+        [
+          -0.039275866854052766,
+          0.999144098512366,
+          -0.012979857116855493,
+          0.042595322117290835
+        ],
+        [
+          -0.9991939149016472,
+          -0.03916326948955279,
+          0.008818091993638331,
+          -0.071024669265832
+        ],
+        [
+          0.008302210933379581,
+          0.013315732454503775,
+          0.9998768747014892,
+          -0.014322384452838371
+        ],
+        [
+          0.0,
+          0.0,
+          0.0,
+          1.0
+        ]
+      ],
+      "T_cam_tcp": [
+        [
+          -0.039275866854052766,
+          0.999144098512366,
+          -0.012979857116855493,
+          0.04036278669319169
+        ],
+        [
+          -0.9991939149016472,
+          -0.03916326948955279,
+          0.008818091993638331,
+          -0.0695079574429262
+        ],
+        [
+          0.008302210933379581,
+          0.013315732454503775,
+          0.9998768747014892,
+          0.15765643799581777
+        ],
+        [
+          0.0,
+          0.0,
+          0.0,
+          1.0
+        ]
+      ],
+      "color_model": {
+        "K": [
+          [
+            905.4855346679688,
+            0.0,
+            634.0691528320312
+          ],
+          [
+            0.0,
+            905.2677001953125,
+            354.7956237792969
+          ],
+          [
+            0.0,
+            0.0,
+            1.0
+          ]
+        ],
+        "distortion_coeffs": [
+          0.13848894133322123,
+          -0.2007282583701408,
+          0.0,
+          0.0,
+          0.0
+        ],
+        "distortion_model": "brown_conrady",
+        "factory_profile": {
+          "K": [
+            [
+              905.4855346679688,
+              0.0,
+              634.0691528320312
+            ],
+            [
+              0.0,
+              905.2677001953125,
+              354.7956237792969
+            ],
+            [
+              0.0,
+              0.0,
+              1.0
+            ]
+          ],
+          "distortion_coeffs": [
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0
+          ],
+          "distortion_model": "inverse_brown_conrady",
+          "fps": 6,
+          "height": 720,
+          "serial": "108322071838",
+          "width": 1280
+        },
+        "fps": 6,
+        "height": 720,
+        "method": "Training-only radial k1/k2 refinement with factory focal lengths/principal point fixed; depth calibration pending",
+        "serial": "108322071838",
+        "training_frames": [
+          "/home/jerry/rax-runtime/sessions/20261110T091931Z_screw_lightbulb_fable52/operator/all-four-calibration-20261116/collection-wires-secured/frames/1794874154353429064",
+          "/home/jerry/rax-runtime/sessions/20261110T091931Z_screw_lightbulb_fable52/operator/all-four-calibration-20261116/collection-wires-secured/frames/1794874162364079303",
+          "/home/jerry/rax-runtime/sessions/20261110T091931Z_screw_lightbulb_fable52/operator/all-four-calibration-20261116/collection-wires-secured/frames/1794874175989414252",
+          "/home/jerry/rax-runtime/sessions/20261110T091931Z_screw_lightbulb_fable52/operator/all-four-calibration-20261116/collection-wires-secured/frames/1794874192096315209",
+          "/home/jerry/rax-runtime/sessions/20261110T091931Z_screw_lightbulb_fable52/operator/all-four-calibration-20261116/collection-wires-secured/frames/1794874209080616536",
+          "/home/jerry/rax-runtime/sessions/20261110T091931Z_screw_lightbulb_fable52/operator/all-four-calibration-20261116/collection-wires-secured/frames/1794874222731182285",
+          "/home/jerry/rax-runtime/sessions/20261110T091931Z_screw_lightbulb_fable52/operator/all-four-calibration-20261116/collection-wires-secured/frames/1794874228619246894",
+          "/home/jerry/rax-runtime/sessions/20261110T091931Z_screw_lightbulb_fable52/operator/all-four-calibration-20261116/collection-wires-secured/frames/1794874238125980005",
+          "/home/jerry/rax-runtime/sessions/20261110T091931Z_screw_lightbulb_fable52/operator/all-four-calibration-20261116/collection-wires-secured/frames/1794874248487823851",
+          "/home/jerry/rax-runtime/sessions/20261110T091931Z_screw_lightbulb_fable52/operator/all-four-calibration-20261116/collection-wires-secured/frames/1794874256585100332",
+          "/home/jerry/rax-runtime/sessions/20261110T091931Z_screw_lightbulb_fable52/operator/all-four-calibration-20261116/collection-wires-secured/frames/1794874269528993884",
+          "/home/jerry/rax-runtime/sessions/20261110T091931Z_screw_lightbulb_fable52/operator/all-four-calibration-20261116/collection-wires-secured/frames/1794874284124562673",
+          "/home/jerry/rax-runtime/sessions/20261110T091931Z_screw_lightbulb_fable52/operator/all-four-calibration-20261116/collection-wires-secured/frames/1794874290582346989",
+          "/home/jerry/rax-runtime/sessions/20261110T091931Z_screw_lightbulb_fable52/operator/all-four-calibration-20261116/collection-wires-secured/frames/1794874301681940664",
+          "/home/jerry/rax-runtime/sessions/20261110T091931Z_screw_lightbulb_fable52/operator/all-four-calibration-20261116/collection-wires-secured/frames/1794874309176260307"
+        ],
+        "training_rms_px": 0.5093750373927178,
+        "width": 1280
+      },
+      "detections": [
+        {
+          "charuco_corners": 107,
+          "held_out": false,
+          "index": 0,
+          "reprojection_max_px": 1.09538733959198,
+          "reprojection_mean_px": 0.4004024267196655
+        },
+        {
+          "charuco_corners": 100,
+          "held_out": false,
+          "index": 1,
+          "reprojection_max_px": 1.7462470531463623,
+          "reprojection_mean_px": 0.40357834100723267
+        },
+        {
+          "charuco_corners": 108,
+          "held_out": false,
+          "index": 2,
+          "reprojection_max_px": 1.3271390199661255,
+          "reprojection_mean_px": 0.40869179368019104
+        },
+        {
+          "charuco_corners": 106,
+          "held_out": false,
+          "index": 3,
+          "reprojection_max_px": 1.8752100467681885,
+          "reprojection_mean_px": 0.41528719663619995
+        },
+        {
+          "charuco_corners": 95,
+          "held_out": false,
+          "index": 4,
+          "reprojection_max_px": 1.5191229581832886,
+          "reprojection_mean_px": 0.43636494874954224
+        },
+        {
+          "charuco_corners": 100,
+          "held_out": false,
+          "index": 5,
+          "reprojection_max_px": 1.544094204902649,
+          "reprojection_mean_px": 0.43216946721076965
+        },
+        {
+          "charuco_corners": 106,
+          "held_out": false,
+          "index": 6,
+          "reprojection_max_px": 1.7970315217971802,
+          "reprojection_mean_px": 0.4446132481098175
+        },
+        {
+          "charuco_corners": 105,
+          "held_out": false,
+          "index": 7,
+          "reprojection_max_px": 1.7282233238220215,
+          "reprojection_mean_px": 0.4229353368282318
+        },
+        {
+          "charuco_corners": 104,
+          "held_out": false,
+          "index": 8,
+          "reprojection_max_px": 1.270782232284546,
+          "reprojection_mean_px": 0.37542688846588135
+        },
+        {
+          "charuco_corners": 102,
+          "held_out": false,
+          "index": 9,
+          "reprojection_max_px": 1.6979482173919678,
+          "reprojection_mean_px": 0.4247172772884369
+        },
+        {
+          "charuco_corners": 103,
+          "held_out": false,
+          "index": 10,
+          "reprojection_max_px": 2.570836067199707,
+          "reprojection_mean_px": 0.4923822581768036
+        },
+        {
+          "charuco_corners": 106,
+          "held_out": false,
+          "index": 11,
+          "reprojection_max_px": 1.6214540004730225,
+          "reprojection_mean_px": 0.40109097957611084
+        },
+        {
+          "charuco_corners": 107,
+          "held_out": false,
+          "index": 12,
+          "reprojection_max_px": 1.9747016429901123,
+          "reprojection_mean_px": 0.4475364685058594
+        },
+        {
+          "charuco_corners": 107,
+          "held_out": false,
+          "index": 13,
+          "reprojection_max_px": 1.1949175596237183,
+          "reprojection_mean_px": 0.4512319564819336
+        },
+        {
+          "charuco_corners": 108,
+          "held_out": false,
+          "index": 14,
+          "reprojection_max_px": 1.2895621061325073,
+          "reprojection_mean_px": 0.4665154814720154
+        },
+        {
+          "charuco_corners": 103,
+          "held_out": true,
+          "index": 15,
+          "reprojection_max_px": 1.481346607208252,
+          "reprojection_mean_px": 0.40135854482650757
+        },
+        {
+          "charuco_corners": 102,
+          "held_out": true,
+          "index": 16,
+          "reprojection_max_px": 1.3196032047271729,
+          "reprojection_mean_px": 0.3948855996131897
+        },
+        {
+          "charuco_corners": 105,
+          "held_out": true,
+          "index": 17,
+          "reprojection_max_px": 1.532782793045044,
+          "reprojection_mean_px": 0.4867532253265381
+        }
+      ],
+      "held_out_count": 3,
+      "ok": true,
+      "residuals": [
+        {
+          "held_out": false,
+          "index": 0,
+          "rotation_error_deg": 0.6389596076721524,
+          "translation_error_m": 0.002151525791453813
+        },
+        {
+          "held_out": false,
+          "index": 1,
+          "rotation_error_deg": 0.27735974263578755,
+          "translation_error_m": 0.0012060497213179987
+        },
+        {
+          "held_out": false,
+          "index": 2,
+          "rotation_error_deg": 0.18288349992132918,
+          "translation_error_m": 0.001388537069753077
+        },
+        {
+          "held_out": false,
+          "index": 3,
+          "rotation_error_deg": 0.79637922057035,
+          "translation_error_m": 0.001114204441455585
+        },
+        {
+          "held_out": false,
+          "index": 4,
+          "rotation_error_deg": 0.3245305303695797,
+          "translation_error_m": 0.0011350932116782305
+        },
+        {
+          "held_out": false,
+          "index": 5,
+          "rotation_error_deg": 0.7225307147778333,
+          "translation_error_m": 0.0008163285630732556
+        },
+        {
+          "held_out": false,
+          "index": 6,
+          "rotation_error_deg": 0.5007580119737405,
+          "translation_error_m": 0.0017028347845345134
+        },
+        {
+          "held_out": false,
+          "index": 7,
+          "rotation_error_deg": 0.21858746371100393,
+          "translation_error_m": 0.0005839065195239568
+        },
+        {
+          "held_out": false,
+          "index": 8,
+          "rotation_error_deg": 0.6926378541423018,
+          "translation_error_m": 0.0007793825938477118
+        },
+        {
+          "held_out": false,
+          "index": 9,
+          "rotation_error_deg": 0.1585159354189822,
+          "translation_error_m": 0.002060294500629743
+        },
+        {
+          "held_out": false,
+          "index": 10,
+          "rotation_error_deg": 0.6551516217124691,
+          "translation_error_m": 0.001994336343502498
+        },
+        {
+          "held_out": false,
+          "index": 11,
+          "rotation_error_deg": 0.47184314434931096,
+          "translation_error_m": 0.0006580378883919125
+        },
+        {
+          "held_out": false,
+          "index": 12,
+          "rotation_error_deg": 0.5107726416537626,
+          "translation_error_m": 0.0011495814935846029
+        },
+        {
+          "held_out": false,
+          "index": 13,
+          "rotation_error_deg": 0.6208987532096318,
+          "translation_error_m": 0.0005456712590471986
+        },
+        {
+          "held_out": false,
+          "index": 14,
+          "rotation_error_deg": 0.8574033676569048,
+          "translation_error_m": 0.0018631895551844868
+        },
+        {
+          "held_out": true,
+          "index": 15,
+          "rotation_error_deg": 0.6774040537861219,
+          "translation_error_m": 0.0020766993666980526
+        },
+        {
+          "held_out": true,
+          "index": 16,
+          "rotation_error_deg": 0.2760462168051683,
+          "translation_error_m": 0.0005302885267941468
+        },
+        {
+          "held_out": true,
+          "index": 17,
+          "rotation_error_deg": 0.7724541650168312,
+          "translation_error_m": 0.0015056456389771682
+        }
+      ],
+      "training_count": 15
+    },
+    "right": {
+      "T_base_board": [
+        [
+          -0.9997622347255553,
+          0.021568508877430493,
+          0.0032052209545275177,
+          0.410928538873885
+        ],
+        [
+          0.021553806182539294,
+          0.9997573225399097,
+          -0.00455296242856402,
+          0.14024971299031397
+        ],
+        [
+          -0.0033026437302063364,
+          -0.004482795180976558,
+          -0.9999844984257287,
+          0.20856692602637786
+        ],
+        [
+          0.0,
+          0.0,
+          0.0,
+          1.0
+        ]
+      ],
+      "T_cam_flange": [
+        [
+          -0.011259739519562106,
+          0.9998876386796878,
+          0.009895871942878224,
+          0.029664270212290848
+        ],
+        [
+          -0.9999354659766102,
+          -0.011244223891649197,
+          -0.0016221316882788338,
+          -0.07063909485621986
+        ],
+        [
+          -0.001510678023691806,
+          -0.009913498102723246,
+          0.9999497189395454,
+          -0.020496654535582887
+        ],
+        [
+          0.0,
+          0.0,
+          0.0,
+          1.0
+        ]
+      ],
+      "T_cam_tcp": [
+        [
+          -0.011259739519562106,
+          0.9998876386796878,
+          0.009895871942878224,
+          0.0313663601864659
+        ],
+        [
+          -0.9999354659766102,
+          -0.011244223891649197,
+          -0.0016221316882788338,
+          -0.07091810150660381
+        ],
+        [
+          -0.001510678023691806,
+          -0.009913498102723246,
+          0.9999497189395454,
+          0.1514946971220189
+        ],
+        [
+          0.0,
+          0.0,
+          0.0,
+          1.0
+        ]
+      ],
+      "color_model": {
+        "K": [
+          [
+            925.86962890625,
+            0.0,
+            646.4573974609375
+          ],
+          [
+            0.0,
+            925.8562622070312,
+            350.99139404296875
+          ],
+          [
+            0.0,
+            0.0,
+            1.0
+          ]
+        ],
+        "distortion_coeffs": [
+          0.14345138701528232,
+          -0.10202685615223077,
+          0.0,
+          0.0,
+          0.0
+        ],
+        "distortion_model": "brown_conrady",
+        "factory_profile": {
+          "K": [
+            [
+              925.86962890625,
+              0.0,
+              646.4573974609375
+            ],
+            [
+              0.0,
+              925.8562622070312,
+              350.99139404296875
+            ],
+            [
+              0.0,
+              0.0,
+              1.0
+            ]
+          ],
+          "distortion_coeffs": [
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0
+          ],
+          "distortion_model": "inverse_brown_conrady",
+          "fps": 6,
+          "height": 720,
+          "serial": "752112070450",
+          "width": 1280
+        },
+        "fps": 6,
+        "height": 720,
+        "method": "Training-only radial k1/k2 refinement with factory focal lengths/principal point fixed; depth calibration pending",
+        "serial": "752112070450",
+        "training_frames": [
+          "/home/jerry/rax-runtime/sessions/20261110T091931Z_screw_lightbulb_fable52/operator/all-four-calibration-20261116/collection-wires-secured/frames/1794874360124662777",
+          "/home/jerry/rax-runtime/sessions/20261110T091931Z_screw_lightbulb_fable52/operator/all-four-calibration-20261116/collection-wires-secured/frames/1794874369494085177",
+          "/home/jerry/rax-runtime/sessions/20261110T091931Z_screw_lightbulb_fable52/operator/all-four-calibration-20261116/collection-wires-secured/frames/1794874385246519844",
+          "/home/jerry/rax-runtime/sessions/20261110T091931Z_screw_lightbulb_fable52/operator/all-four-calibration-20261116/collection-wires-secured/frames/1794874401950882775",
+          "/home/jerry/rax-runtime/sessions/20261110T091931Z_screw_lightbulb_fable52/operator/all-four-calibration-20261116/collection-wires-secured/frames/1794874419318241395",
+          "/home/jerry/rax-runtime/sessions/20261110T091931Z_screw_lightbulb_fable52/operator/all-four-calibration-20261116/collection-wires-secured/frames/1794874430315547728",
+          "/home/jerry/rax-runtime/sessions/20261110T091931Z_screw_lightbulb_fable52/operator/all-four-calibration-20261116/collection-wires-secured/frames/1794874437636528440",
+          "/home/jerry/rax-runtime/sessions/20261110T091931Z_screw_lightbulb_fable52/operator/all-four-calibration-20261116/collection-wires-secured/frames/1794874443912940064",
+          "/home/jerry/rax-runtime/sessions/20261110T091931Z_screw_lightbulb_fable52/operator/all-four-calibration-20261116/collection-wires-secured/frames/1794874455130552828",
+          "/home/jerry/rax-runtime/sessions/20261110T091931Z_screw_lightbulb_fable52/operator/all-four-calibration-20261116/collection-wires-secured/frames/1794874463389898809",
+          "/home/jerry/rax-runtime/sessions/20261110T091931Z_screw_lightbulb_fable52/operator/all-four-calibration-20261116/collection-wires-secured/frames/1794874470259392858",
+          "/home/jerry/rax-runtime/sessions/20261110T091931Z_screw_lightbulb_fable52/operator/all-four-calibration-20261116/collection-wires-secured/frames/1794874480345044847",
+          "/home/jerry/rax-runtime/sessions/20261110T091931Z_screw_lightbulb_fable52/operator/all-four-calibration-20261116/collection-wires-secured/frames/1794874488257359394",
+          "/home/jerry/rax-runtime/sessions/20261110T091931Z_screw_lightbulb_fable52/operator/all-four-calibration-20261116/collection-wires-secured/frames/1794874494178644128",
+          "/home/jerry/rax-runtime/sessions/20261110T091931Z_screw_lightbulb_fable52/operator/all-four-calibration-20261116/collection-wires-secured/frames/1794874510965016057"
+        ],
+        "training_rms_px": 0.42705786940815516,
+        "width": 1280
+      },
+      "detections": [
+        {
+          "charuco_corners": 108,
+          "held_out": false,
+          "index": 0,
+          "reprojection_max_px": 1.5563441514968872,
+          "reprojection_mean_px": 0.2541312873363495
+        },
+        {
+          "charuco_corners": 108,
+          "held_out": false,
+          "index": 1,
+          "reprojection_max_px": 1.6381202936172485,
+          "reprojection_mean_px": 0.31594404578208923
+        },
+        {
+          "charuco_corners": 108,
+          "held_out": false,
+          "index": 2,
+          "reprojection_max_px": 1.7320493459701538,
+          "reprojection_mean_px": 0.29512956738471985
+        },
+        {
+          "charuco_corners": 107,
+          "held_out": false,
+          "index": 3,
+          "reprojection_max_px": 1.3363217115402222,
+          "reprojection_mean_px": 0.24891996383666992
+        },
+        {
+          "charuco_corners": 108,
+          "held_out": false,
+          "index": 4,
+          "reprojection_max_px": 1.7284337282180786,
+          "reprojection_mean_px": 0.3132788836956024
+        },
+        {
+          "charuco_corners": 108,
+          "held_out": false,
+          "index": 5,
+          "reprojection_max_px": 1.7562602758407593,
+          "reprojection_mean_px": 0.32536780834198
+        },
+        {
+          "charuco_corners": 108,
+          "held_out": false,
+          "index": 6,
+          "reprojection_max_px": 1.948833703994751,
+          "reprojection_mean_px": 0.524904191493988
+        },
+        {
+          "charuco_corners": 108,
+          "held_out": false,
+          "index": 7,
+          "reprojection_max_px": 1.8128573894500732,
+          "reprojection_mean_px": 0.3769395351409912
+        },
+        {
+          "charuco_corners": 104,
+          "held_out": false,
+          "index": 8,
+          "reprojection_max_px": 1.4827572107315063,
+          "reprojection_mean_px": 0.2897568345069885
+        },
+        {
+          "charuco_corners": 104,
+          "held_out": false,
+          "index": 9,
+          "reprojection_max_px": 1.7313921451568604,
+          "reprojection_mean_px": 0.49087026715278625
+        },
+        {
+          "charuco_corners": 104,
+          "held_out": false,
+          "index": 10,
+          "reprojection_max_px": 1.7014133930206299,
+          "reprojection_mean_px": 0.29242265224456787
+        },
+        {
+          "charuco_corners": 108,
+          "held_out": false,
+          "index": 11,
+          "reprojection_max_px": 2.0331764221191406,
+          "reprojection_mean_px": 0.38417571783065796
+        },
+        {
+          "charuco_corners": 108,
+          "held_out": false,
+          "index": 12,
+          "reprojection_max_px": 1.6511985063552856,
+          "reprojection_mean_px": 0.2962545156478882
+        },
+        {
+          "charuco_corners": 108,
+          "held_out": false,
+          "index": 13,
+          "reprojection_max_px": 1.9199607372283936,
+          "reprojection_mean_px": 0.3380906283855438
+        },
+        {
+          "charuco_corners": 106,
+          "held_out": false,
+          "index": 14,
+          "reprojection_max_px": 1.6663514375686646,
+          "reprojection_mean_px": 0.3087313771247864
+        },
+        {
+          "charuco_corners": 108,
+          "held_out": true,
+          "index": 15,
+          "reprojection_max_px": 1.604920506477356,
+          "reprojection_mean_px": 0.3306383490562439
+        },
+        {
+          "charuco_corners": 108,
+          "held_out": true,
+          "index": 16,
+          "reprojection_max_px": 1.4319665431976318,
+          "reprojection_mean_px": 0.32579562067985535
+        },
+        {
+          "charuco_corners": 108,
+          "held_out": true,
+          "index": 17,
+          "reprojection_max_px": 1.8297219276428223,
+          "reprojection_mean_px": 0.4121898114681244
+        }
+      ],
+      "held_out_count": 3,
+      "ok": true,
+      "residuals": [
+        {
+          "held_out": false,
+          "index": 0,
+          "rotation_error_deg": 0.2659291720486459,
+          "translation_error_m": 0.0014150132446533862
+        },
+        {
+          "held_out": false,
+          "index": 1,
+          "rotation_error_deg": 0.23322374477286856,
+          "translation_error_m": 0.0006722068250017774
+        },
+        {
+          "held_out": false,
+          "index": 2,
+          "rotation_error_deg": 0.11200780402043883,
+          "translation_error_m": 0.0010611680420965408
+        },
+        {
+          "held_out": false,
+          "index": 3,
+          "rotation_error_deg": 0.2995783479491698,
+          "translation_error_m": 0.0014051685817093615
+        },
+        {
+          "held_out": false,
+          "index": 4,
+          "rotation_error_deg": 0.18275576699550888,
+          "translation_error_m": 0.0006790897421570723
+        },
+        {
+          "held_out": false,
+          "index": 5,
+          "rotation_error_deg": 0.20338410471590776,
+          "translation_error_m": 0.0016107764830742815
+        },
+        {
+          "held_out": false,
+          "index": 6,
+          "rotation_error_deg": 0.2791311142711095,
+          "translation_error_m": 0.0013874913981635226
+        },
+        {
+          "held_out": false,
+          "index": 7,
+          "rotation_error_deg": 0.36717133500841426,
+          "translation_error_m": 0.0003251096603649122
+        },
+        {
+          "held_out": false,
+          "index": 8,
+          "rotation_error_deg": 0.09931769012183177,
+          "translation_error_m": 0.0012033662999884772
+        },
+        {
+          "held_out": false,
+          "index": 9,
+          "rotation_error_deg": 0.28068650752974234,
+          "translation_error_m": 0.0011904887342723287
+        },
+        {
+          "held_out": false,
+          "index": 10,
+          "rotation_error_deg": 0.401889820018383,
+          "translation_error_m": 0.0006646332622167456
+        },
+        {
+          "held_out": false,
+          "index": 11,
+          "rotation_error_deg": 0.20735694004158534,
+          "translation_error_m": 0.0007930157771026807
+        },
+        {
+          "held_out": false,
+          "index": 12,
+          "rotation_error_deg": 0.16214978054018583,
+          "translation_error_m": 0.0009957270946294057
+        },
+        {
+          "held_out": false,
+          "index": 13,
+          "rotation_error_deg": 0.14774600674566005,
+          "translation_error_m": 0.0009691308030299103
+        },
+        {
+          "held_out": false,
+          "index": 14,
+          "rotation_error_deg": 0.5335796456346725,
+          "translation_error_m": 0.0005009313621017563
+        },
+        {
+          "held_out": true,
+          "index": 15,
+          "rotation_error_deg": 0.3972611165692162,
+          "translation_error_m": 0.0031298971613184174
+        },
+        {
+          "held_out": true,
+          "index": 16,
+          "rotation_error_deg": 0.45376721128641867,
+          "translation_error_m": 0.002809445965353497
+        },
+        {
+          "held_out": true,
+          "index": 17,
+          "rotation_error_deg": 0.7147543327491914,
+          "translation_error_m": 0.001992689288583886
+        }
+      ],
+      "training_count": 15
+    }
+  },
+  "wrists_only": false
+}

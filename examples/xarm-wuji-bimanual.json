@@ -293,6 +293,7 @@
         "settle_position_range_rad": 0.004,
         "settle_s": 0.4,
         "settle_timeout_s": 10.0,
+        "stall_warning_grace_s": 0.1,
         "tolerance_rad": 0.1,
         "type": "wuji_hand2",
         "upper_rad": [
@@ -316,8 +317,7 @@
           0.698132,
           2.094395,
           1.570796
-        ],
-        "stall_warning_grace_s": 0.1
+        ]
       },
       "home_joints": [
         0.174533,
@@ -340,46 +340,54 @@
       "xarm_ip": "192.168.1.241"
     }
   },
+  "calibration_manifest": "calibration/xarm-wuji-bimanual-four-camera-20261116/manifest.json",
   "camera_cpus": "0-15",
+  "camera_depth_mode": "Z16",
   "cameras": [
     {
-      "height": 480,
+      "depth_height": 480,
+      "depth_width": 640,
+      "height": 720,
       "mount": "fixed",
       "name": "front",
       "serial": "348522070593",
-      "width": 640
+      "width": 1280
     },
     {
+      "depth_height": 480,
+      "depth_width": 640,
+      "height": 720,
+      "mount": "fixed",
       "name": "side_right",
       "serial": "263222071915",
-      "mount": "fixed",
-      "width": 640,
-      "height": 480
+      "width": 1280
     },
     {
       "arm": "left",
-      "height": 480,
+      "depth_height": 480,
+      "depth_width": 640,
+      "height": 720,
       "mount": "tcp",
       "name": "wrist_left",
       "serial": "108322071838",
-      "width": 640
+      "width": 1280
     },
     {
       "arm": "right",
-      "height": 480,
+      "depth_height": 480,
+      "depth_width": 640,
+      "height": 720,
       "mount": "tcp",
       "name": "wrist_right",
       "serial": "752112070450",
-      "width": 640
+      "width": 1280
     }
   ],
   "motion_archive_enabled": true,
   "protected_paths": [],
   "stream_archive": false,
   "stream_depth_hz": 1.0,
-  "stream_fps": 15,
+  "stream_fps": 6,
   "stream_window_s": 120,
-  "unverified_camera_extrinsics": [],
-  "camera_depth_mode": "Z16",
-  "calibration_manifest": "calibration/xarm-wuji-bimanual-four-camera/manifest.json"
+  "unverified_camera_extrinsics": []
 }
