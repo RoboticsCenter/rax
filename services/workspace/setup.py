@@ -107,6 +107,10 @@ class Setup:
                        'postures': tuple(sorted(profile.get('postures', {})))}
                 for side, profile in profiles.items()}
             facts.pop('gripper')  # Accidental gripper-template references fail rendering.
+        from services.skill_library import library_config
+        library = library_config(self.backend_options)
+        facts['skill_library'] = library['name'] if library else None  # skill-library/<name>/ in the workspace
+        facts['skill_library_merge'] = bool(library and library['merge'])
         return facts
 
     @property
@@ -116,8 +120,10 @@ class Setup:
     @property
     def tools(self):
         """Every MCP tool the session exposes, sorted."""
-        return tuple(sorted({'status', 'request_operator', *self.robot_facts['tools'],
-                             *(('gemini_generate',) if self.gemini else ())}))
+        facts = self.robot_facts
+        return tuple(sorted({'status', 'request_operator', *facts['tools'],
+                             *(('gemini_generate',) if self.gemini else ()),
+                             *(('skill_library_merge',) if facts['skill_library_merge'] else ())}))
 
     def axes(self):
         """Which skill layers a workspace takes: the robot it controls and how it perceives."""

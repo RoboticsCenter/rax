@@ -150,8 +150,11 @@ def validate_workspace_location(config, workspace=None):
     provisioning or writing a launch record so a bad location is retryable.
     """
     protected = [*protected_paths(config), *HIDDEN_SOCKETS]
+    from services import skill_library
+    library = skill_library.library_config(config.backend_options)
+    shared = [skill_library.library_path(library['name'])] if library else []  # the clone's `git fetch origin`
     for readable in (Path(workspace) if workspace is not None else config.root/WORKSPACE_NAME,
-                     config.root/'stream'):
+                     config.root/'stream', *shared):
         resolved = readable.resolve()
         for path in protected:
             if resolved.is_relative_to(Path(path).resolve()):
@@ -221,7 +224,10 @@ def populate_workspace(config, workspace, *, gemini=True):
     (workspace/'runtime'/'stream').symlink_to(config.root/'stream', target_is_directory=True)
     built = build(recipe_for(), Setup.from_config(config, gemini=gemini), workspace)
     from services import skill_library
-    built['skill_library'] = skill_library.checkout(workspace)
+    built['skill_library'] = skill_library.checkout(workspace)  # read-only Mooncake references (screw-lightbulb)
+    library = skill_library.checkout_library(config, workspace)  # the rig's own library, on a session branch
+    if library:
+        built['skill_library'][library['name']] = library
     (workspace/'TASK.md').write_text(f'# Task: {config.task}\n\n{config.task_description.strip()}\n')
     (workspace/'CLAUDE.md').write_text('@AGENTS.md\n')
     (workspace/'.claude').mkdir(exist_ok=True)

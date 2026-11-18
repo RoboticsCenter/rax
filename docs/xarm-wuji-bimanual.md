@@ -383,6 +383,44 @@ arm-controller fault disarms and stops the whole rig. Both controllers are watch
 even when recording is off. The operator stop path bypasses the MCP queue;
 another MCP request cannot interrupt an active call.
 
+## Dexterous skill library
+
+The bimanual examples set the backend option `skill_library`, which gives each session
+this rig's library of dexterous primitives and their competing variants. The library is
+mooncake branch `skill-library/xarmwujibimanual/dex`. A session gets:
+
+- the host library `<artifact root>/skill-library/xarmwujibimanual`, branch `main`
+  (`$RAX_SKILL_LIBRARY/<name>` to move it). It is initialized once from the branch in
+  `RAX_MOONCAKE_REPO`, the sibling `../mooncake`, or `source.repository`;
+- a clone at `agent-workspace/skill-library/xarmwujibimanual/` on `session/<session>`;
+- the agent skill `dex-skill-library`, an `AGENTS.md` pointer to the library's `INDEX.md`,
+  and the MCP tool `skill_library_merge`.
+
+The merge validates the agent's committed branch as data and merges it into the host
+`main`. No step pushes to mooncake. Operator commands:
+
+```bash
+$RAX_PYTHON -m services.skill_library validate <library checkout>
+$RAX_PYTHON -m services.skill_library sync xarmwujibimanual
+$RAX_PYTHON -m services.skill_library fork --from <host library> --ref <tag> --to <root>/xarmwujibimanual
+```
+
+- `validate` checks every variant.
+- `sync` merges new branch commits into the host main and prints the push that would
+  publish it; it does not run that push.
+- `fork` makes an earlier state for head-to-head runs; set `RAX_SKILL_LIBRARY=<root>` to use it.
+
+Set `"merge": false` for a read-only library. The library's variants are drafts until
+they have 2 unattended successful real runs; its `COMPARISON.md` holds the per-variant
+metrics. Host-side runners (not the agent sandbox) use `services.skill_library`:
+
+- `load_skill_main(name, library_root=None)` returns the skill's `main`; `services/dex_eval`
+  resolves skills through it, so set `RAX_SKILL_LIBRARY_CHECKOUT` to a library checkout;
+- `load_skill`, `run_skill`, `run_record` and `append_run`.
+
+RL and imitation variants keep their policies in the skill's own `checkpoints/` folder (e.g.
+`checkpoints/policy.onnx`).
+
 ## Hardware-free validation
 
 ```bash

@@ -12,7 +12,8 @@ SKILL_LAYERS = ('task', 'perception/common', 'perception/{perception}', 'percept
 # No OpenRouter key, no gemini_generate tool: leave its skill out instead of advertising it.
 AGENT = Recipe('real-robot/agent', PROJECT / 'auto_research_agent', SKILL_LAYERS, vocab=VOCAB,
                omit_skills=(SkillRule('gemini', lambda setup: not setup.gemini),
-                            SkillRule('hand-control', lambda setup: not setup.robot_facts['has_hand'])))
+                            SkillRule('hand-control', lambda setup: not setup.robot_facts['has_hand']),
+                            SkillRule('dex-skill-library', lambda setup: not setup.robot_facts['skill_library'])))
 
 
 def recipe_for(options=frozenset()):

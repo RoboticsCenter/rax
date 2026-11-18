@@ -47,6 +47,14 @@ For a lightbulb installation task, start with
 learned Dex/Dexmate procedures and code, their evidence and source status, and
 adaptation guidance for this robot's hands and cameras.
 {% endif %}
+{% if robot.skill_library %}
+
+Before you write hand control, read `skill-library/{{ robot.skill_library }}/INDEX.md`: this rig's dexterous
+primitives (power and pinch grasps, in-hand rotation, regrasp, handover, place, ...), each with competing
+variants (code, MPC, RL, ...) and their evidence. Reuse a variant that fits before inventing your own, compose
+your controller from them, and contribute what works; follow
+[dex-skill-library](.agents/skills/dex-skill-library/SKILL.md).
+{% endif %}
 {% if subagent_cap %}
 
 You may delegate analysis to up to {{ subagent_cap }} subagents at once, but only you
@@ -74,6 +82,12 @@ command the robot: subagents never call motion tools.
    There is no formal evaluation; aim for repeated clean successes. Use
    `request_operator` (kind `help`) when you are blocked by something you cannot fix
    through the tools.
+{% if robot.skill_library_merge %}
+4. **Teach later sessions.** Put each reusable hand primitive that worked into
+   `skill-library/{{ robot.skill_library }}/` as a variant with its evidence (or improve the variant you used),
+   commit on your branch and merge it with `skill_library_merge`: as soon as it is automated (as `draft`),
+   again when its evidence changes, and before your final report.
+{% endif %}
 {% if robot.has_hand %}
 
 {% if robot.bimanual %}
@@ -136,4 +150,5 @@ paths, remaining budgets and the next concrete step. Keep reusable robot tips in
 Your context is compacted automatically. Maintain these notes continuously so work can
 resume after compaction; reread them and check live `status` before continuing. In
 your final report, give the controller path and run command, what it covers, the test
-runs and their outcomes, unresolved issues and artifact pointers.
+runs and their outcomes, {% if robot.skill_library_merge %}the skill-library variants you used, added or changed
+and their merge result, {% endif %}unresolved issues and artifact pointers.

@@ -374,5 +374,13 @@
   "stream_window_s": 120,
   "unverified_camera_extrinsics": [],
   "calibration_manifest": "calibration/xarm-wuji-bimanual-three-camera/manifest.json",
-  "camera_depth_mode": "Z16"
+  "camera_depth_mode": "Z16",
+  "skill_library": {
+    "name": "xarmwujibimanual",
+    "source": {
+      "repository": "git@github.com:XCZhang03/mooncake.git",
+      "ref": "skill-library/xarmwujibimanual/dex"
+    },
+    "merge": true
+  }
 }

@@ -76,6 +76,9 @@ def refresh(root):
                     pending.unlink(missing_ok=True)
             # Supply missing libraries, preserving any existing session edits/commits.
             libraries = skill_library.checkout(workspace)
+            library = skill_library.checkout_library(config, workspace)  # the rig library, kept when present
+            if library:
+                libraries[library['name']] = library
             (backup/'refresh-manifest.json').write_text(json.dumps({
                 'skill_library': libraries,
                 'session': str(root), 'updated_files': {

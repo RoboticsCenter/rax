@@ -32,12 +32,34 @@ def mooncake_source(tmp_path, monkeypatch):
     (repo / 'SKILL.md').write_text('Newer unpinned version\n')
     git('add', '.')
     git('-c', 'user.name=Test', '-c', 'user.email=test@example.com', 'commit', '-qm', 'newer')
+    # The rig library branch the bimanual examples configure (skill_library.source.ref), minimal and valid.
+    branch = git('rev-parse', '--abbrev-ref', 'HEAD')
+    git('checkout', '-q', '--orphan', 'skill-library/xarmwujibimanual/dex')
+    git('rm', '-q', '-rf', '.')
+    write_minimal_library(repo)
+    git('add', '.')
+    git('-c', 'user.name=Test', '-c', 'user.email=test@example.com', 'commit', '-qm', 'rig library')
+    git('checkout', '-q', branch)
     lock = tmp_path / 'sources.json'
     lock.write_text(json.dumps({'repository': str(repo), 'sources': {
         name: {'ref': f'skill-library/{name}/main', 'commit': commit} for name in ('dex', 'dexmate')}}))
     monkeypatch.setattr(skill_library, 'SOURCES', lock)
     monkeypatch.setenv('RAX_MOONCAKE_REPO', str(repo))
     return commit, original
+
+
+def write_minimal_library(root, name='xarmwujibimanual'):
+    """A valid, empty rig skill library (library.json, README, INDEX, COMPARISON, skills/)."""
+    import json
+    root = Path(root)
+    (root/'skills').mkdir(parents=True, exist_ok=True)
+    (root/'skills'/'.gitkeep').write_text('')
+    (root/'library.json').write_text(json.dumps({'format': 1, 'name': name, 'robot': name}) + '\n')
+    (root/'README.md').write_text(f'# {name} dexterous skill library\n')
+    (root/'INDEX.md').write_text('# Skill index\n\n| Skill | Primitive | Representation | Hands | Status | What | When |\n'
+                                 '|---|---|---|---|---|---|---|\n')
+    (root/'COMPARISON.md').write_text('# Variant comparison\n')
+    return root
 
 
 def configuration(base, *, provider='anthropic', **overrides):

@@ -22,6 +22,7 @@ SHARED_OPTIONS = frozenset({
     'robot_log_hz', 'motion_archive_enabled', 'motion_archive_padding_s',
     'motion_archive_codec', 'agent_image_width', 'agent_python', 'protected_paths',
     'calibration_manifest', 'unverified_camera_extrinsics',
+    'skill_library',  # the rig's dexterous skill library (services/skill_library.py); launcher-only
 })
 
 
@@ -122,6 +123,9 @@ def validate_options(options):
     if (not isinstance(unverified, list) or any(not isinstance(name, str) for name in unverified)
             or len(set(unverified)) != len(unverified) or set(unverified) - names):
         raise ValueError('unverified_camera_extrinsics must list distinct configured camera names')
+    if 'skill_library' in options:
+        from services.skill_library import library_config
+        library_config(options)
     if options.get('calibration_manifest'):
         from .calibration import BimanualCalibration
         BimanualCalibration(options)

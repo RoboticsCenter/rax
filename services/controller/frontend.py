@@ -50,6 +50,14 @@ OPERATOR = tool('request_operator',
      'timeout_s': {'type': 'number', 'minimum': 30, 'maximum': 3600,
                    'description': 'How long to wait for the answer (default 900).'}},
     ['kind', 'message'])
+SKILL_MERGE = tool('skill_library_merge',
+    "Merge your session branch of the rig's skill library (the clone in skill-library/<name>/) into the "
+    "library's main, so later sessions get your skills and variants. Only committed changes count (git add, git "
+    'commit first). The harness checks the format and evidence of every skill you changed (see the '
+    'dex-skill-library skill) and merges; it returns problems to fix, conflicts to resolve by merging '
+    'origin/main, or the merged commit. Nothing is pushed anywhere.',
+    {'message': {'type': 'string', 'maxLength': 500, 'description': 'What this merge adds or changes, one line.'}},
+    ['message'])
 GEMINI = {
     'name': 'gemini_generate',
     'description': ('OpenRouter-style chat completion via Gemini 3.8 Flash: text/images, JSON schema output and '
@@ -85,12 +93,20 @@ class Frontend:
         self.control_uncertain = False
         self._dispatch = threading.Lock()
         self._backend_tools = {t['name']: t for t in backend.tools()}
-        reserved = {'status', 'gemini_generate', 'request_operator'} & set(self._backend_tools)
+        # The rig's skill library clone, when the launcher created one for this workspace (services.skill_library).
+        from services import skill_library
+        library = skill_library.library_config(session.config.backend_options)
+        self.workspace = Path(session.config.root)/'agent-workspace'
+        self.library = bool(library and library['merge']
+                            and (skill_library.clone_path(self.workspace, library['name'])/'.git').is_dir())
+        reserved = ({'status', 'gemini_generate', 'request_operator', 'skill_library_merge'}
+                    & set(self._backend_tools))
         if reserved:
             raise ValueError(f'Backend tools may not reuse harness tool names: {sorted(reserved)}')
 
     def tools(self):
-        return [STATUS, OPERATOR, *self._backend_tools.values(), *([GEMINI] if self.gemini else [])]
+        return [STATUS, OPERATOR, *self._backend_tools.values(), *([GEMINI] if self.gemini else []),
+                *([SKILL_MERGE] if self.library else [])]
 
     def status(self):
         config = self.s.config
@@ -157,6 +173,13 @@ class Frontend:
                     images = []
                 elif name == 'gemini_generate' and self.gemini:
                     value, images = self.gemini_call(arguments, failure)
+                elif name == 'skill_library_merge' and self.library:
+                    failure['stage'] = 'validation'
+                    if set(arguments) - {'message'} or not str(arguments.get('message', '')).strip():
+                        raise ValueError('skill_library_merge takes message (one line)')
+                    from services import skill_library
+                    failure['stage'] = 'skill_library'
+                    value, images = skill_library.merge(self.s.config, self.workspace, arguments['message']), []
                 elif name in self._backend_tools:
                     failure['stage'] = 'validation'
                     validate = getattr(self.backend, 'validate', None)
