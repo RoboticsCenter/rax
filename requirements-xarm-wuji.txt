@@ -9,3 +9,5 @@ opencv-python-headless==5.0.0.93
 PyYAML==6.0.3
 Jinja2==3.1.6
 Pillow==13.0.0
+# Evaluation report plots (services/dex_eval, scripts/dex_eval_report.py).
+matplotlib>=3.6

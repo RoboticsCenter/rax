@@ -1,0 +1,8 @@
+# Analysis-only environment for services/dex_eval: metrics, reports and rating sessions.
+# Robot runs (sim or real) use the full runtime in requirements-xarm-wuji.txt, which includes these.
+numpy==2.5.4
+scipy==1.18.1
+matplotlib>=3.6
+# Optional: fingertip-speed SPARC through Wuji Hand 2 forward kinematics. Also needs a
+# wuji-description checkout (set RAX_WUJI_DESCRIPTION). Tested with mujoco 4.0.1.
+# mujoco>=3.2
