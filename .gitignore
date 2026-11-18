@@ -24,3 +24,11 @@
 # Isolated local feature checkouts.
 /.worktrees/
 .venv/
+
+# Hillclimb hook files
+/.claude/settings.local.json
+/.github/hooks/hooks.json
+/.codex/hooks.json
+/.claude/settings.local.json.malformed-*
+/.github/hooks/hooks.json.malformed-*
+/.codex/hooks.json.malformed-*
