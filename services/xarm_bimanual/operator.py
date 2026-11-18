@@ -21,6 +21,11 @@ from .config import SIDES, validate_options, arm_options
 PROJECT = Path(__file__).resolve().parents[2]
 
 
+def _simulated(options):
+    """Sessions on the MuJoCo twin: arm commands go to its simulated controllers."""
+    return isinstance(options, dict) and options.get('simulation') is not None
+
+
 def ready_hand(state):
     return (state.get('mode') == 'holding' and state.get('fresh') is True
             and control_enabled(state, state) and state.get('owns_control') is True
@@ -32,6 +37,9 @@ def ready_hand(state):
 def stop(root, options, *, driver_factory=XArmDriver):
     """Every transport gets its own stop attempt, even if another transport blocks."""
     root = Path(root) if root is not None else None
+    if root is not None and _simulated(options):
+        from services.sim_xarm_wuji.operator import driver_factory as simulated_driver
+        driver_factory = simulated_driver(root)
     disarm_error = None
     if root is not None:
         try:
@@ -75,6 +83,9 @@ def stop(root, options, *, driver_factory=XArmDriver):
 
 def status(root, options, *, driver_factory=XArmDriver):
     """Read each arm and the matching session's two hand snapshots independently."""
+    if root and _simulated(options):
+        from services.sim_xarm_wuji.operator import driver_factory as simulated_driver
+        driver_factory = simulated_driver(root)
     def read(side):
         hand = recorded_status(root, side=side) if root else {
             'fresh': False, 'mode': 'unavailable', 'fault': 'No matching bimanual session snapshot'}
@@ -126,6 +137,10 @@ def prepare(root, options, *, minutes, confirmed=False):
                 arming.write(root, False, reason=f'operator recovery of {side} hand')
                 recover_retained_faults(root, side=side)
         for side in SIDES:
+            if _simulated(options):
+                from services.sim_xarm_wuji.operator import ready_arm
+                ready_arm(root, options, side)
+                continue
             with tempfile.NamedTemporaryFile(mode='w', suffix='.json', prefix=f'rax-{side}-ready-') as saved:
                 json.dump(arm_options(options, side), saved)
                 saved.flush()

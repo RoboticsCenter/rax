@@ -21,7 +21,21 @@ BACKENDS = {
     'mock': 'services.mock_backend:MockBackend',
     'xarm': 'services.xarm.backend:XArmBackend',
     'xarm_bimanual': 'services.xarm_bimanual.backend:XArmBimanualBackend',
+    # The bimanual rig's MuJoCo twin (services/sim_xarm_wuji): RAX's bimanual backend on
+    # simulated devices. Options may be partial (examples/xarm-wuji-bimanual-sim.json fills in).
+    'xarm_wuji_bimanual_sim': 'services.sim_xarm_wuji.backend:SimXArmBimanualBackend',
 }
+# Real robot keys whose options may instead select their simulator, keeping the robot
+# key (and so the agent's workspace, skills and tools) identical to the real session.
+SIMULATORS = {'xarm_bimanual': 'xarm_wuji_bimanual_sim'}
+
+
+def selected_backend(config):
+    """The registry key that serves this configuration."""
+    if config.robot in SIMULATORS and isinstance(config.backend_options, dict) \
+            and config.backend_options.get('simulation') is not None:
+        return SIMULATORS[config.robot]
+    return config.robot
 
 
 def backend_class(name):
@@ -34,4 +48,4 @@ def backend_class(name):
 
 def make_backend(config):
     """The configured robot's backend, constructed with the operator configuration."""
-    return backend_class(config.robot)(config)
+    return backend_class(selected_backend(config))(config)

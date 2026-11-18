@@ -24,6 +24,7 @@ SHARED_OPTIONS = frozenset({
     'motion_archive_codec', 'agent_image_width', 'agent_python', 'protected_paths',
     'calibration_manifest', 'unverified_camera_extrinsics',
     'skill_library',  # the rig's dexterous skill library (services/skill_library.py); launcher-only
+    'simulation',  # selects the MuJoCo twin (services/sim_xarm_wuji); see services/backends.py
 })
 
 
@@ -130,6 +131,9 @@ def validate_options(options):
     if options.get('calibration_manifest'):
         from .calibration import BimanualCalibration
         BimanualCalibration(options)
+    if 'simulation' in options:
+        from services.sim_xarm_wuji.config import validate_simulation
+        validate_simulation(options)  # simulated rigs must not name real devices
     return deepcopy(options)
 
 

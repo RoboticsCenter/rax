@@ -32,3 +32,6 @@
 /.claude/settings.local.json.malformed-*
 /.github/hooks/hooks.json.malformed-*
 /.codex/hooks.json.malformed-*
+
+# MuJoCo writes warnings next to the process.
+MUJOCO_LOG.TXT

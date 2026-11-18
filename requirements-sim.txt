@@ -1,0 +1,13 @@
+# MuJoCo twin of the bimanual xArm 6 + Wuji Hand 2 rig (services/sim_xarm_wuji,
+# docs/xarm-wuji-sim.md). Install into the robot runtime's interpreter (Python 3.12):
+#   uv pip install --python .venv/bin/python -r requirements-sim.txt
+# The vendor SDKs (wuji-sdk, xarm-python-sdk) and pyrealsense2 are not needed: the twin
+# replaces them. With wuji-sdk installed, a test also compares the mimic with its stubs.
+mujoco==3.17.0
+ruckig==0.19.4
+numpy==2.5.4
+scipy==1.18.1
+opencv-python-headless==5.0.0.93
+PyYAML==6.0.3
+Jinja2==3.1.6
+Pillow==13.0.0

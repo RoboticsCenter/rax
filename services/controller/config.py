@@ -47,6 +47,9 @@ class Configuration:
         elif self.robot == 'xarm_bimanual':
             from services.xarm_bimanual.config import validate_options
             validate_options(self.backend_options)
+        elif self.robot == 'xarm_wuji_bimanual_sim':
+            from services.sim_xarm_wuji.config import validate_backend_options
+            validate_backend_options(self.backend_options)  # completed from the example rig
         if self.observation_profile not in PROFILES:
             raise ValueError(f'observation_profile must be one of {PROFILES}')
         if self.agent_provider not in PROVIDERS:
@@ -62,7 +65,7 @@ class Configuration:
 
     @property
     def camera_geometry(self):
-        return self.observation_profile == 'rgbd' and self.robot != 'xarm_bimanual'
+        return self.observation_profile == 'rgbd' and self.robot not in ('xarm_bimanual', 'xarm_wuji_bimanual_sim')
 
     @classmethod
     def from_dict(cls, value):
