@@ -51,11 +51,16 @@ echo "== battery: hand=$HAND out=$OUT artifact_root=$RAX_ARTIFACT_ROOT ${EXECUTE
   --items single_joint,stick_slip,fist_pinch,tapping,hold,waypoints5 \
   --repeats 1 --shuffle --seed 1 --hand-patch "$OUT/patch.json" --start-temp-c 55 \
   --out "$OUT" $EXECUTE 2>&1 | tee "$OUT/battery.log"
+BATTERY_STATUS=${PIPESTATUS[0]}
 [ -n "$EXECUTE" ] || { echo "dry run only; re-run without --dry-run to move the hand"; exit 0; }
 
-echo "== report"
-"$PY" scripts/dex_eval_report.py "$OUT" --group-by controller --baseline M0_baseline \
-  --out "$OUT/report" 2>&1 | tee "$OUT/report.log"
+if [ "$BATTERY_STATUS" -eq 0 ] && [ -d "$OUT/trials" ] && [ -n "$(ls -A "$OUT/trials" 2>/dev/null)" ]; then
+  echo "== report"
+  "$PY" scripts/dex_eval_report.py "$OUT" --group-by controller --baseline M0_baseline \
+    --out "$OUT/report" 2>&1 | tee "$OUT/report.log"
+else
+  echo "== battery FAILED (exit $BATTERY_STATUS) or produced no trials; skipping the report, packing logs only"
+fi
 
 {
   echo "rax: $(git rev-parse HEAD) ($(git rev-parse --abbrev-ref HEAD))"
@@ -70,4 +75,10 @@ ITEMS=(-C "$BASE" "$NAME")
 [ -n "$BS" ] && [ -d "$BS" ] && ITEMS+=(-C "$(dirname "$BS")" "$(basename "$BS")")
 tar czf "$BASE/$NAME.tar.gz" "${ITEMS[@]}" 2>/dev/null
 ls -lh "$BASE/$NAME.tar.gz"
-echo "DONE -> copy $BASE/$NAME.tar.gz to the analysis machine"
+if [ "${BATTERY_STATUS:-1}" -eq 0 ]; then
+  echo "DONE -> copy $BASE/$NAME.tar.gz to the analysis machine"
+else
+  [ -n "$BS" ] && { echo "== hand service log tail:"; tail -n 25 "$BS"/wuji*-controller.log 2>/dev/null; }
+  echo "FAILED -> copy $BASE/$NAME.tar.gz (logs only) to the analysis machine"
+  exit 1
+fi
