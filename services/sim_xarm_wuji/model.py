@@ -171,15 +171,29 @@ def hand_peaks(model, side, rig=True):
     return np.asarray(model.actuator_forcerange[ids, 1], dtype=float)
 
 
+# Wuji-identified output torque constants (N m/A) per SDK joint, finger-major
+# (thumb, index, middle, ring, pinky) x (S1..S4). Source: the vendor's own Hand 2
+# pen-spin actuator identification in wuji-technology/wuji-mjlab (Apache-2.0), which
+# also reports 1.911 A per MIT unit, consistent with RAX's measured ~1.98x gain factor.
+WUJI_IDENTIFIED_KT = np.array([
+    0.4136, 0.3545, 0.2216, 0.1329,
+    0.4136, 0.1673, 0.1673, 0.1673,
+    0.4136, 0.1673, 0.1673, 0.1673,
+    0.4136, 0.1673, 0.1673, 0.1673,
+    0.4461, 0.1115, 0.1115, 0.1115,
+])
+
+
 def hand_torque_constants(model, side, scale=1.0, override=None, rig=True):
-    """N m/A per SDK joint: ASSUMED the MJCF's actuatorfrcrange at PEAK_CURRENT_A.
-    Read before the firmware first writes the actuators' force ranges."""
+    """N m/A per SDK joint: Wuji's identified constants (WUJI_IDENTIFIED_KT) times
+    ``scale``, unless ``override`` gives one number or 20. ``model``/``side``/``rig``
+    are kept for the old MJCF-peak assumption (hand_peaks / PEAK_CURRENT_A)."""
     if override is not None:
         values = [float(override)]*20 if np.isscalar(override) else [float(v) for v in override]
         if len(values) != 20 or min(values) <= 0:
             raise ValueError('torque_per_amp must be one positive number or 20')
         return np.asarray(values)
-    return hand_peaks(model, side, rig) / PEAK_CURRENT_A * float(scale)
+    return WUJI_IDENTIFIED_KT * float(scale)
 
 
 # ---- cameras ---------------------------------------------------------------------------------------------------------

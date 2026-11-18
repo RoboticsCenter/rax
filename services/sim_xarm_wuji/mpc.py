@@ -128,8 +128,7 @@ class HandModel:
         joints = [mujoco.mj_name2id(m, mujoco.mjtObj.mjOBJ_JOINT, prefix + j) for j in MJCF_HAND_JOINTS]
         self.qadr = np.array([m.jnt_qposadr[j] for j in joints])
         self.vadr = np.array([m.jnt_dofadr[j] for j in joints])
-        peaks = m.actuator_forcerange[self.actuators, 1].copy()
-        self.kt = peaks / PEAK_CURRENT_A * float(torque_per_amp_scale)
+        self.kt = M.WUJI_IDENTIFIED_KT * float(torque_per_amp_scale)
         m.jnt_actfrclimited[joints] = 1
         m.jnt_actfrcrange[joints, 0], m.jnt_actfrcrange[joints, 1] = -self.kt * 3.0, self.kt * 3.0
         m.dof_frictionloss[self.vadr] = self.kt * float(coulomb_friction_a)

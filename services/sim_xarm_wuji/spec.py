@@ -51,7 +51,7 @@ HAND_DEFAULTS = {
     # 1.9895 x commanded effort (docs/wuji-parameter-sweep-2026-10-27.md); aiowuji
     # fits 1.95 / 1.9. Applied to the whole law, before the current cap.
     'gain_factor': 1.98,
-    # Multiplies the ASSUMED per-joint torque constant (actuatorfrcrange / PEAK_CURRENT_A).
+    # Multiplies the per-joint torque constant (Wuji-identified, model.WUJI_IDENTIFIED_KT).
     'torque_per_amp_scale': 1.0,
     # Optional explicit N m/A: one number or 20 (overrides the MJCF-derived values).
     'torque_per_amp': None,
