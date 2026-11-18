@@ -28,7 +28,7 @@ xArm/Wuji validation.
 
 Sessions whose backend options carry `skill_library` (the bimanual examples:
 `{"name": "xarmwujibimanual", "source": {"repository": ..., "ref":
-"skill-library/xarmwujibimanual/dex"}, "merge": true}`) also get the rig's library of
+"skill-library/xarm-wuji-bimanual/dex"}, "merge": true}`) also get the rig's library of
 dexterous primitives and their competing variants, with the agent skill
 `dex-skill-library` (in `end_effectors/wuji_hand2/`, omitted without the option), an
 `AGENTS.md` pointer to its `INDEX.md`, and the MCP tool `skill_library_merge`. This is

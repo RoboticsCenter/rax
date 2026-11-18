@@ -8,7 +8,7 @@
    backend option `skill_library` (examples/xarm-wuji-bimanual*.json):
 
        "skill_library": {"name": "xarmwujibimanual",
-                         "source": {"repository": "<git URL or path>", "ref": "skill-library/xarmwujibimanual/dex"},
+                         "source": {"repository": "<git URL or path>", "ref": "skill-library/xarm-wuji-bimanual/dex"},
                          "merge": true}
 
        <RAX_SKILL_LIBRARY or <artifact root>/skill-library>/<name>/  the host library (git, branch main); only the

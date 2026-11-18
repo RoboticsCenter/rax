@@ -34,7 +34,7 @@ def mooncake_source(tmp_path, monkeypatch):
     git('-c', 'user.name=Test', '-c', 'user.email=test@example.com', 'commit', '-qm', 'newer')
     # The rig library branch the bimanual examples configure (skill_library.source.ref), minimal and valid.
     branch = git('rev-parse', '--abbrev-ref', 'HEAD')
-    git('checkout', '-q', '--orphan', 'skill-library/xarmwujibimanual/dex')
+    git('checkout', '-q', '--orphan', 'skill-library/xarm-wuji-bimanual/dex')
     git('rm', '-q', '-rf', '.')
     write_minimal_library(repo)
     git('add', '.')

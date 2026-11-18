@@ -390,7 +390,7 @@ another MCP request cannot interrupt an active call.
 
 The bimanual examples set the backend option `skill_library`, which gives each session
 this rig's library of dexterous primitives and their competing variants. The library is
-mooncake branch `skill-library/xarmwujibimanual/dex`. A session gets:
+mooncake branch `skill-library/xarm-wuji-bimanual/dex`. A session gets:
 
 - the host library `<artifact root>/skill-library/xarmwujibimanual`, branch `main`
   (`$RAX_SKILL_LIBRARY/<name>` to move it). It is initialized once from the branch in

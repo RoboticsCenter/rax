@@ -392,7 +392,7 @@
     "name": "xarmwujibimanual",
     "source": {
       "repository": "git@github.com:XCZhang03/mooncake.git",
-      "ref": "skill-library/xarmwujibimanual/dex"
+      "ref": "skill-library/xarm-wuji-bimanual/dex"
     },
     "merge": true
   }

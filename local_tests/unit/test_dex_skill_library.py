@@ -13,12 +13,12 @@ from services import skill_library as lib
 from services.controller.config import Configuration
 
 ROOT = Path(__file__).resolve().parents[2]
-# A checkout of skill-library/xarmwujibimanual/dex beside the RAX checkout (or its main checkout, from a worktree).
+# A checkout of skill-library/xarm-wuji-bimanual/dex beside the RAX checkout (or its main checkout, from a worktree).
 REAL_LIBRARY = Path(os.environ.get('RAX_TEST_DEX_LIBRARY') or next(
     (p / 'mooncake-skill-dex' for p in (ROOT.parent, *ROOT.parents[2:4]) if (p / 'mooncake-skill-dex').is_dir()),
     ROOT.parent / 'mooncake-skill-dex'))
 OPTION = {'name': 'xarmwujibimanual', 'merge': True,
-          'source': {'repository': 'unused-url', 'ref': 'skill-library/xarmwujibimanual/dex'}}
+          'source': {'repository': 'unused-url', 'ref': 'skill-library/xarm-wuji-bimanual/dex'}}
 SECTIONS = '\n\n'.join(f'## {s}\ntext' for s in lib.SECTIONS[:4]) + \
     '\n\n## Checks\ntext\n\n### Perception checkpoints\nNone\n\n## Failure modes\ntext\n\n## Evidence\ntext\n'
 ENTRY = ('def check_preconditions(ctx, **params):\n    return {"ok": not params.get("refuse"), "why": "refused"}\n\n'
@@ -78,7 +78,7 @@ def source(tmp_path, monkeypatch):
     repo = tmp_path / 'mooncake'
     repo.mkdir()
     git('init', '-q', '-b', 'main', cwd=repo)
-    git('checkout', '-q', '-b', 'skill-library/xarmwujibimanual/dex', cwd=repo)
+    git('checkout', '-q', '-b', 'skill-library/xarm-wuji-bimanual/dex', cwd=repo)
     write_minimal_library(repo)
     git('add', '-A', cwd=repo)
     git('-c', 'user.name=t', '-c', 'user.email=t@t', 'commit', '-qm', 'init', cwd=repo)
@@ -114,7 +114,7 @@ def test_bimanual_examples_configure_the_library_and_validate():
     from services.xarm_bimanual.config import validate_options
     for path in sorted(ROOT.glob('examples/xarm-wuji-bimanual*.json')):
         options = json.loads(path.read_text())
-        assert lib.library_config(options)['ref'] == 'skill-library/xarmwujibimanual/dex', path
+        assert lib.library_config(options)['ref'] == 'skill-library/xarm-wuji-bimanual/dex', path
         validate_options(options)
     options['skill_library'] = {'name': 'dex', 'source': OPTION['source']}
     with pytest.raises(ValueError):
@@ -129,7 +129,7 @@ def test_checkout_initializes_the_host_library_and_a_session_branch(tmp_path, so
     assert git('rev-parse', '--abbrev-ref', 'HEAD', cwd=library).strip() == 'main'
     clone = workspace / 'skill-library' / 'xarmwujibimanual'
     assert git('rev-parse', '--abbrev-ref', 'HEAD', cwd=clone).strip() == 'session/S1'
-    assert info['source_commit'] == git('rev-parse', 'skill-library/xarmwujibimanual/dex', cwd=source).strip()
+    assert info['source_commit'] == git('rev-parse', 'skill-library/xarm-wuji-bimanual/dex', cwd=source).strip()
     (clone / 'INDEX.md').write_text('session edits')  # a refresh keeps the agent's work
     assert lib.checkout_library(config, workspace)['branch'] == 'session/S1'
     assert (clone / 'INDEX.md').read_text() == 'session edits'
@@ -432,7 +432,7 @@ def test_run_records_append_to_evidence_and_validate(checkout):
         lib.append_run('power-grasp--code-test', {'date': 'x'}, library=checkout)
 
 
-# ---- the real library (the skill-library/xarmwujibimanual/dex worktree), when present ------------------------------
+# ---- the real library (the skill-library/xarm-wuji-bimanual/dex worktree), when present ------------------------------
 real = pytest.mark.skipif(not (REAL_LIBRARY / 'library.json').is_file(),
                           reason=f'no library checkout at {REAL_LIBRARY} (set RAX_TEST_DEX_LIBRARY)')
 
