@@ -469,7 +469,7 @@ def test_the_real_variants_run_through_the_host_api_on_a_fake_ctx():
     assert result['ok'] and result['success_check'] and result['skill']['representation'] == 'code', result['why']
     refused = lib.run_skill(FakeCtx(), 'power-grasp--mpc-cem', {'side': 'right'}, library=REAL_LIBRARY)
     assert refused['measured']['status'] == 'failed_precondition'
-    assert 'sim-model-available' in refused['measured']['preconditions']['failed']
+    assert 'object-described' in refused['measured']['preconditions']['failed']
     rotate = lib.load_skill_main('in-hand-rotate/rl', str(REAL_LIBRARY))(FakeCtx(), side='right')
     assert rotate['measured']['status'] == 'failed_precondition'  # no checkpoints/policy.onnx yet
     assert 'checkpoint-present' in rotate['measured']['preconditions']['failed']
