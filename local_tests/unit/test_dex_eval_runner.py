@@ -196,6 +196,7 @@ def test_skill_resolution_order_and_library_adapter(tmp_path, skill_dir, monkeyp
     assert asked == ['grasp/fast', 'grasp_fast'] and main(None)['why'] == 'library'
     import services.skill_library as library
     monkeypatch.setattr(library, 'load_skill', load_skill, raising=False)
+    monkeypatch.delattr(library, 'load_skill_main', raising=False)  # probed first when present (the real loader)
     assert skills.library_loader() is load_skill
     with pytest.raises(skills.SkillLoadError, match='cannot resolve'):
         skills.resolve('nothing', 'here', search_paths=[skill_dir], loader=False)
