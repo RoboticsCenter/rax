@@ -2,6 +2,12 @@
 
 The socket thread never calls the SDK. Stop increments an epoch immediately, so a
 late native call cannot be followed by another target from the cancelled action.
+
+While holding, the writer also runs the smooth streaming layer (services.wuji.smooth):
+non-blocking targets and timed trajectories are validated on the socket thread, queued
+with the current epoch, and applied by the writer, which interpolates and jerk-limits
+them at the command rate. Blocking moves, hold, stop, disarm and every existing guard
+keep their behavior; an idle stream sends exactly the previous hold command.
 """
 import argparse
 import json
@@ -9,6 +15,7 @@ import math
 import os
 import signal
 import socketserver
+import sys
 import threading
 import time
 from collections import OrderedDict, deque
@@ -24,6 +31,14 @@ from .partial import (DISABLED_STATES, active_indices, control_enabled, disabled
                       effective_parameters, max_error, max_velocity, validate_isolated_targets)
 from .scurve import SCurvePath, next_deadline, require_ruckig
 from .sdk import WujiDriver
+from .smooth import (StreamEngine, parse_stream, parse_trajectory, profile_parameters, profile_summary,
+                     resolve_settings, Spline)
+from .trace import TraceRecorder
+
+DIRECT_OPS = ('stream', 'trajectory', 'stream_config', 'record', 'stream_status')
+# GIL hand-off interval for the hand process. The default 5 ms lets an IPC, snapshot
+# or SDK callback thread delay the writer by several 1 kHz periods.
+SWITCH_INTERVAL_S = .0005
 
 
 class Cancelled(RuntimeError):
@@ -97,6 +112,19 @@ class Controller:
         self.closed = False
         self.cached = {'mode': self.mode, 'fresh': False, 'connected': False}
         self.updated = clock()
+        # Smooth streaming layer (writer-owned engine; socket thread uses the inbox).
+        self.stream = StreamEngine(config)
+        self.stream_inbox = deque()
+        self.stream_target = None          # latest accepted full target, None when not streaming-ready
+        self.stream_accepted = self.stream_processed = 0
+        self.stream_error = None
+        self.stream_pending_settings = None
+        self.stream_effort = [0.]*20       # friction feed-forward added to command_effort
+        self.command_offset = [0.]*20      # hold-deadband position offset added at send
+        self.runtime_hz = config['command_hz']
+        self.profile_name = 'profile'
+        self.recorder = self.last_recording = None
+        self._last_sent = None
 
     def _finish(self, job, outcome, **extra):
         if job is not None and job['id'] is not None:
@@ -114,11 +142,13 @@ class Controller:
                              disabled_joints=list(self.cfg['disabled_joints']))
             with self.lock:
                 self.results[job['id']] = {'done': True, 'ok': outcome in ('reached', 'prepared', 'held', 'stopped', 'connected',
-                                                                         'effort_set', 'impedance_set', 'held_short_of_target'),
+                                                                         'effort_set', 'impedance_set', 'held_short_of_target',
+                                                                         'profile_set'),
                                            'outcome': outcome, 'command_id': job['id'], **extra}
 
     def submit(self, ident, op, args=None):
-        if op not in ('connect', 'prepare', 'move', 'hold', 'emergency', 'disable', 'set_effort', 'set_impedance'):
+        if op not in ('connect', 'prepare', 'move', 'hold', 'emergency', 'disable', 'set_effort', 'set_impedance',
+                      'set_profile'):
             raise ValueError('unknown hand operation')
         if not isinstance(ident, str) or not 1 <= len(ident) <= 80 or not isinstance(args or {}, dict):
             raise ValueError('invalid command id or arguments')
@@ -141,6 +171,7 @@ class Controller:
                 for old in [*self.pending, self.active, self.stop_request, self.stopping]:
                     self._finish(old, 'stopped', ok=False, reason='cancelled by stop', confirmed=False)
                 self.pending.clear()
+                self.stream_inbox.clear()  # Queued stream targets never outlive a stop/hold.
                 self.stop_request = job
             else:
                 self.pending.append(job)
@@ -156,6 +187,124 @@ class Controller:
             if ident not in self.results:
                 raise ValueError('unknown hand command id')
             return deepcopy(self.results[ident])
+
+    # ------------------------------------------------------------ smooth streaming (socket thread)
+    def direct(self, op, args=None):
+        """Non-job requests answered on the socket thread; none of them calls the SDK."""
+        args = dict(args or {})
+        if op == 'stream_status':
+            return self.stream_status()
+        if op == 'record':
+            return self.record(args)
+        if op == 'stream_config':
+            return self.stream_configure(args)
+        if op in ('stream', 'trajectory'):
+            return self.stream_command(op, args)
+        raise ValueError('unknown hand operation')
+
+    def _stream_admission(self):
+        if (self.mode != 'holding' or self.active is not None or self.pending or self.stopping
+                or self.stop_request is not None or self.stream_target is None):
+            busy = 'a blocking hand operation is active' if (self.active or self.pending) else f'mode is {self.mode}'
+            raise RuntimeError(f'hand streaming requires a prepared, idle, holding hand ({busy})')
+        if self.fault:
+            raise RuntimeError(f'hand is faulted: {self.fault}')
+        if not self.owns_control or not self.armed():
+            raise RuntimeError('operator has not armed motion or the hand is not under control')
+
+    def stream_command(self, op, args):
+        dry_run = args.pop('dry_run', False) is True
+        with self.lock:
+            self._stream_admission()
+            base = list(self.stream_target)
+            if op == 'stream':
+                command = parse_stream(args, self.cfg, base)
+            else:
+                command = parse_trajectory(args, self.cfg, base)
+                # Conservative duration check from the latest target at rest.
+                times = [0., *command['times']]
+                columns = [[base[i], *[row[i] for row in command['rows']]] for i in command['indices']]
+                peak_v = peak_a = 0.
+                settings = self.stream_pending_settings or self.stream.settings
+                for c, i in enumerate(command['indices']):
+                    v, a = Spline.peaks(times, [columns[c]], [0.])
+                    peak_v = max(peak_v, v/settings['max_velocity_rad_s'][i])
+                    peak_a = max(peak_a, a/settings['max_acceleration_rad_s2'][i])
+                scale = max(1., peak_v, math.sqrt(peak_a))
+                if times[-1]*scale > self.cfg['max_duration_s']:
+                    raise ValueError(f'trajectory needs about {times[-1]*scale:.2f} s at the configured limits, '
+                                     f'above max_duration_s={self.cfg["max_duration_s"]}')
+                command['estimated_time_scale'] = scale
+            if dry_run:
+                return {'valid': True, 'target_positions': list(command['target'])}
+            command['epoch'] = self.epoch
+            self.stream_accepted += 1
+            command['accepted'] = self.stream_accepted
+            self.stream_inbox.append(command)
+            self.stream_target = list(command['target'])
+            value = {'accepted': True, 'sequence': self.stream_accepted, 'target_positions': list(command['target'])}
+            if op == 'trajectory':
+                value.update(estimated_duration_s=command['times'][-1]*command['estimated_time_scale'],
+                             estimated_time_scale=command['estimated_time_scale'])
+            return value
+
+    def stream_configure(self, args):
+        reset = args.pop('reset', False)
+        if type(reset) is not bool:
+            raise ValueError('reset must be true or false')
+        with self.lock:
+            if self.mode not in ('holding', 'executing') or self.stream_target is None:
+                raise RuntimeError('stream settings apply to a prepared hand; preparation restores the defaults')
+            current = None if reset else (self.stream_pending_settings or self.stream.settings)
+            settings = resolve_settings(args, self.cfg, current)
+            # The writer adopts settings at the next rest, never mid-motion.
+            self.stream_pending_settings = settings
+            at_rest = self.mode == 'holding' and self.stream.converged
+        from .smooth import public_settings
+        return {'settings': public_settings(settings), 'applies': 'next_tick' if at_rest else 'at_rest'}
+
+    def record(self, args):
+        action = args.get('action')
+        if action == 'start':
+            directory = args.get('directory')
+            if not isinstance(directory, str):
+                raise ValueError('record start needs an absolute directory')
+            max_seconds = number(args.get('max_seconds', self.cfg['max_record_s']), 'max_seconds',
+                                 .1, self.cfg['max_record_s'])
+            info = {k: args[k] for k in ('controller', 'skill', 'variant', 'trial') if isinstance(args.get(k), str)}
+            with self.lock:
+                if self.recorder is not None and not self.recorder.closed:
+                    raise RuntimeError('a hand recording is already active; stop it first')
+                recorder = TraceRecorder(directory, self.cfg['handedness'], max_seconds=max_seconds,
+                                         nominal_rate_hz=self.runtime_hz, cfg=self.cfg,
+                                         backend=getattr(self.driver, 'backend_kind', 'real'), info=info)
+                self.recorder = recorder
+            return recorder.summary()
+        if action == 'stop':
+            with self.lock:
+                recorder, self.recorder = self.recorder, None
+            if recorder is None:
+                raise RuntimeError('no hand recording is active')
+            recorder.close()  # Closed before saving: no row can be appended concurrently.
+            self.last_recording = recorder
+            threading.Thread(target=recorder.save, name='wuji-trace-save', daemon=True).start()
+            return {**recorder.summary(), 'saving': True}
+        if action == 'status':
+            recorder = self.recorder or self.last_recording
+            return None if recorder is None else {**recorder.summary(), 'active': recorder is self.recorder}
+        raise ValueError('record action must be start, stop or status')
+
+    def stream_status(self):
+        with self.lock:
+            cached = self.cached
+            value = {key: deepcopy(cached.get(key)) for key in (
+                'mode', 'fault', 'fresh', 'positions', 'velocity_rad_s', 'target_positions', 'stream',
+                'smooth_profile', 'command_effort_a', 'action', 'temperature_max_c')}
+            age = max(0., self.clock()-self.updated)
+        value['controller_age_s'] = age
+        if age > self.cfg['max_scheduler_gap_s']:
+            value['fresh'] = False
+        return value
 
     def status(self):
         with self.lock:
@@ -183,13 +332,20 @@ class Controller:
                  'command_acceleration_rad_s2': (list(self.command_acceleration)
                                                  if self.cfg['motion_mode'] == 'scurve' else None),
                  'motion': path.status() if path else None,
-                 'command_timing': {'requested_hz': self.cfg['command_hz'], 'commands': self.command_count,
+                 'stream': self._stream_public(sample),
+                 'smooth_profile': profile_summary(self.control_parameters, self.cfg, self.profile_name),
+                 'command_offset_rad': list(self.command_offset) if any(self.command_offset) else None,
+                 'friction_effort_a': list(self.stream_effort) if any(self.stream_effort) else None,
+                 'recording': None if self.recorder is None else self.recorder.summary(),
+                 'command_timing': {'requested_hz': self.cfg['command_hz'], 'runtime_hz': self.runtime_hz,
+                                    'commands': self.command_count,
                                     'observed_hz': ((self.command_count-1)/(self.last_command_at-self.first_command_at)
                                                     if self.command_count > 1 and self.last_command_at > self.first_command_at else None),
                                     'max_interval_s': self.max_command_interval, 'skipped_slots': self.skipped_slots,
                                     'warning_threshold_s': min(.05, self.cfg['max_scheduler_gap_s']),
                                     'stop_threshold_s': self.cfg['max_scheduler_gap_s'],
                                     'delays': deepcopy(self.timing_delays)},
+                 'temperature_max_c': self._hottest(sample),
                  'joint_names': list(JOINT_NAMES), 'profile_revision': self.cfg['profile_revision'],
                  'postures': sorted(self.cfg['postures']), 'owns_control': self.owns_control,
                  'action': self.active['id'] if self.active else None,
@@ -209,6 +365,25 @@ class Controller:
                  'stop': deepcopy(self.stopping)}
         with self.lock:
             self.cached, self.updated = value, self.clock()
+
+    def _hottest(self, sample):
+        temperatures = (sample.get('diagnostics') or {}).get('mcu_temp_c_fb')
+        if not temperatures or len(temperatures) != 20:
+            return None
+        return max(temperatures[i] for i in active_indices(self.cfg))
+
+    def _stream_public(self, sample):
+        value = self.stream.status(self.clock())
+        positions = sample.get('positions')
+        goal = self.stream.goal
+        if self.stream_target is not None:
+            value['target_positions'] = list(self.stream_target)
+        value.update(accepted=self.stream_accepted, processed=self.stream_processed,
+                     ready=self.stream_target is not None,
+                     settings_pending=self.stream_pending_settings is not None, last_error=self.stream_error,
+                     max_error_rad=(max_error(self.cfg, goal, positions)
+                                    if positions is not None and len(positions) == 20 else None))
+        return value
 
     def _admit(self, epoch):
         if epoch != self.epoch:
@@ -266,13 +441,20 @@ class Controller:
             # spent inside the native send call itself.
             if not seed and self.mode in ('holding', 'executing', 'enabling') and self.last_command_at is not None:
                 self._check_timing('command_gap', self.clock()-self.last_command_at)
-            if self.cfg['motion_mode'] in ('feedback', 'scurve'):
-                self.driver.send(self.target, self.command_velocity, self.command_effort)
+            # Hold-deadband offsets and friction feed-forward are zero unless the
+            # smooth layer is engaged; then the stream also supplies its velocity.
+            positions = (self.target if not any(self.command_offset)
+                         else [q+o for q, o in zip(self.target, self.command_offset)])
+            currents = (self.command_effort if not any(self.stream_effort)
+                        else [b+f for b, f in zip(self.command_effort, self.stream_effort)])
+            if self.cfg['motion_mode'] in ('feedback', 'scurve') or any(self.command_velocity):
+                self.driver.send(positions, self.command_velocity, currents)
             else:
-                self.driver.send(self.target, None, self.command_effort)
+                self.driver.send(positions, None, currents)
             if seed:
                 return  # The one disabled seed precedes enable RPCs, not the periodic stream.
             sent = self.clock()
+            self._last_sent = (sent, positions, currents)
             if self.first_command_at is None:
                 self.first_command_at = sent
             if self.last_command_at is not None:
@@ -281,8 +463,25 @@ class Controller:
             self.command_count += 1
         self._write(publish, epoch)
 
+    def _release_stream(self):
+        """Stops and faults end streaming: no offsets, friction or queued targets survive."""
+        self.stream_effort, self.command_offset = [0.]*20, [0.]*20
+        self.stream_pending_settings = None
+        with self.lock:
+            self.stream_inbox.clear()
+            self.stream_target = None
+
+    def _adopt_reference(self):
+        """Called with the lock held when control returns to holding at a new target."""
+        self.stream_inbox.clear()
+        self.stream_target = list(self.target)
+        self.stream_effort, self.command_offset = [0.]*20, [0.]*20
+        self.stream.sync(self.target)
+        self.stream.watch_settle = True  # wuji_wait also reports settling after blocking moves.
+
     def _fail(self, reason):
         self.command_effort = [0.]*20
+        self._release_stream()
         self.effort_velocity_guard.reset()
         self.fault = str(reason)
         self._finish(self.active, 'fault', reason=self.fault, control_certain=False)
@@ -299,6 +498,7 @@ class Controller:
 
     def _stop_for_disarm(self):
         self.command_effort = [0.]*20
+        self._release_stream()
         self.effort_velocity_guard.reset()
         with self.lock:
             for job in [*self.pending, self.active]:
@@ -316,6 +516,7 @@ class Controller:
                          'faulted' if self.fault else 'disabled')
 
     def _start_stop(self, job):
+        previous_mode, previous_active = self.mode, self.active
         self.active = self.stopping = None
         state = self.driver.snapshot()
         healthy_hold = (job['op'] == 'hold' and self.fault is None and self.armed() and control_enabled(state, self.cfg)
@@ -323,10 +524,22 @@ class Controller:
                         and max_error(self.cfg, self.target, state['positions'])
                         <= self.cfg['max_tracking_error_rad'])
         if healthy_hold:
+            streaming = ((previous_mode == 'holding' and previous_active is None
+                          and (self.stream.moving or not self.stream.goal_static))
+                         or bool(previous_active and previous_active.get('stream_brake') and self.stream.braking))
+            if streaming:
+                # Brake the stream reference to rest with its own jerk/acceleration limits.
+                with self.lock:
+                    self.stream_inbox.clear()
+                if not self.stream.braking:
+                    self.stream.brake()
+                self.active = {**job, 'stream_brake': True, 'started': self.clock()}
+                self.mode = 'executing'
+                return
             moving = any(abs(x) > 1e-10 for x in [*self.command_velocity, *self.command_acceleration])
             if self.cfg['motion_mode'] == 'scurve' and moving:
                 try:
-                    path = SCurvePath(self.target, self.target, self.cfg, velocity=self.command_velocity,
+                    path = SCurvePath(self.target, self.target, self._runtime_cfg(), velocity=self.command_velocity,
                                       acceleration=self.command_acceleration, brake=True)
                 except Exception as exc:  # noqa: BLE001 -- native planning failure must still request emergency stop.
                     job = {**job, 'hold_fallback_reason': str(exc)}
@@ -339,7 +552,9 @@ class Controller:
                 self.active = job
                 self.command_velocity, self.command_acceleration = [0.]*20, [0.]*20
                 self._send(job['epoch'])
-                self.mode = 'holding'
+                with self.lock:
+                    self.mode = 'holding'
+                    self._adopt_reference()
                 self._finish(job, 'held', requested='hold', sdk_returned=True, confirmed=False,
                              target_positions=list(self.target), note='stationary command; physical settling not confirmed')
                 self.active = None
@@ -347,6 +562,7 @@ class Controller:
         self.command_velocity, self.command_acceleration = [0.]*20, [0.]*20
         behavior = 'disable' if job['op'] == 'disable' else 'emergency'
         self.command_effort = [0.]*20
+        self._release_stream()
         self.effort_velocity_guard.reset()
         self.mode = 'stopping'
         self.target = None
@@ -361,6 +577,22 @@ class Controller:
         if job['epoch'] != self.epoch:
             return  # A newer stop will be applied before any other write.
         self.stopping = {**job, 'behavior': behavior, 'since': since, 'deadline': self.clock()+self.cfg['stop_timeout_s']}
+
+    def _runtime_cfg(self):
+        """S-curve paths advance one period per tick: use the active writer rate."""
+        if self.runtime_hz == self.cfg['command_hz']:
+            return self.cfg
+        return {**self.cfg, 'command_hz': self.runtime_hz}
+
+    def _set_control_parameters(self, desired):
+        setter = getattr(self.driver, 'set_control_parameters', None)
+        if setter is not None:
+            setter(desired)
+            return
+        if self.cfg['disabled_joints']:
+            raise ValueError('this hand driver cannot write partial-hand control parameters')
+        self.driver.set_current_limits(desired['current_limit_a'])
+        self.driver.set_impedance(desired['kp'], desired['kd'])
 
     def _check_stop(self, state):
         job = self.stopping
@@ -411,6 +643,9 @@ class Controller:
             self.command_velocity = [0.]*20
             self.command_acceleration = [0.]*20
             self.command_effort = [0.]*20
+            self._release_stream()
+            self.stream.reset(self.target)  # Preparation restores default stream settings.
+            self.runtime_hz, self.profile_name = self.cfg['command_hz'], 'profile'
             self.effort_velocity_guard.reset()
             self.first_command_at = self.last_command_at = None
             self.command_count = self.skipped_slots = 0
@@ -437,6 +672,35 @@ class Controller:
             raise RuntimeError('hand requires explicit operator preparation before motion')
         if max_error(self.cfg, self.target, state['positions']) > self.cfg['max_tracking_error_rad']:
             raise RuntimeError('unresolved tracking error before hand motion')
+        if not self.stream.converged or self.stream_inbox:
+            raise ValueError('the hand stream reference is still moving; call wuji_wait or wuji_hold '
+                             'before a blocking move, effort, impedance or profile change')
+        if job['op'] == 'set_profile':
+            desired, info = profile_parameters(job['args'], self.cfg, self.control_parameters)
+            if max_velocity(self.cfg, state['velocity_rad_s']) > self.cfg['stopped_velocity_rad_s']:
+                raise ValueError('profile changes require a measured stationary hand')
+            for name, bias, cap in zip(JOINT_NAMES, self.command_effort, desired['current_limit_a']):
+                if abs(bias) > cap:
+                    raise ValueError(f'{name} feed-forward bias {bias:g} A exceeds the requested cap {cap:g} A')
+            self.active = job  # Partial writes must stop, never look like a pure rejection.
+            self.stream_effort, self.command_offset = [0.]*20, [0.]*20
+            self._write(lambda: self._set_control_parameters(desired), job['epoch'])
+            self.control_parameters = deepcopy(desired)
+            self.profile_name = info['name']
+            settings = self.stream_pending_settings or self.stream.settings
+            settings = {**settings, 'hold_deadband_rad': info['hold_deadband_rad']}
+            if self.stream_pending_settings is not None:
+                self.stream_pending_settings = settings
+            else:
+                self.stream.settings = settings
+            job['completion'] = ('profile_set', {
+                'profile': profile_summary(desired, self.cfg, info['name']),
+                'control_parameters': deepcopy(desired), 'hold_deadband_rad': info['hold_deadband_rad'],
+                'target_positions': list(self.target), 'readback_verified': True})
+            return
+        if job['op'] in ('move', 'set_effort', 'set_impedance'):
+            # Blocking operations send the plain reference, without stream offsets.
+            self.stream_effort, self.command_offset = [0.]*20, [0.]*20
         if job['op'] == 'set_effort':
             args = validate_tool('wuji_set_effort', job['args'], self.cfg)
             goal = effort(args['effort_a'], self.control_parameters['current_limit_a'])
@@ -464,7 +728,7 @@ class Controller:
             return
         completion = completion_mode(job['args'].get('completion', 'position'))
         if self.cfg['motion_mode'] == 'scurve':
-            trajectory = SCurvePath(self.target, job['args']['positions'], self.cfg, job['args'].get('duration_s'),
+            trajectory = SCurvePath(self.target, job['args']['positions'], self._runtime_cfg(), job['args'].get('duration_s'),
                                     velocity=self.command_velocity, acceleration=self.command_acceleration)
         else:
             trajectory = Trajectory(self.target, job['args']['positions'], self.cfg, job['args'].get('duration_s'))
@@ -557,6 +821,76 @@ class Controller:
             job['completion'] = ('reached' if settled else 'held_short_of_target' if contact else 'target_not_reached', result)
             self.command_velocity = [0.]*20
 
+    # ------------------------------------------------------------ smooth streaming (writer thread)
+    def _drain_stream(self, now):
+        with self.lock:
+            commands = list(self.stream_inbox)
+            self.stream_inbox.clear()
+        for command in commands:
+            self.stream_processed = max(self.stream_processed, command.get('accepted', 0))
+            if command['epoch'] != self.epoch:
+                continue  # Accepted before a stop/hold: never applied.
+            try:
+                self.stream.apply(command, now)
+                self.stream_error = None
+            except ValueError as exc:
+                self.stream_error = f'{command["kind"]} rejected: {exc}'
+                with self.lock:
+                    self.stream_target = list(self.stream.latest_target)
+        pending = self.stream_pending_settings
+        if pending is not None and self.stream.converged:
+            self.stream.apply({'kind': 'settings', 'settings': pending}, now)
+            self.stream_pending_settings = None
+            self.runtime_hz = pending['command_hz']
+
+    def _advance_stream(self, state):
+        now = self.clock()
+        if not self.stream.same_reference(self.target):
+            # Safety net: something other than the stream moved the reference.
+            with self.lock:
+                self._adopt_reference()
+        if self.stream_inbox or self.stream_pending_settings is not None:
+            self._drain_stream(now)
+        if not self.stream.engaged:
+            if any(self.command_offset) or any(self.stream_effort):
+                self.command_offset, self.stream_effort = [0.]*20, [0.]*20
+            return
+        q, v, a, offset, friction = self.stream.step(now, state, self.command_effort,
+                                                     self.control_parameters['current_limit_a'])
+        self.target, self.command_velocity, self.command_acceleration = q, v, a
+        self.command_offset, self.stream_effort = offset, friction
+
+    def _advance_stream_brake(self, job, state, elapsed):
+        q, v, a, offset, friction = self.stream.step(self.clock(), state, self.command_effort,
+                                                     self.control_parameters['current_limit_a'])
+        self.target, self.command_velocity, self.command_acceleration = q, v, a
+        self.command_offset, self.stream_effort = offset, friction
+        if not self.stream.braking:
+            self.command_velocity, self.command_acceleration = [0.]*20, [0.]*20
+            job['completion'] = ('held', {'requested': 'hold', 'sdk_returned': True, 'confirmed': False,
+                                         'target_positions': list(self.target), 'braking_duration_s': elapsed,
+                                         'note': 'stream reference braked to rest; physical settling not confirmed'})
+        elif elapsed > self.cfg['stop_timeout_s']:
+            raise RuntimeError('stream hold braking exceeded its stop deadline')
+
+    def _record(self, state):
+        recorder, sent = self.recorder, self._last_sent
+        if recorder is None or sent is None:
+            return
+        job = self.active
+        path = job.get('trajectory') if job else None
+        if path is not None and hasattr(path, 'goal'):
+            requested = path.goal
+        elif self.stream_target is not None:
+            requested = self.stream_target
+        else:
+            requested = self.target
+        streaming = self.mode == 'holding' and job is None or bool(job and job.get('stream_brake'))
+        recorder.append(sent[0], q_ref=sent[1], q_target=requested, state=state, i_ff=sent[2],
+                        kp=self.control_parameters['kp'], kd=self.control_parameters['kd'],
+                        dq_ref=self.command_velocity, q_goal=self.stream.goal if streaming else self.target,
+                        current_limit_a=self.control_parameters['current_limit_a'])
+
     def tick(self, *, publish=True):
         now = self.clock()
         previous = (self.mode, id(self.active), id(self.stopping), self.fault, self.epoch)
@@ -588,7 +922,9 @@ class Controller:
                 state = self._admit(job['epoch'])
                 if control_enabled(state, self.cfg) and all(state['received_monotonic'].get(k, -1) > job['started']
                                             for k in ('state', 'diagnostics')):
-                    self.mode = 'holding'
+                    with self.lock:
+                        self.mode = 'holding'
+                        self._adopt_reference()
                     self._finish(job, 'prepared', profile_revision=self.cfg['profile_revision'])
                     self.active = None
                 elif self.clock()-job['started'] > self.cfg['stop_timeout_s']:
@@ -604,14 +940,16 @@ class Controller:
                                                            'target_positions': list(self.target),
                                                            'ramp_seconds': ramp.duration, 'units': 'A',
                                                            'contact_force_verified': False})
+                elif 'stream_brake' in job:
+                    self._advance_stream_brake(job, state, elapsed)
                 elif 'scurve' in job:
                     self._advance_scurve(job, state, elapsed)
                 elif 'feedback' in job:
                     self._advance_feedback(job, state, elapsed)
-                else:
+                elif 'trajectory' in job:
                     self.target = job['trajectory'].sample(elapsed)
                 if ('effort_ramp' not in job and 'feedback' not in job and 'scurve' not in job
-                        and elapsed >= job['trajectory'].duration):
+                        and 'stream_brake' not in job and elapsed >= job['trajectory'].duration):
                     error = max_error(self.cfg, self.target, state['positions'])
                     job['settled_since'] = (job['settled_since'] or self.clock()) if error <= self.cfg['tolerance_rad'] else None
                     if job['settled_since'] is not None and self.clock()-job['settled_since'] >= self.cfg['settle_s']:
@@ -631,6 +969,8 @@ class Controller:
                             'positions': state['positions'], 'target_positions': list(self.target),
                             'trajectory_complete': True,
                             'reason': 'target did not settle; bounded target remains held, inspect before retry'})
+            if self.mode == 'holding' and self.active is None:
+                self._advance_stream(state)
             if self.mode in ('holding', 'executing', 'enabling'):
                 state = self._admit(self.epoch)
                 if max_error(self.cfg, self.target, state['positions']) > self.cfg['max_tracking_error_rad']:
@@ -641,15 +981,20 @@ class Controller:
                 else:
                     self.effort_velocity_guard.reset()
                 self._send(tick_epoch)
+                if self.recorder is not None:
+                    self._record(state)
                 with self.lock:
                     # Do not report success until the final write returned, and
                     # never replace a priority cancellation with a late success.
                     if self.active and 'completion' in self.active:
                         if self.active['epoch'] != self.epoch:
                             raise Cancelled('stop arrived before command completion')
-                        outcome, result = self.active['completion']
-                        self._finish(self.active, outcome, **result)
+                        job, (outcome, result) = self.active, self.active['completion']
                         self.active, self.mode = None, 'holding'
+                        self._adopt_reference()
+                        # Status (profile, targets) must be current once the result is visible.
+                        self._publish()
+                        self._finish(job, outcome, **result)
         except Cancelled:
             # submit() has already cancelled the job and queued a priority
             # stop. Let the next tick deliver it without latching a fault.
@@ -673,9 +1018,9 @@ class Controller:
                 self.fault = f'connection failed: {exc}'
             self._publish()
             due = self.clock()
-            period = 1/self.cfg['command_hz']
             while not stop.is_set():
                 self.tick(publish=False)
+                period = 1/self.runtime_hz  # Operator rate, or a lower stream_config rate.
                 due, skipped = next_deadline(due, self.clock(), period)
                 self.skipped_slots += skipped
                 while not stop.is_set():
@@ -698,15 +1043,22 @@ class Controller:
 def serve(config, root, socket_path, *, driver=None, parent_pid=None, side=None):
     root, socket_path = Path(root), Path(socket_path)
     stop = threading.Event()
-    engine = Controller(config, driver or WujiDriver(config), lambda: arming.read(root)['armed'],
+    armed = arming.CachedReader(root)
+    engine = Controller(config, driver or WujiDriver(config), lambda: armed()['armed'],
                         parent_alive=lambda: parent_pid is None or os.getppid() == parent_pid)
+    sys.setswitchinterval(SWITCH_INTERVAL_S)
+    try:
+        import numpy  # noqa: F401 -- loaded before the loop so a first trace start cannot stall it.
+    except ImportError:
+        pass
 
     class Handler(socketserver.StreamRequestHandler):
         def handle(self):
             self.request.settimeout(.5)
             try:
-                line = self.rfile.readline(65537)
-                if len(line) > 65536 or not line.endswith(b'\n'):
+                # Timed trajectories (up to 256 x 20 waypoints) exceed the old 64 KiB frame.
+                line = self.rfile.readline(1048577)
+                if len(line) > 1048576 or not line.endswith(b'\n'):
                     raise ValueError('invalid IPC frame')
                 request = json.loads(line)
                 op = request['op']
@@ -716,11 +1068,14 @@ def serve(config, root, socket_path, *, driver=None, parent_pid=None, side=None)
                     value = engine.heartbeat()
                 elif op == 'result':
                     value = engine.result(request['id'])
+                elif op in DIRECT_OPS:
+                    value = engine.direct(op, request.get('args', {}))
                 else:
                     value = engine.submit(request['id'], op, request.get('args', {}))
                 response = {'ok': True, 'value': value}
             except Exception as exc:
-                response = {'ok': False, 'error': str(exc)}
+                response = {'ok': False, 'error': str(exc),
+                            'kind': 'invalid' if isinstance(exc, ValueError) else 'state'}
             try:
                 self.wfile.write(json.dumps(response, allow_nan=False).encode()+b'\n')
             except (BrokenPipeError, ConnectionResetError, TimeoutError):

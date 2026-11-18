@@ -153,6 +153,9 @@ catch-up jumps. Gains, damping, current caps and motion limits are unchanged.
 Fault notifications include the controller's specific reason and hand snapshot.
 See the [real host-timing validation](wuji-bimanual-host-timing-2026-11-03.md) for
 the induced delay, right-finger movement and four-camera holding checks.
+The [smooth control layer](wuji-smooth-control.md) adds non-blocking streaming,
+timed trajectories, impedance presets, friction feed-forward, trace recording and the
+`scripts/wuji_motion_battery.py` comparison battery; it has not yet run on these hands.
 See the [physical movement record](wuji-left-partial-live-test-2026-11-02.md) for
 the measured eighteen-joint movements and the later native ring-S1 stall warning
 that stopped the grouped finger sequence.

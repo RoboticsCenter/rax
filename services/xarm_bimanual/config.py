@@ -10,6 +10,7 @@ PAIRED_TOOLS = {
     'xarm_move_both': 'xarm_move_pose',
     'xarm_move_joints_both': 'xarm_move_joints',
     'wuji_move_both': 'wuji_move_joints',
+    'wuji_stream_both': 'wuji_stream',
 }
 COMBINED_TOOL = 'xarm_move_combined'
 COMBINED_ACTIONS = {

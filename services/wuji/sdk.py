@@ -1,4 +1,29 @@
-"""Native SDK boundary. Cached callbacks never issue motor commands."""
+"""Native SDK boundary. Cached callbacks never issue motor commands.
+
+Everything below this module is ``wuji_sdk`` (pinned 2026.10.12, firmware 2.13.1); every
+module above it is pure host logic. A simulator can emulate the hand by passing an ``sdk``
+module object to WujiDriver that provides exactly this surface:
+
+    SdkManager.instance().connect(address=|sn=, device_name=, options=ConnectOptions(...)) -> WujiHand2
+    ConnectOptions(enable_bridge=, timeout_ms=, retry_count=), JointCommand(position, velocity, effort_a)
+    WujiHand2: serial_number, info.firmware_version, handedness().get(), fingertip_online(),
+               nid_to_joint_index(nid) (static), describe_error(code) (static, optional),
+               joint_states().subscribe_with_callback(on_frame, on_error),
+               joint_diagnostics().subscribe_with_callback(on_frame, on_error),
+               effort_limit().set(20 A)/.get(), mit_params().set([(kp, kd)]*20)/.get() -> [.kp, .kd],
+               joint_command().publish().send([JointCommand]*20)/.close(),
+               enable(mask=None), disable(mask=None), emergency_stop(), disconnect()
+    frames:    .header.seq, .header.timestamp_us, .joints[] with .nid and position/velocity/effort
+               (state) or status_word.ext_state(_name)/error_code_current/current/vbus_v_fb/
+               mcu_temp_c_fb (diagnostics)
+    optional:  RAX_BACKEND_KIND = 'sim' on the module labels traces as simulated.
+
+The smooth control layer adds no new SDK calls: streaming uses the same publisher at the
+command rate, friction feed-forward is the JointCommand effort (A) field, and impedance
+presets use effort_limit()/mit_params() set+get with readback (set_control_parameters).
+The Hand 2 SDK pinned here has no real-time controller or command filter; firmware 3.0.0
+adds position_command_low_pass_cutoff_frequency() in beta Position mode only.
+"""
 import fcntl
 import math
 import os
@@ -326,6 +351,46 @@ class WujiDriver:
         result = {key: self._check_readback(key, [getattr(p, key, None) for p in actual], values[key])
                   for key in ('kp', 'kd')}
         self.profile = {**self.profile, **result}
+
+    def set_control_parameters(self, desired):
+        """Write per-joint current caps and MIT gains (smooth-layer impedance profiles).
+
+        Values must stay within the operator ceilings. Partial hands keep disabled joints at
+        exactly zero gains and current, as preparation does, and require them confirmed
+        disabled before the write. Readback is verified; a failed write leaves no profile,
+        so the next command refuses (partial hand) and the controller stops.
+        """
+        if self.profile is None:
+            raise RuntimeError('hand profile has not been prepared')
+        excluded = set(disabled_indices(self.cfg))
+        values = {}
+        for key in ('current_limit_a', 'kp', 'kd'):
+            values[key] = vector(desired[key], key)
+            for i, (name, value, ceiling) in enumerate(zip(JOINT_NAMES, values[key], self.cfg[key])):
+                if i in excluded:
+                    if value != 0.:
+                        raise ValueError(f'{name} is disabled; its {key} must stay zero')
+                elif value < 0 or value > ceiling+1e-12 or (key != 'kd' and value <= 0):
+                    raise ValueError(f'{name} {key} must be within the operator ceiling {ceiling:g}')
+        if excluded:
+            state = self.snapshot()
+            states = state['diagnostics'].get('states', [])
+            if (not state['fresh'] or len(states) != 20
+                    or any(states[i] not in DISABLED_STATES for i in excluded)):
+                raise RuntimeError('excluded joints must be confirmed disabled before parameter writes')
+        self.profile = None
+        self.hand.effort_limit().set(values['current_limit_a'])
+        self.hand.mit_params().set(list(zip(values['kp'], values['kd'])))
+        limits = list(self.hand.effort_limit().get())
+        gains = list(self.hand.mit_params().get())
+        actual = {'current_limit_a': self._check_readback('current_limit_a', limits, values['current_limit_a']),
+                  'kp': self._check_readback('kp', [getattr(p, 'kp', None) for p in gains], values['kp']),
+                  'kd': self._check_readback('kd', [getattr(p, 'kd', None) for p in gains], values['kd'])}
+        self.profile = actual
+
+    @property
+    def backend_kind(self):
+        return getattr(self.sdk, 'RAX_BACKEND_KIND', 'real') if self.sdk is not None else 'real'
 
     def send(self, positions, velocities=None, effort_a=None):
         q = vector(positions)

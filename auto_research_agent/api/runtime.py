@@ -80,3 +80,15 @@ class Context:
     def images(result):
         """The image blocks of a tool result ({'mimeType', 'data'(base64)})."""
         return [b for b in result.get('content', []) if b.get('type') == 'image']
+
+    def hand(self, side=None):
+        """Smooth Wuji hand control (streaming targets, trajectories, profiles, traces).
+
+        ``side`` is 'left' or 'right' in bimanual sessions and omitted otherwise. See
+        api/hand.py for the methods and an example skill.
+        """
+        try:
+            from .hand import Hand
+        except ImportError:  # Loaded as a top-level module rather than api.runtime.
+            from hand import Hand
+        return Hand(self, side)

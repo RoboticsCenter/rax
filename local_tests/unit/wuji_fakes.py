@@ -21,6 +21,8 @@ class Clock:
 
 
 class FakeHand:
+    backend_kind = 'mock'
+
     def __init__(self, cfg, clock=time.monotonic, continuous=False):
         self.cfg, self.clock, self.continuous = cfg, clock, continuous
         self.connected = False
@@ -74,6 +76,10 @@ class FakeHand:
     def set_impedance(self, kp, kd):
         self.writes.append(('impedance', list(kp), list(kd)))
         self.control_parameters.update(kp=list(kp), kd=list(kd))
+
+    def set_control_parameters(self, values):
+        self.writes.append(('control_parameters', deepcopy(values)))
+        self.control_parameters = {k: list(values[k]) for k in ('kp', 'kd', 'current_limit_a')}
 
     def enable(self):
         self.writes.append(('enable',))
@@ -143,6 +149,63 @@ class FakeHandClient:
         if self.fail_stop:
             raise RuntimeError('hand stop failed')
         return {'requested': 'emergency', 'sdk_returned': True, 'confirmed': True}
+
+    # -- smooth layer: records calls; applies targets immediately (no dynamics).
+    def stream_check(self, op, args):
+        from services.wuji.smooth import parse_stream, parse_trajectory
+        parse = parse_stream if op == 'stream' else parse_trajectory
+        command = parse(dict(args), self.cfg, list(self.target))
+        return {'valid': True, 'target_positions': command['target']}
+
+    def stream(self, **args):
+        self.control_calls.append(('stream', deepcopy(args)))
+        from services.wuji.smooth import parse_stream
+        if self.fail_move:
+            raise RuntimeError('injected hand transport loss')
+        self.q = self.target = parse_stream(dict(args), self.cfg, list(self.target))['target']
+        return {'accepted': True, 'sequence': len(self.control_calls), 'target_positions': list(self.target)}
+
+    def trajectory(self, *, waypoints, wait=True, timeout_s=None):
+        self.control_calls.append(('trajectory', deepcopy(waypoints), wait))
+        from services.wuji.smooth import parse_trajectory
+        self.q = self.target = parse_trajectory({'waypoints': waypoints}, self.cfg, list(self.target))['target']
+        return {'accepted': True, 'waited': wait, 'settled': wait, 'outcome': 'settled' if wait else None,
+                'target_positions': list(self.target)}
+
+    def stream_config(self, **settings):
+        self.control_calls.append(('stream_config', deepcopy(settings)))
+        return {'settings': settings, 'applies': 'next_tick'}
+
+    def set_profile(self, **args):
+        self.control_calls.append(('set_profile', deepcopy(args)))
+        return {'outcome': 'profile_set', 'profile': {'name': args.get('name')}, 'readback_verified': True}
+
+    def wait(self, timeout_s=None, after=None):
+        return {'outcome': 'settled', 'settled': True, 'positions': list(self.q),
+                'target_positions': list(self.target), 'max_joint_error_rad': 0.}
+
+    def stream_status(self):
+        return {'mode': 'holding', 'stream': {'accepted': 0, 'processed': 0}}
+
+    def record_start(self, directory, **info):
+        self.control_calls.append(('record_start', str(directory), deepcopy(info)))
+        self.recording = str(directory)
+        return {'directory': str(directory), 'side': self.cfg['handedness'], 'samples': 0}
+
+    def record_stop(self):
+        import numpy as np
+        from pathlib import Path
+        directory = Path(self.recording)
+        directory.mkdir(parents=True, exist_ok=True)
+        arrays = {'t': np.arange(3, dtype=float)}
+        for key in ('q_ref', 'q_target', 'q_meas', 'dq_meas', 'current', 'i_ff', 'kp', 'kd'):
+            arrays[key] = np.zeros((3, 20))
+        np.savez(directory/f"hand_{self.cfg['handedness']}.npz", **arrays)
+        self.control_calls.append(('record_stop',))
+        return {'saved': {'samples': 3}, 'nominal_rate_hz': self.cfg['command_hz'], 'backend': 'mock'}
+
+    def record_status(self):
+        return None
 
     def close(self):
         self.closed = True

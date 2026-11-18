@@ -107,22 +107,32 @@ QUAT = {'type': 'array', 'items': NUMBER, 'minItems': 4, 'maxItems': 4,
 
 
 def _validate_arguments(value, schema, path='arguments'):
-    """Enforce the JSON types and bounds declared by the xArm tool schemas."""
-    kind = schema['type']
+    """Enforce the JSON types and bounds declared by the xArm tool schemas.
+
+    Supports a list of types (e.g. number or 20-array), 'null', and objects whose
+    additionalProperties is True (free-form) or a schema (validated map values).
+    """
+    kinds = schema['type'] if isinstance(schema['type'], list) else [schema['type']]
     valid = {'object': isinstance(value, dict), 'array': isinstance(value, (list, tuple)),
              'number': type(value) in (int, float), 'integer': type(value) is int,
-             'boolean': type(value) is bool, 'string': isinstance(value, str)}
-    if not valid[kind]:
-        raise ValueError(f'{path} must be {kind}')
+             'boolean': type(value) is bool, 'string': isinstance(value, str), 'null': value is None}
+    kind = next((k for k in kinds if valid[k]), None)
+    if kind is None:
+        raise ValueError(f'{path} must be {" or ".join(kinds)}')
     if 'enum' in schema and value not in schema['enum']:
         raise ValueError(f"{path} must be one of {schema['enum']}")
     if kind == 'object':
-        properties = schema['properties']
-        missing, unknown = set(schema.get('required', ())) - value.keys(), value.keys() - properties.keys()
+        properties = schema.get('properties', {})
+        extra = schema.get('additionalProperties', False)
+        missing = set(schema.get('required', ())) - value.keys()
+        unknown = value.keys() - properties.keys() if extra is False else set()
         if missing or unknown:
             raise ValueError(f'{path}: missing {sorted(missing)}, unknown {sorted(unknown)}')
         for name, item in value.items():
-            _validate_arguments(item, properties[name], f'{path}.{name}')
+            if name in properties:
+                _validate_arguments(item, properties[name], f'{path}.{name}')
+            elif isinstance(extra, dict):
+                _validate_arguments(item, extra, f'{path}.{name}')
     elif kind == 'array':
         if not schema.get('minItems', 0) <= len(value) <= schema.get('maxItems', float('inf')):
             raise ValueError(f'{path} has an invalid number of items')
@@ -392,9 +402,10 @@ class XArmBackend:
                             'without a probe move. Does not clear controller errors or ready the arm. Always allowed.'},
         ]
         if self.has_hand:
-            from services.wuji.config import tools
+            from services.wuji.config import tools, trace_tools
             definitions = [t for t in definitions if t['name'] != 'xarm_gripper']
             definitions.extend(tools(self.hand_config))
+            definitions.extend(trace_tools([self.hand_config['handedness']], self.hand_config['max_record_s']))
             definitions[0]['description'] = ('xArm pose and joints, Wuji hand feedback, controller errors, '
                                              'operator arming, cameras and configured workspace limits.')
             next(t for t in definitions if t['name'] == 'xarm_hold')['description'] = (
@@ -484,9 +495,12 @@ class XArmBackend:
 
     def validate(self, name, arguments):
         if self.has_hand and name.startswith('wuji_'):
-            from services.wuji.config import validate_tool, MOTION_TOOLS, MUTATING_TOOLS, effort
+            from services.wuji.config import validate_tool, MOTION_TOOLS, MUTATING_TOOLS, STREAM_TOOL_NAMES, effort
             from services.wuji.controller import Trajectory, EffortRamp
             goal = validate_tool(name, arguments, self.hand_config)
+            if name in STREAM_TOOL_NAMES:
+                self._validate_stream_tool(name, goal)
+                return
             if name in MUTATING_TOOLS:
                 self._require_armed()
                 self._motion_state()
@@ -645,11 +659,152 @@ class XArmBackend:
                                         'control_certain': exc.control_certain,
                                         'operator_request': exc.operator_request}
 
+    # ------------------------------------------------------------ smooth hand control layer
+    def _validate_stream_tool(self, name, goal):
+        """Admission for the smooth-layer tools. High-rate wuji_stream skips the arm RPC
+        status read; arm faults are still caught by the telemetry watcher, and the hand
+        owner re-checks arming, faults and freshness every command period."""
+        if name in ('wuji_stream', 'wuji_trajectory', 'wuji_set_profile'):
+            self._require_armed()
+        if name in ('wuji_trajectory', 'wuji_set_profile'):
+            self._motion_state()
+        if name == 'wuji_stream':
+            self.end_effector.stream_check('stream', goal)
+        elif name == 'wuji_trajectory':
+            self.end_effector.stream_check('trajectory', {'waypoints': goal['waypoints']})
+        elif name == 'wuji_set_profile':
+            from services.wuji.smooth import profile_parameters
+            state = self.end_effector.require_ready()
+            profile_parameters(goal, self.hand_config, state['control_parameters'])
+
+    @property
+    def trace_trials(self):
+        if getattr(self, '_trace_trials', None) is None:
+            from services.wuji.trace import TrialRecorder
+            self._trace_trials = TrialRecorder(self.workspace/'runtime'/'traces')
+        return self._trace_trials
+
+    def _trace_location(self, directory, label):
+        """A requested trial directory is used only inside the agent workspace (resolved, so a
+        planted symlink cannot redirect host writes); otherwise traces go to
+        runtime/traces/<label> and the caller copies them from the reported directory."""
+        if directory is None:
+            return None, None
+        workspace = self.workspace.resolve()
+        path = Path(directory)
+        resolved = (path if path.is_absolute() else workspace/path).resolve()
+        if resolved != workspace and resolved.is_relative_to(workspace):
+            return resolved, None
+        return None, str(directory)
+
+    def _trace_start_on(self, hands, arguments, max_seconds):
+        from services.wuji.smooth import check_record_meta
+        args = dict(arguments)
+        sides = args.pop('sides', None) or list(hands)
+        if not sides or set(sides) - set(hands) or len(set(sides)) != len(sides):
+            raise ValueError(f'sides must be distinct names from {sorted(hands)}')
+        label = args.pop('label', None)
+        if label is not None and (not isinstance(label, str) or len(label) > 120):
+            raise ValueError('label must be text of at most 120 characters')
+        directory, requested = self._trace_location(args.pop('directory', None), label)
+        meta = check_record_meta(args, {'max_record_s': max_seconds})
+        value = self.trace_trials.start({side: hands[side] for side in sides}, directory=directory,
+                                        label=label, **meta)
+        result = {'recording': True, 'trial': value['trial'], 'directory': value['directory'], 'sides': sides,
+                  'path': self._workspace_relative(value['directory'])}
+        if requested is not None:
+            result.update(requested_directory=requested,
+                          note='requested directory is outside the agent workspace; files are written to directory')
+        return result
+
+    def _trace_stop_on(self, arguments):
+        args = dict(arguments)
+        if set(args) - {'success', 'notes', 'directory'}:
+            raise ValueError('trace_stop accepts success, notes and directory')
+        if args.get('success') is not None and type(args['success']) is not bool:
+            raise ValueError('success must be true, false or null')
+        active = self.trace_trials.status()
+        if active is None:
+            raise RuntimeError('no trace trial is recording')
+        directory, _ = self._trace_location(args.get('directory'), None)
+        if args.get('directory') is not None and directory is not None and str(directory) != active['directory']:
+            raise ValueError(f"directory does not match the active trial {active['directory']}")
+        value = self.trace_trials.stop(success=args.get('success'), notes=args.get('notes'))
+        return {'recording': False, 'trial': value['trial'], 'directory': value['directory'],
+                'path': self._workspace_relative(value['directory']), 'sides': value['sides'],
+                'errors': value['errors'], 'samples': {side: (info.get('trace') or {}).get('saved', {}).get('samples')
+                                                       for side, info in value['meta']['hands'].items()}}
+
+    def _workspace_relative(self, directory):
+        try:
+            return str(Path(directory).relative_to(self.workspace.resolve()))
+        except ValueError:
+            return None
+
+    def _trace_start(self, **arguments):
+        return self._trace_start_on({self.hand_config['handedness']: self.end_effector}, arguments,
+                                    self.hand_config['max_record_s']), []
+
+    def _trace_stop(self, **arguments):
+        return self._trace_stop_on(arguments), []
+
+    def _stream_call(self, name, arguments):
+        from services.wuji.config import validate_tool
+        goal = validate_tool(name, arguments, self.hand_config)
+        hand = self.end_effector
+        if name == 'wuji_wait':
+            return hand.wait(timeout_s=goal.get('timeout_s'))
+        if name == 'wuji_stream_config':
+            return hand.stream_config(**goal)
+        self._require_armed()
+        started = time.time()
+        record = goal.get('record') if name == 'wuji_trajectory' else None
+        try:
+            if name == 'wuji_stream':
+                return hand.stream(**goal)
+            if name == 'wuji_set_profile':
+                result = hand.set_profile(**goal)
+            else:
+                trial = result = saved = None
+                if record is not None:
+                    trial = self.trace_trials.start({self.hand_config['handedness']: hand}, **record)
+                try:
+                    result = hand.trajectory(waypoints=goal['waypoints'],
+                                             wait=goal.get('wait', True) or trial is not None,
+                                             timeout_s=goal.get('timeout_s'))
+                finally:
+                    if trial is not None:
+                        try:  # Keep the (partial) trace as evidence even when execution failed.
+                            saved = self.trace_trials.stop(success=None, outcome=(result or {}).get('outcome'))
+                        except Exception as exc:  # noqa: BLE001 -- never mask the motion error.
+                            saved = {'error': str(exc)}
+                if saved is not None:
+                    result['trace'] = f"runtime/traces/{saved['trial']}" if 'trial' in saved else saved
+        except ValueError as exc:
+            # The owner rejected the request before accepting anything: the hand keeps
+            # its previous target, so control remains known.
+            exc.control_certain = True
+            raise
+        except Exception as exc:
+            outcome = self._stop_assembly()
+            exc.control_certain = False
+            exc.robot_state = {**getattr(exc, 'robot_state', {}), 'hand': hand.status(), 'assembly_stop': outcome}
+            raise
+        if result.get('waited') or name == 'wuji_set_profile':
+            clip = self._schedule_motion_clip(name, started, time.time(), 'completed')
+            if clip:
+                result['motion_clip'] = clip
+            self.last_motion = {'tool': name, 'at': time.time(), **result}
+        return result
+
     def _hand_call(self, name, arguments):
         if name == 'wuji_status':
             return self.end_effector.status(), []
         if name == 'wuji_hold':
             return self.end_effector.hold(), []
+        from services.wuji.config import STREAM_TOOL_NAMES
+        if name in STREAM_TOOL_NAMES:
+            return self._stream_call(name, arguments), []
         from services.wuji.config import validate_tool
         goal = validate_tool(name, arguments, self.hand_config)
         self._require_armed()

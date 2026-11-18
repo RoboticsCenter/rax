@@ -63,7 +63,8 @@ def test_wuji_tools_replace_gripper_and_status_has_real_hand_shape(make_backend)
     assert value['reached'] and hand.moves == [[.1]*20]
     assert backend.last_motion['tool'] == 'wuji_pose'
     assert backend.mutating == {'xarm_move_pose', 'xarm_move_joints', 'wuji_move_joints', 'wuji_pose', 'wuji_home',
-                               'wuji_set_effort', 'wuji_set_impedance'}
+                               'wuji_set_effort', 'wuji_set_impedance',
+                               'wuji_stream', 'wuji_trajectory', 'wuji_set_profile'}
 
 
 def test_hand_home_routes_to_existing_move_and_preserves_tuned_parameters(make_backend):

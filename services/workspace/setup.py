@@ -31,7 +31,9 @@ ROBOT_FACTS['xarm_bimanual'] = {
     'tools': ('xarm_status', 'xarm_observe', 'xarm_move_pose', 'xarm_move_joints',
               'xarm_move_both', 'xarm_move_joints_both', 'xarm_move_combined', 'xarm_stream', 'xarm_hold',
               'wuji_status', 'wuji_move_joints', 'wuji_pose', 'wuji_home', 'wuji_hold',
-              'wuji_set_effort', 'wuji_set_impedance', 'wuji_move_both'),
+              'wuji_set_effort', 'wuji_set_impedance', 'wuji_move_both',
+              'wuji_stream', 'wuji_trajectory', 'wuji_set_profile', 'wuji_stream_config',
+              'wuji_wait', 'wuji_stream_both', 'trace_start', 'trace_stop'),
 }
 
 

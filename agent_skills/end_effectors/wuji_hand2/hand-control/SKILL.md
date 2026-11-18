@@ -52,7 +52,9 @@ For `partial_hand: true`, use `active_enabled`, not all-joint `enabled`, to asse
 readiness. The configured passive joints and their isolated diagnostic codes do
 not block supported moves. Position moves, saved poses/home and hold are supported;
 `completion="contact"`, `wuji_set_effort` and `wuji_set_impedance` are unavailable
-for that hand. Keep its commissioned gains/caps and zero feed-forward bias.
+for that hand. Keep its commissioned gains/caps and zero feed-forward bias unless you
+deliberately select a `wuji_set_profile` preset. Presets and streaming act on its active
+joints only.
 The other hand keeps its own full or partial profile.
 Home moves only the active joints. A passive joint may remain elsewhere, so an
 active-joint home result does not establish the complete finger's home shape.
@@ -121,6 +123,57 @@ They do not certify self-collision clearance or a successful grasp.
 `effort_a`, motor current and current limits are **amperes**, not calibrated contact
 force or joint torque. Optional fingertip-online flags report availability, not
 contact. Use images and actual object motion to assess a grasp.
+
+## Smooth streaming, trajectories, profiles and traces
+
+Use these for skills, policies and anything with more than one waypoint. Use the
+blocking tools above for single checked positioning steps. Details and every parameter
+are in the repository's `docs/wuji-smooth-control.md`.
+
+- `wuji_stream` is **non-blocking**: it sets the latest target and returns at once. Give
+  `positions` (20), `joints` (`{"index_S2": 0.4}`) or `fingers` (`{"index": [s1, s2, s3, s4]}`).
+  Omitted joints keep their targets, and `relative=true` adds deltas. Call it at 10–50 Hz from a loop, or once.
+  The hand interpolates between calls with jerk/acceleration/velocity limits and does
+  not stop between targets. If calls stop, it comes to rest at the last target.
+  `duration_s` makes one minimum-jerk move. It does not wait: use `wuji_wait`
+  (convergence plus measured settling) before judging the result.
+- `wuji_trajectory` takes timed waypoints `[{"t": 0.5, "joints": {...}}, ...]` (seconds
+  from the call) and executes them as **one smooth motion** through every waypoint. Time
+  is stretched only if the limits require it (`time_scale`). A new trajectory or
+  stream continues smoothly from the moving goal, so plan chunks can overlap. It waits
+  by default; pass `wait=false` for chunks.
+- `wuji_set_profile` selects an impedance preset for the next stage: `soft`, `default`,
+  `firm`, `hold` (soft gains plus a small hold deadband against twitching) or `profile` (the
+  operator values). It also takes an optional per-stage `current_limit_a`. Values never
+  exceed the operator ceilings. Call it with the hand at rest, and read
+  `smooth_profile.cap_saturation_error_rad` in `wuji_status`.
+- `wuji_stream_config` holds software smoothing settings: `filter_tau_s`, per-joint
+  velocity/acceleration/jerk limits, `friction` feed-forward and `hold_deadband_rad`.
+  They apply at the next rest, and preparation restores the defaults.
+- `trace_start` / `trace_stop` record a trial (`hand_<side>.npz` at the command rate, plus
+  `meta.json`) under `runtime/traces/`. Set `controller`, `skill`, `variant` and `params` to
+  compare variants, and pass `success` to `trace_stop`.
+{% if robot.bimanual %}- Each hand takes `hand="left"|"right"`. `wuji_stream_both(left={...}, right={...})`
+  streams both hands in one call, and `trace_start(sides=[...])` records one or both.
+{% endif %}- Blocking moves, effort and impedance changes are refused while a stream is still
+  moving: call `wuji_wait` or `wuji_hold` first. `wuji_hold` brakes a moving stream to rest.
+  Arming, limits, tracking-error, feedback and temperature guards apply as for every move.
+  Passive joints of a partial hand never move and get no feed-forward. Profiles and
+  streaming work on its active joints.
+
+From Python, `ctx.hand({% if robot.bimanual %}'right'{% endif %})` wraps these tools:
+
+```python
+from api.hand import Rate
+hand = ctx.hand({% if robot.bimanual %}'right'{% endif %})
+hand.profile('default', current_limit_a=0.6)
+with hand.recording(controller='stream', skill='pinch', params={'speed': 0.3}) as trial:
+    rate = Rate(30)
+    for q in targets:            # 20 radians each
+        hand.stream(q)
+        rate.sleep()
+    trial.success = hand.wait()['settled']
+```
 
 ## Learn geometry through bounded probes
 

@@ -22,7 +22,7 @@ from services.xarm.backend import XArmBackend, CameraService, DEFAULTS, _schema,
 from services.xarm.faults import ControllerFault, check_controller
 from services.xarm.sdk import XArmDriver, MotionStopped
 from services.wuji.client import WujiClient
-from services.wuji.config import MUTATING_TOOLS, TOOL_NAMES
+from services.wuji.config import HIGH_RATE_TOOLS, MUTATING_TOOLS, STREAM_TOOL_NAMES, TOOL_NAMES
 from .config import (SIDES, PAIRED_TOOLS, COMBINED_TOOL, COMBINED_ACTIONS,
                      combined_actions, validate_options, arm_options)
 from .calibration import BimanualCalibration
@@ -190,11 +190,16 @@ class XArmBimanualBackend(XArmBackend):
                 + definition['description'])
             definitions.append(definition)
         for name, single in PAIRED_TOOLS.items():
-            definitions.append({'name': name, 'description':
+            description = (
                 f'Run {single} for left and right concurrently in one MCP call. Both targets and both '
                 'assemblies are checked before either command starts. Each arm target uses its own base '
                 'frame. This is not synchronized interpolation or collision planning; verify both sweeps. '
-                'Any execution failure disarms and requests stops on all four devices. Results are per side.',
+                'Any execution failure disarms and requests stops on all four devices. Results are per side.')
+            if name == 'wuji_stream_both':
+                description = ('Non-blocking wuji_stream for both hands in one MCP call (one payload per hand, '
+                               'same arguments as wuji_stream). Both targets are validated before either is '
+                               'accepted. Use it from 10-50 Hz bimanual control loops. No collision planning.')
+            definitions.append({'name': name, 'description': description,
                 'inputSchema': _schema({side: deepcopy(singles[side][single]['inputSchema']) for side in SIDES}, SIDES)})
         combined = {}
         for side in SIDES:
@@ -242,6 +247,8 @@ class XArmBimanualBackend(XArmBackend):
                    'Depth metric validation is pending; no depth pixel-to-position tool is exposed.'
                    if self.calibration else 'Calibration is pending: no camera-to-arm transforms or projected points.')},
         ]
+        from services.wuji.config import trace_tools
+        definitions += trace_tools(SIDES, self._max_record_s())
         stream = deepcopy(next(t for t in self.arms['left'].tools() if t['name'] == 'xarm_stream'))
         stream['inputSchema']['properties']['cameras'] = camera_list
         stream['description'] = 'Review the configured cameras’ rolling recording and both assemblies’ state. ' + stream['description']
@@ -273,8 +280,11 @@ class XArmBimanualBackend(XArmBackend):
             raise ValueError(f'unknown tool {name}')
         _validate_arguments(arguments, definition['inputSchema'])
         actions = combined_actions(arguments) if name == COMBINED_TOOL else None
-        if name in self.mutating:
+        if name in self.mutating and not self._streaming_tool(name):
             self._ready()
+        elif self._streaming_tool(name) and name in self.mutating:
+            # Owners re-check their hand every period; whole-rig RPC reads would cap the rate.
+            self._require_armed()
         if actions is not None:
             for side, single, payload in actions.values():
                 self.arms[side].validate(single, payload)
@@ -316,24 +326,41 @@ class XArmBimanualBackend(XArmBackend):
             else:
                 result = getattr(self, '_' + name.removeprefix('xarm_'))(**arguments)
         except Exception as exc:
+            rejected = (self._streaming_tool(name) and isinstance(exc, ValueError)
+                        and getattr(exc, 'control_certain', False) is True)
             if getattr(exc, 'operator_required', False):
                 self.handle_control_fault(exc)
-            elif name in self.mutating:
+            elif name in self.mutating and not rejected:
                 outcome = self._stop_assembly(verify_arm=True, require_healthy=False)
                 exc.robot_state = {**getattr(exc, 'robot_state', {}), 'assembly_stop': outcome}
                 exc.control_certain = all(v.get('confirmed') is True for v in outcome.values())
                 self.control_uncertain = not exc.control_certain
-            if name in self.mutating:
+            if name in self.mutating and not rejected:
                 self._schedule_motion_clip(name, started, time.time(), 'failed', exc)
             raise
         if name in self.mutating:
             self.control_uncertain = False
             value = result[0]
-            clip = self._schedule_motion_clip(name, started, time.time(), 'completed')
-            if clip:
-                value['motion_clip'] = clip
-            self.last_motion = {'tool': name, 'at': time.time(), **value}
+            if name not in HIGH_RATE_TOOLS and name != 'wuji_stream_both':
+                clip = self._schedule_motion_clip(name, started, time.time(), 'completed')
+                if clip:
+                    value['motion_clip'] = clip
+                self.last_motion = {'tool': name, 'at': time.time(), **value}
         return result
+
+    def _max_record_s(self):
+        return min(arm.hand_config['max_record_s'] for arm in self.arms.values())
+
+    def _trace_start(self, **arguments):
+        hands = {side: arm.end_effector for side, arm in self.arms.items()}
+        return self._trace_start_on(hands, arguments, self._max_record_s()), []
+
+    def _trace_stop(self, **arguments):
+        return self._trace_stop_on(arguments), []
+
+    @staticmethod
+    def _streaming_tool(name):
+        return name in STREAM_TOOL_NAMES or name == 'wuji_stream_both'
 
     def _paired(self, name, arguments):
         gate = threading.Barrier(2)

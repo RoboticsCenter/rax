@@ -5,11 +5,20 @@ from copy import deepcopy
 
 JOINT_NAMES = tuple(f'{finger}_S{joint}' for finger in ('thumb', 'index', 'middle', 'ring', 'pinky')
                     for joint in range(1, 5))
-TOOL_NAMES = ('wuji_status', 'wuji_move_joints', 'wuji_pose', 'wuji_home', 'wuji_hold',
-              'wuji_set_effort', 'wuji_set_impedance')
+LEGACY_TOOL_NAMES = ('wuji_status', 'wuji_move_joints', 'wuji_pose', 'wuji_home', 'wuji_hold',
+                     'wuji_set_effort', 'wuji_set_impedance')
+# Smooth control layer (docs/wuji-smooth-control.md): non-blocking streaming targets, timed
+# trajectories, impedance presets, stream settings and settle waits.
+STREAM_TOOL_NAMES = ('wuji_stream', 'wuji_trajectory', 'wuji_set_profile', 'wuji_stream_config', 'wuji_wait')
+TOOL_NAMES = LEGACY_TOOL_NAMES + STREAM_TOOL_NAMES
+# Robot-level trace recording (shared trace format; services/dex_eval looks these names up).
+TRACE_TOOL_NAMES = ('trace_start', 'trace_stop')
 MOTION_TOOLS = frozenset({'wuji_move_joints', 'wuji_pose', 'wuji_home'})
 CONTROL_TOOLS = frozenset({'wuji_set_effort', 'wuji_set_impedance'})
-MUTATING_TOOLS = MOTION_TOOLS | CONTROL_TOOLS
+STREAM_MOTION_TOOLS = frozenset({'wuji_stream', 'wuji_trajectory', 'wuji_set_profile'})
+# High-rate tools skip per-call motion clips and heavyweight whole-rig status reads.
+HIGH_RATE_TOOLS = frozenset({'wuji_stream', 'wuji_stream_config', 'wuji_wait'})
+MUTATING_TOOLS = MOTION_TOOLS | CONTROL_TOOLS | STREAM_MOTION_TOOLS
 DEFAULTS = {
     'type': 'wuji_hand2', 'address': None, 'handedness': 'right',
     'command_hz': 120., 'max_feedback_age_s': .25, 'max_scheduler_gap_s': .1,
@@ -26,6 +35,10 @@ DEFAULTS = {
     'max_effort_slew_a_s': .5,
     'effort_velocity_grace_s': 0.,
     'postures': {}, 'lock_paths': [],
+    # Smooth control layer. None means "same as the S-curve limit" (no behavior change).
+    'stream_max_acceleration_rad_s2': None, 'stream_max_jerk_rad_s3': None,
+    'friction_current_a': .08, 'friction_velocity_rad_s': .03, 'max_feedforward_fraction': .5,
+    'gain_scale': 1.98, 'max_record_s': 120.,
 }
 REQUIRED = {'serial', 'profile_revision', 'lower_rad', 'upper_rad', 'current_limit_a', 'kp', 'kd'}
 
@@ -110,9 +123,16 @@ def validate_config(value):
         'max_effort_slew_a_s': (.01, 2.),
         'effort_velocity_grace_s': (0., .02),
         'stall_warning_grace_s': (0., .2),
+        'friction_velocity_rad_s': (.001, 1.), 'max_feedforward_fraction': (.05, 1.),
+        'gain_scale': (.5, 4.), 'max_record_s': (1., 600.),
     }
     for key, (lo, hi) in bounds.items():
         cfg[key] = number(cfg[key], key, lo, hi)
+    for key, hi in (('stream_max_acceleration_rad_s2', 25.), ('stream_max_jerk_rad_s3', 100.)):
+        if cfg[key] is not None:
+            cfg[key] = number(cfg[key], key, .01, hi)
+    # Hard ceiling: host friction feed-forward never exceeds 0.3 A commanded per joint.
+    cfg['friction_current_a'] = parameters(cfg['friction_current_a'], 'friction_current_a', .3)
     if cfg['max_scheduler_gap_s'] <= 1 / cfg['command_hz']:
         raise ValueError('max_scheduler_gap_s must exceed the command period')
     if (cfg['motion_mode'] == 'feedback'
@@ -178,6 +198,10 @@ def completion_mode(value):
 def validate_tool(name, args, cfg, *, reference=None):
     if not isinstance(args, dict) or name not in TOOL_NAMES:
         raise ValueError('unknown Wuji tool or invalid arguments')
+    if name in STREAM_TOOL_NAMES:
+        # Structural checks here; the hand owner validates against its live target.
+        from .smooth import check_tool_args
+        return check_tool_args(name, args, cfg)
     allowed = {'wuji_move_joints': {'positions', 'duration_s', 'completion'}, 'wuji_pose': {'name', 'duration_s'},
                'wuji_home': {'duration_s'},
                'wuji_set_effort': {'effort_a', 'duration_s'},
@@ -186,7 +210,8 @@ def validate_tool(name, args, cfg, *, reference=None):
         raise ValueError(f'unknown arguments for {name}: {sorted(set(args)-allowed)}')
     if cfg['disabled_joints']:
         if name not in ('wuji_status', 'wuji_move_joints', 'wuji_pose', 'wuji_home', 'wuji_hold'):
-            raise ValueError('partial-hand mode supports status, position moves and hold only')
+            raise ValueError('partial-hand mode supports status, position moves and hold only; '
+                             'the wuji_stream/wuji_set_profile tools support active joints')
         if args.get('completion', 'position') != 'position':
             raise ValueError('partial-hand mode requires position completion on active joints')
     if name == 'wuji_set_impedance':
@@ -289,4 +314,109 @@ def tools(cfg):
              'Overrides persist until changed or operator preparation restores the profile; status reports both.',
              {key: {'type': 'array', 'items': {'type': 'number', 'minimum': 0}, 'minItems': 20, 'maxItems': 20}
               for key in ('kp', 'kd', 'current_limit_a')}),
+        *stream_tools(cfg, tool),
+    ]
+
+
+def trace_fields(max_seconds):
+    return {'controller': {'type': 'string', 'description': 'Condition/controller name (grouping key).'},
+            'skill': {'type': 'string'}, 'variant': {'type': 'string'},
+            'params': {'type': 'object', 'additionalProperties': True}, 'notes': {'type': 'string'},
+            'max_seconds': {'type': 'number', 'minimum': 1, 'maximum': max_seconds}}
+
+
+def trace_tools(sides, max_seconds):
+    """trace_start/trace_stop schemas (robot level; one trial directory for the selected hands)."""
+    def tool(name, description, properties):
+        return {'name': name, 'description': description, 'inputSchema': {
+            'type': 'object', 'properties': properties, 'required': [], 'additionalProperties': False}}
+    side_list = {'type': 'array', 'items': {'type': 'string', 'enum': list(sides)}, 'minItems': 1,
+                 'maxItems': len(sides), 'description': f'Hands to record (default {", ".join(sides)}).'}
+    return [
+        tool('trace_start', 'Start recording a trace trial at the hand command rate (shared trace format: '
+             'hand_<side>.npz with t, q_ref, q_target, q_meas, dq_meas, current, i_ff, kp, kd, temperature_c; '
+             'meta.json). directory: trial directory inside the agent workspace; any other path is replaced '
+             'by runtime/traces/<label> and the result reports where the files are. Does not move the hand.',
+             {'directory': {'type': 'string'}, 'label': {'type': 'string'}, 'sides': side_list,
+              **trace_fields(max_seconds)}),
+        tool('trace_stop', 'Stop the active trace trial, write hand_<side>.npz and meta.json (with success '
+             'true/false/null and the active current_limit_a), and return the trial directory.',
+             {'success': {'type': ['boolean', 'null']}, 'notes': {'type': 'string'},
+              'directory': {'type': 'string', 'description': 'Optional; must match the active trial.'}}),
+    ]
+
+
+def stream_tools(cfg, tool):
+    """Schemas for the smooth control layer (see docs/wuji-smooth-control.md)."""
+    number_ = {'type': 'number'}
+    joints = {'type': 'object', 'properties': {name: number_ for name in JOINT_NAMES},
+              'additionalProperties': False, 'description': 'Subset by joint name, e.g. {"index_S2": 0.4}.'}
+    fingers = {'type': 'object', 'additionalProperties': False,
+               'properties': {finger: {'type': 'array', 'items': number_, 'minItems': 4, 'maxItems': 4}
+                              for finger in ('thumb', 'index', 'middle', 'ring', 'pinky')},
+               'description': 'Subset by finger: four radians S1..S4 each, e.g. {"index": [0.3, 0, 0.5, 0.4]}.'}
+    positions = {'type': 'array', 'items': number_, 'minItems': 20, 'maxItems': 20,
+                 'description': 'All twenty joints, thumb/index/middle/ring/pinky S1..S4.'}
+    per_joint = {'type': ['number', 'array'], 'items': number_, 'minItems': 20, 'maxItems': 20}
+    record = {'type': 'object', 'additionalProperties': False, 'properties': trace_fields(cfg['max_record_s'])}
+    waypoint = {'type': 'object', 'additionalProperties': False, 'required': ['t'], 'properties': {
+        't': {'type': 'number', 'minimum': .001, 'maximum': cfg['max_duration_s'],
+              'description': 'Seconds from the call; strictly increasing.'},
+        'positions': positions, 'joints': joints, 'fingers': fingers}}
+    return [
+        tool('wuji_stream', 'NON-BLOCKING smooth target update for policies, MPC and code loops (call at '
+             '10-50 Hz, or once). Returns immediately; the hand service interpolates toward the latest target '
+             'at its command rate with jerk/acceleration/velocity limits and never stops between targets. '
+             'Give exactly one of positions (20 rad), joints {name: rad} or fingers {finger: [S1..S4]}; '
+             'omitted joints keep their targets. relative=true adds deltas to the latest target. Without '
+             'duration_s the ramp spans the observed call period (10-100 ms); with duration_s it is a '
+             'minimum-jerk move. Disabled (partial-hand) joints keep their values. Requires a prepared, '
+             'armed, holding hand; blocking moves are refused while the stream reference is moving. '
+             'Use wuji_wait to wait for measured settling. No collision planning.',
+             {'positions': positions, 'joints': joints, 'fingers': fingers,
+              'relative': {'type': 'boolean', 'default': False},
+              'duration_s': {'type': 'number', 'minimum': 0, 'maximum': cfg['max_duration_s']},
+              'shape': {'type': 'string', 'enum': ['linear', 'minjerk']}}),
+        tool('wuji_trajectory', 'Execute timed waypoints as ONE smooth motion through every waypoint '
+             '(monotone cubic spline, no stops, zero velocity at the end). Times are seconds from the call; '
+             'time is stretched uniformly if a waypoint pair needs more than the velocity/acceleration '
+             'limits (reported as time_scale). A new trajectory or stream continues smoothly from the '
+             'current goal, so action chunks can be sent before the previous one ends. wait=true (default) '
+             'returns after measured settling or timeout; wait=false returns at once. record optionally '
+             'saves this call as one trace trial.',
+             {'waypoints': {'type': 'array', 'items': waypoint, 'minItems': 1, 'maxItems': 256},
+              'wait': {'type': 'boolean', 'default': True},
+              'timeout_s': {'type': 'number', 'minimum': .1, 'maximum': 300},
+              'record': record}, ['waypoints']),
+        tool('wuji_set_profile', 'Select an impedance preset for the next stage: soft, default, firm, hold '
+             '(soft gains plus a small hold deadband against twitching) or profile (operator values). Presets '
+             f'are effective stiffness/damping divided by the firmware gain scale ({cfg["gain_scale"]:g}x), '
+             'clamped to the operator ceilings. Optional kp, kd and current_limit_a (number or 20) override '
+             'within the ceilings; current_limit_a is the per-stage current cap. Requires the reference '
+             'at rest and a measured stationary hand; readback is verified. Partial hands keep disabled '
+             'joints at zero. Returns nominal and effective gains and the error at which the cap saturates.',
+             {'name': {'type': 'string', 'enum': ['profile', 'soft', 'default', 'firm', 'hold']},
+              'kp': per_joint, 'kd': per_joint, 'current_limit_a': per_joint,
+              'hold_deadband_rad': {'type': 'number', 'minimum': 0, 'maximum': .02}}, ['name']),
+        tool('wuji_stream_config', 'Stream smoothing settings (software only; applied while the reference is '
+             'at rest): filter_tau_s low-pass on targets (0 off), interpolation_s ramp per target (null auto, '
+             '0 none), synchronization finger|hand|joint, per-joint max velocity/acceleration/jerk (number or '
+             '20, never above the operator profile), friction feed-forward on/off with current (A) and tanh '
+             'velocity scale, hold_deadband_rad, and command_hz (at most the configured rate). Omitted '
+             'settings are unchanged; reset=true restores defaults. Returns the active settings.',
+             {'reset': {'type': 'boolean'},
+              'filter_tau_s': {'type': 'number', 'minimum': 0, 'maximum': 2},
+              'interpolation_s': {'type': ['number', 'null'], 'minimum': 0, 'maximum': 1},
+              'synchronization': {'type': 'string', 'enum': ['finger', 'hand', 'joint']},
+              'max_velocity_rad_s': per_joint, 'max_acceleration_rad_s2': per_joint, 'max_jerk_rad_s3': per_joint,
+              'friction': {'type': 'boolean'}, 'friction_current_a': per_joint,
+              'friction_velocity_rad_s': {'type': 'number', 'minimum': .001, 'maximum': 1},
+              'hold_deadband_rad': {'type': 'number', 'minimum': 0, 'maximum': .02},
+              'hold_delay_s': {'type': 'number', 'minimum': 0, 'maximum': 5},
+              'command_hz': {'type': 'number', 'minimum': 20, 'maximum': cfg['command_hz']}}),
+        tool('wuji_wait', 'Wait until the stream/trajectory reference has converged and measured joints settle '
+             f'within tolerance_rad={cfg["tolerance_rad"]:g} for settle_s={cfg["settle_s"]:g} (or timeout_s, '
+             f'default {cfg["settle_timeout_s"]:g}). Returns settled, reached, measured positions and per-joint '
+             'errors; a shortfall (e.g. contact) is reported, not treated as a fault. Does not move the hand.',
+             {'timeout_s': {'type': 'number', 'minimum': 0, 'maximum': 60}}),
     ]

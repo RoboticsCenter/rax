@@ -1,5 +1,5 @@
 """End-effector selection, independent of xArm motion and camera code."""
-from services.wuji.config import TOOL_NAMES, validate_config
+from services.wuji.config import TOOL_NAMES, TRACE_TOOL_NAMES, validate_config
 
 
 def kind(options):
@@ -16,7 +16,7 @@ def kind(options):
 
 
 def tool_names(options):
-    return TOOL_NAMES if kind(options) == 'wuji_hand2' else ('xarm_gripper',)
+    return TOOL_NAMES + TRACE_TOOL_NAMES if kind(options) == 'wuji_hand2' else ('xarm_gripper',)
 
 
 class Gripper:

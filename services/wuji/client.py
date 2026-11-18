@@ -46,8 +46,60 @@ def request(path, op, *, timeout=.5, **payload):
         raise ConnectionError('hand service returned an invalid response')
     response = json.loads(line)
     if not response['ok']:
-        raise RuntimeError(response['error'])
+        # Argument rejections (nothing was accepted) stay distinguishable from state errors.
+        raise (ValueError if response.get('kind') == 'invalid' else RuntimeError)(response['error'])
     return response['value']
+
+
+def direct(root, op, args=None, *, side=None, timeout=.5):
+    """Non-blocking smooth-layer request (stream, trajectory, stream_config, record, stream_status).
+
+    Answered by the owner's socket thread without SDK calls. Never retried: a timeout
+    may mean the target was accepted.
+    """
+    path = socket_path(root, side) if side is not None else socket_path(root)
+    return request(path, op, timeout=timeout, args=args or {})
+
+
+def wait_settled(root, *, side=None, timeout_s=3., after=None, poll_s=.01, clock=time.monotonic):
+    """Poll until all accepted stream commands are applied, the reference converged and the
+    measured joints settled (cfg tolerance/settle window), or timeout. Never moves the hand."""
+    started = clock()
+    deadline = started+timeout_s
+    while True:
+        value = direct(root, 'stream_status', side=side)
+        stream = value.get('stream') or {}
+        if value.get('mode') not in ('holding', 'executing') or value.get('fault'):
+            raise HandError({'outcome': 'not_holding', 'reason': value.get('fault') or
+                             f"hand mode {value.get('mode')} while waiting for stream settling"}, value)
+        processed = stream.get('processed', 0) >= (stream.get('accepted', 0) if after is None else after)
+        converged = processed and stream.get('reference_converged') and value.get('mode') == 'holding'
+        settled = bool(converged and stream.get('settled'))
+        now = clock()
+        if settled or now >= deadline:
+            target = stream.get('target_positions')
+            positions = value.get('positions')
+            errors = ([t-p for t, p in zip(target, positions)] if target and positions else None)
+            return {'outcome': 'settled' if settled else ('converged_unsettled' if converged else 'timeout'),
+                    'settled': settled, 'reached': settled, 'reference_converged': bool(converged),
+                    'seconds': now-started, 'positions': positions, 'target_positions': target,
+                    'joint_errors_rad': errors, 'max_joint_error_rad': stream.get('max_error_rad'),
+                    'trajectory': stream.get('trajectory'), 'stream_error': stream.get('last_error')}
+        time.sleep(poll_s)
+
+
+def record_stop(root, *, side=None, timeout_s=30., poll_s=.05):
+    """Stop the owner's recording and wait until hand_<side>.npz is written."""
+    summary = direct(root, 'record', {'action': 'stop'}, side=side)
+    deadline = time.monotonic()+timeout_s
+    while time.monotonic() < deadline:
+        value = direct(root, 'record', {'action': 'status'}, side=side)
+        if value and (value.get('saved') or value.get('error')):
+            if value.get('error'):
+                raise RuntimeError(f'trace save failed: {value["error"]}')
+            return value
+        time.sleep(poll_s)
+    raise TimeoutError(f'trace save did not finish within {timeout_s} s: {summary}')
 
 
 class HandError(RuntimeError):
@@ -245,6 +297,48 @@ class WujiClient:
 
     def set_impedance(self, **parameters):
         return self._operation('set_impedance', parameters)
+
+    # -- smooth control layer
+    def _direct(self, op, args=None, **kwargs):
+        return direct(self.root, op, args, side=self.side, **kwargs)
+
+    def stream(self, **args):
+        return self._direct('stream', args)
+
+    def stream_check(self, op, args):
+        """Owner-side validation against the live target without accepting anything."""
+        return self._direct(op, {**args, 'dry_run': True})
+
+    def trajectory(self, *, waypoints, wait=True, timeout_s=None):
+        accepted = self._direct('trajectory', {'waypoints': waypoints})
+        if not wait:
+            return {**accepted, 'waited': False}
+        budget = timeout_s if timeout_s is not None else (
+            accepted['estimated_duration_s']*1.5+self.cfg['settle_timeout_s']+1)
+        result = self.wait(timeout_s=budget, after=accepted['sequence'])
+        return {**accepted, **result, 'waited': True}
+
+    def stream_config(self, **settings):
+        return self._direct('stream_config', settings)
+
+    def set_profile(self, **args):
+        return self._operation('set_profile', args, timeout=self.cfg['stop_timeout_s']+5)
+
+    def stream_status(self):
+        return self._direct('stream_status')
+
+    def wait(self, timeout_s=None, after=None):
+        timeout_s = self.cfg['settle_timeout_s'] if timeout_s is None else timeout_s
+        return wait_settled(self.root, side=self.side, timeout_s=timeout_s, after=after)
+
+    def record_start(self, directory, **info):
+        return self._direct('record', {'action': 'start', 'directory': str(directory), **info})
+
+    def record_stop(self):
+        return record_stop(self.root, side=self.side)
+
+    def record_status(self):
+        return self._direct('record', {'action': 'status'})
 
     def stop(self):
         return self._operation('emergency', timeout=self.cfg['stop_timeout_s']+2)
